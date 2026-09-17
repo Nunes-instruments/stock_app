@@ -53,6 +53,12 @@ from runtime_paths import (
 )
 from version_info import APP_VERSION, BUILD_DATE
 
+from rack_shelf_document import (
+    get_rack_shelf_inventory,
+    import_rack_shelf_document,
+    apply_document_counts_to_overview,
+)
+
 from company_dashboard import (
     ensure_storage_layout_tables,
     get_company_overview,
@@ -678,13 +684,57 @@ def api_product_preview_image():
 
 @app.route("/company-dashboard")
 def all_company_dashboard():
-    overview = get_company_overview()
-    import_result = session.pop("layout_import_result", None)
+    overview = apply_document_counts_to_overview(get_company_overview())
     return render_template(
         "company_dashboard.html",
         overview=overview,
-        import_result=import_result,
     )
+
+
+@app.route("/rack-shelf")
+def rack_shelf_page():
+    selected_branch = normalize_text(
+        request.args.get("branch", get_active_branch_key())
+    ).lower()
+    if selected_branch not in BRANCHES:
+        selected_branch = DEFAULT_BRANCH_KEY
+
+    rack_inventory = get_rack_shelf_inventory(selected_branch)
+    upload_result = session.pop("rack_shelf_upload_result", None)
+
+    return render_template(
+        "rack_shelf.html",
+        rack_inventory=rack_inventory,
+        upload_result=upload_result,
+        selected_branch=selected_branch,
+    )
+
+
+@app.route("/rack-shelf/upload", methods=["POST"])
+def rack_shelf_upload():
+    selected_branch = normalize_text(
+        request.form.get("branch", DEFAULT_BRANCH_KEY)
+    ).lower()
+    if selected_branch not in BRANCHES:
+        selected_branch = DEFAULT_BRANCH_KEY
+
+    uploaded = request.files.get("file")
+    if not uploaded or not normalize_text(uploaded.filename):
+        session["rack_shelf_upload_result"] = {
+            "error": "Please select an Excel file."
+        }
+        return redirect(url_for("rack_shelf_page", branch=selected_branch))
+
+    try:
+        result = import_rack_shelf_document(uploaded, selected_branch)
+        session["rack_shelf_upload_result"] = {
+            "source_file": result.get("source_file", ""),
+            "summary": result.get("summary", {}),
+        }
+    except Exception as error:
+        session["rack_shelf_upload_result"] = {"error": str(error)}
+
+    return redirect(url_for("rack_shelf_page", branch=selected_branch))
 
 
 @app.route("/storage-layout/import/<kind>", methods=["POST"])
