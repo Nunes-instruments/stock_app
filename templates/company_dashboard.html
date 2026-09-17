@@ -2,23 +2,51 @@
 {% block title %}Executive Inventory{% endblock %}
 {% block content %}
 <style>
-:root{--x:#0b0b0b;--muted:#777;--line:#e5e5e5;--soft:#f7f7f5}
-.exec{display:grid;gap:18px;color:#161616}.exec *{box-sizing:border-box}
-.exec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:4px 2px}
-.exec-kicker{font-size:8px;font-weight:950;letter-spacing:.16em;text-transform:uppercase;color:#8b8b8b}
-.exec-head h1{margin:7px 0 0;font-size:clamp(28px,3.3vw,44px);line-height:.98;letter-spacing:-.045em;color:#090909}
-.exec-head p{margin:9px 0 0;max-width:680px;color:#777;font-size:10px;line-height:1.6}
-.online{display:flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid #d8d8d8;border-radius:999px;background:#fff;font-size:8px;font-weight:900}.online:before{content:"";width:7px;height:7px;border-radius:50%;background:#111;box-shadow:0 0 0 4px #eee}
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.kpi{padding:18px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 7px 24px rgba(0,0,0,.04)}.kpi small{display:block;color:#8c8c8c;font-size:7px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}.kpi strong{display:block;margin-top:12px;color:#080808;font-size:31px;font-weight:950;letter-spacing:-.04em}.kpi span{display:block;margin-top:7px;color:#999;font-size:8px}
-.section{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 8px 26px rgba(0,0,0,.035)}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #ededed}.section-head h2{margin:0;font-size:15px;font-weight:950;color:#111}.section-head p{margin:4px 0 0;color:#8a8a8a;font-size:8px}
-.company-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.company{padding:19px;border-right:1px solid #ededed}.company:last-child{border-right:0}.company .no{font-size:8px;font-weight:950;color:#aaa}.company h3{min-height:32px;margin:7px 0 17px;font-size:12px;color:#111}.company .stock{font-size:29px;font-weight:950;letter-spacing:-.035em}.company .label{margin-top:5px;color:#929292;font-size:8px}.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:16px}.fact{padding:10px 9px;border-radius:10px;background:var(--soft)}.fact small{color:#929292;font-size:6px;font-weight:950;text-transform:uppercase}.fact strong{display:block;margin-top:5px;font-size:14px}
-.actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px}.action{display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:14px;border:1px solid #dedede;border-radius:13px;background:#fff;text-decoration:none;transition:.15s ease}.action:hover{border-color:#111;transform:translateY(-2px);box-shadow:0 9px 22px rgba(0,0,0,.06)}.action strong{display:block;color:#111;font-size:10px}.action small{display:block;margin-top:4px;color:#8a8a8a;font-size:7px}.arrow{font-size:18px;color:#111}
-@media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.company-grid{grid-template-columns:1fr}.company{border-right:0;border-bottom:1px solid #ededed}.actions{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.exec-head{align-items:flex-start;flex-direction:column}.kpis,.actions{grid-template-columns:1fr}}
+:root{--ink:#0b0b0b;--muted:#686868;--line:#dedede;--soft:#f5f5f3}
+.exec{display:grid;gap:22px;color:#151515}.exec *{box-sizing:border-box}
+.exec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:8px 2px 4px}
+.exec-kicker{font-size:13px;font-weight:950;letter-spacing:.12em;text-transform:uppercase;color:#767676}
+.exec-head h1{margin:9px 0 0;font-size:clamp(36px,4vw,54px);line-height:1;letter-spacing:-.045em;color:#070707;font-weight:950}
+.exec-head p{max-width:760px;margin:13px 0 0;color:var(--muted);font-size:15px;line-height:1.6}
+.online{display:flex;align-items:center;gap:10px;min-height:46px;padding:0 17px;border:1px solid #cfcfcf;border-radius:999px;background:#fff;color:#1d1d1d;font-size:13px;font-weight:900}.online:before{content:"";width:9px;height:9px;border-radius:50%;background:#111;box-shadow:0 0 0 5px #ededed}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kpi{min-height:142px;padding:22px;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 8px 25px rgba(0,0,0,.045)}
+.kpi small{display:block;color:#757575;font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.07em}.kpi strong{display:block;margin-top:16px;color:#070707;font-size:40px;line-height:1;font-weight:950;letter-spacing:-.045em}.kpi span{display:block;margin-top:11px;color:#858585;font-size:13px;line-height:1.35}
+.section{overflow:hidden;border:1px solid var(--line);border-radius:20px;background:#fff;box-shadow:0 9px 28px rgba(0,0,0,.04)}
+.section-head{padding:20px 22px;border-bottom:1px solid #e8e8e8}.section-head h2{margin:0;color:#0c0c0c;font-size:22px;font-weight:950}.section-head p{margin:7px 0 0;color:#777;font-size:14px;line-height:1.45}
+.company-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.company{padding:24px;border-right:1px solid #e8e8e8}.company:last-child{border-right:0}
+.company-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.company .no{color:#a1a1a1;font-size:12px;font-weight:950}
+.company-badge{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border:1px solid #d8d8d8;border-radius:999px;color:#4d4d4d;background:#fafafa;font-size:11px;font-weight:900}.company-badge.head{border-color:#111;background:#111;color:#fff}
+.company h3{min-height:46px;margin:12px 0 20px;color:#111;font-size:18px;line-height:1.3;font-weight:950}.company .stock{color:#080808;font-size:38px;line-height:1;font-weight:950;letter-spacing:-.04em}.company .label{margin-top:8px;color:#7d7d7d;font-size:13px}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:20px}.fact{min-height:82px;padding:13px 12px;border-radius:12px;background:var(--soft)}.fact small{color:#787878;font-size:10px;font-weight:950;text-transform:uppercase}.fact strong{display:block;margin-top:8px;color:#111;font-size:21px;font-weight:950}
+.company-note{margin-top:16px;padding:13px 14px;border:1px solid #e4e4e4;border-radius:11px;background:#fafafa;color:#666;font-size:12px;line-height:1.5}.company-note strong{color:#111}
+.actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:18px}.action{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:92px;padding:18px;border:1px solid #d8d8d8;border-radius:14px;background:#fff;text-decoration:none;transition:.15s ease}.action:hover{transform:translateY(-2px);border-color:#111;box-shadow:0 10px 24px rgba(0,0,0,.06)}.action strong{display:block;color:#111;font-size:15px;font-weight:950}.action small{display:block;margin-top:7px;color:#757575;font-size:12px;line-height:1.4}.arrow{color:#111;font-size:25px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.company-grid{grid-template-columns:1fr}.company{border-right:0;border-bottom:1px solid #e8e8e8}.company:last-child{border-bottom:0}.actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.exec-head{align-items:flex-start;flex-direction:column}.kpis,.actions{grid-template-columns:1fr}}
 </style>
 <div class="exec">
-<section class="exec-head"><div><div class="exec-kicker">Nunes Inventory Control</div><h1>Company Overview</h1><p>One clean management view for company stock, products and storage coverage. Rack inspection is kept in its own workspace.</p></div><div class="online">System online</div></section>
-<section class="kpis"><article class="kpi"><small>Total Products</small><strong>{{ overview.grand.total_products|int }}</strong><span>Across all companies</span></article><article class="kpi"><small>Total Stock</small><strong>{{ overview.grand.total_stock|int }}</strong><span>Available quantity</span></article><article class="kpi"><small>Racks</small><strong>{{ overview.grand.racks|int }}</strong><span>Document-defined racks</span></article><article class="kpi"><small>Occupied Shelves</small><strong>{{ overview.grand.shelves|int }}</strong><span>Real mapped locations only</span></article></section>
-<section class="section"><div class="section-head"><div><h2>Company Portfolio</h2><p>Inventory position by company.</p></div></div><div class="company-grid">{% for branch in overview.branches %}<article class="company"><div class="no">0{{ loop.index }}</div><h3>{{ branch.name }}</h3><div class="stock">{{ branch.total_stock|int }}</div><div class="label">Total stock quantity</div><div class="facts"><div class="fact"><small>Products</small><strong>{{ branch.total_products|int }}</strong></div><div class="fact"><small>Racks</small><strong>{{ branch.racks|int }}</strong></div><div class="fact"><small>Shelves</small><strong>{{ branch.shelves|int }}</strong></div></div></article>{% endfor %}</div></section>
-<section class="section"><div class="section-head"><div><h2>Operations</h2><p>Only the daily actions needed from the management dashboard.</p></div></div><div class="actions"><a class="action" href="{{ url_for('rack_shelf_page') }}"><span><strong>Rack & Shelf</strong><small>Upload document and manage locations</small></span><span class="arrow">&rsaquo;</span></a><a class="action" href="{{ url_for('storage_view') }}"><span><strong>Storage View</strong><small>Existing full storage workspace</small></span><span class="arrow">&rsaquo;</span></a><a class="action" href="{{ url_for('add_stock_page') }}"><span><strong>Add Stock</strong><small>Inward / outward movement</small></span><span class="arrow">&rsaquo;</span></a><a class="action" href="{{ url_for('current_stock') }}"><span><strong>Current Stock</strong><small>Search available inventory</small></span><span class="arrow">&rsaquo;</span></a></div></section>
+<section class="exec-head"><div><div class="exec-kicker">Nunes Inventory Control</div><h1>Company Overview</h1><p>Each company is shown separately. Head Office carries the rack-based inventory. Other offices are currently empty and display zero until their real stock is introduced.</p></div><div class="online">System online</div></section>
+<section class="kpis">
+<article class="kpi"><small>Total Products</small><strong>{{ overview.grand.total_products|int }}</strong><span>Current products across active company stock</span></article>
+<article class="kpi"><small>Total Stock</small><strong>{{ overview.grand.total_stock|int }}</strong><span>Current available quantity</span></article>
+<article class="kpi"><small>Head Office Racks</small><strong>{{ overview.grand.racks|int }}</strong><span>Rack system belongs to Head Office only</span></article>
+<article class="kpi"><small>Occupied Shelves</small><strong>{{ overview.grand.shelves|int }}</strong><span>Real Head Office shelf locations only</span></article>
+</section>
+<section class="section"><div class="section-head"><h2>Company Stock Position</h2><p>Each company keeps its own independent inventory position.</p></div><div class="company-grid">
+{% for branch in overview.branches %}
+<article class="company">
+<div class="company-top"><div class="no">0{{ loop.index }}</div>{% if branch.key == 'main' %}<span class="company-badge head">Head Office</span>{% else %}<span class="company-badge">Branch Office</span>{% endif %}</div>
+<h3>{{ branch.name }}</h3><div class="stock">{{ branch.total_stock|int }}</div><div class="label">Total stock quantity</div>
+<div class="facts"><div class="fact"><small>Products</small><strong>{{ branch.total_products|int }}</strong></div><div class="fact"><small>Racks</small><strong>{{ branch.racks|int }}</strong></div><div class="fact"><small>Shelves</small><strong>{{ branch.shelves|int }}</strong></div></div>
+{% if branch.key == 'main' %}<div class="company-note"><strong>Rack system active.</strong> Rack and shelf document management is available for Head Office.</div>{% else %}<div class="company-note"><strong>No products in this office yet.</strong> Products, stock, racks and shelves are currently set to 0.</div>{% endif %}
+</article>{% endfor %}
+</div></section>
+<section class="section"><div class="section-head"><h2>Operations</h2><p>Large, clear actions for everyday stock work.</p></div><div class="actions">
+<a class="action" href="{{ url_for('rack_shelf_page') }}"><span><strong>Rack &amp; Shelf</strong><small>Head Office rack document and locations</small></span><span class="arrow">&rsaquo;</span></a>
+<a class="action" href="{{ url_for('storage_view') }}"><span><strong>Storage View</strong><small>Open the existing full storage workspace</small></span><span class="arrow">&rsaquo;</span></a>
+<a class="action" href="{{ url_for('add_stock_page') }}"><span><strong>Add Stock</strong><small>Record inward or outward stock movement</small></span><span class="arrow">&rsaquo;</span></a>
+<a class="action" href="{{ url_for('current_stock') }}"><span><strong>Current Stock</strong><small>Search and review available inventory</small></span><span class="arrow">&rsaquo;</span></a>
+</div></section>
 </div>
 {% endblock %}

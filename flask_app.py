@@ -693,13 +693,8 @@ def all_company_dashboard():
 
 @app.route("/rack-shelf")
 def rack_shelf_page():
-    selected_branch = normalize_text(
-        request.args.get("branch", get_active_branch_key())
-    ).lower()
-    if selected_branch not in BRANCHES:
-        selected_branch = DEFAULT_BRANCH_KEY
-
-    rack_inventory = get_rack_shelf_inventory(selected_branch)
+    selected_branch = DEFAULT_BRANCH_KEY
+    rack_inventory = get_rack_shelf_inventory(DEFAULT_BRANCH_KEY)
     upload_result = session.pop("rack_shelf_upload_result", None)
 
     return render_template(
@@ -712,18 +707,14 @@ def rack_shelf_page():
 
 @app.route("/rack-shelf/upload", methods=["POST"])
 def rack_shelf_upload():
-    selected_branch = normalize_text(
-        request.form.get("branch", DEFAULT_BRANCH_KEY)
-    ).lower()
-    if selected_branch not in BRANCHES:
-        selected_branch = DEFAULT_BRANCH_KEY
+    selected_branch = DEFAULT_BRANCH_KEY
 
     uploaded = request.files.get("file")
     if not uploaded or not normalize_text(uploaded.filename):
         session["rack_shelf_upload_result"] = {
             "error": "Please select an Excel file."
         }
-        return redirect(url_for("rack_shelf_page", branch=selected_branch))
+        return redirect(url_for("rack_shelf_page"))
 
     try:
         result = import_rack_shelf_document(uploaded, selected_branch)
@@ -734,7 +725,7 @@ def rack_shelf_upload():
     except Exception as error:
         session["rack_shelf_upload_result"] = {"error": str(error)}
 
-    return redirect(url_for("rack_shelf_page", branch=selected_branch))
+    return redirect(url_for("rack_shelf_page"))
 
 
 @app.route("/storage-layout/import/<kind>", methods=["POST"])

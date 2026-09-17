@@ -103,31 +103,40 @@ def _empty_inventory(branch_key="main"):
 
 def get_rack_shelf_inventory(branch_key="main"):
     key = normalize_branch_key(branch_key)
-    runtime_file = _runtime_json(key)
+
+    if key != "main":
+        return _empty_inventory(key)
+
+    runtime_file = _runtime_json("main")
     source = runtime_file
-    if not source.exists() and key == "main" and BUNDLED_MAIN_FILE.exists():
+    if not source.exists() and BUNDLED_MAIN_FILE.exists():
         source = BUNDLED_MAIN_FILE
     if not source.exists():
-        return _empty_inventory(key)
+        return _empty_inventory("main")
 
     try:
         data = json.loads(source.read_text(encoding="utf-8"))
     except Exception:
-        return _empty_inventory(key)
+        return _empty_inventory("main")
 
-    data["branch_key"] = key
-    data["branch_name"] = BRANCHES[key]["name"]
+    data["branch_key"] = "main"
+    data["branch_name"] = BRANCHES["main"]["name"]
     summary = data.setdefault("summary", {})
     if "located_stock_lines" not in summary:
         summary["located_stock_lines"] = int(
-            summary.get("rack_stock_lines", 0) or summary.get("stock_lines_total", 0) or 0
+            summary.get("rack_stock_lines", 0)
+            or summary.get("stock_lines_total", 0)
+            or 0
         )
     summary.setdefault("coded_racks", len(data.get("racks", [])))
     summary.setdefault(
         "occupied_shelves",
         sum(len(r.get("shelves", [])) for r in data.get("racks", [])),
     )
-    summary.setdefault("unassigned_lines", int(data.get("last_rack", {}).get("item_count", 0) or 0))
+    summary.setdefault(
+        "unassigned_lines",
+        int(data.get("last_rack", {}).get("item_count", 0) or 0),
+    )
     return data
 
 
@@ -211,6 +220,8 @@ def _parse_dataframe(frame, source_name):
 
 def import_rack_shelf_document(file_storage, branch_key="main"):
     key = normalize_branch_key(branch_key)
+    if key != "main":
+        raise ValueError("Rack & Shelf is available only for Head Office.")
     filename = Path(_clean(file_storage.filename) or "rack_shelf.xlsx").name
     if not filename.lower().endswith((".xlsx", ".xls")):
         raise ValueError("Please upload an Excel .xlsx or .xls file.")
@@ -310,13 +321,41 @@ def import_rack_shelf_document(file_storage, branch_key="main"):
 
 def apply_document_counts_to_overview(overview):
     branches = overview.get("branches", [])
+
     for branch in branches:
-        inv = get_rack_shelf_inventory(branch.get("key", "main"))
-        summary = inv.get("summary", {})
-        branch["racks"] = int(summary.get("coded_racks", 0) or 0)
-        branch["shelves"] = int(summary.get("occupied_shelves", 0) or 0)
+        key = branch.get("key", "main")
+
+        if key == "main":
+            inv = get_rack_shelf_inventory("main")
+            summary = inv.get("summary", {})
+            branch["racks"] = int(summary.get("coded_racks", 0) or 0)
+            branch["shelves"] = int(summary.get("occupied_shelves", 0) or 0)
+            branch["rack_enabled"] = True
+            branch["inventory_status"] = "Active"
+        else:
+            branch["total_products"] = 0
+            branch["total_stock"] = 0
+            branch["racks"] = 0
+            branch["shelves"] = 0
+            branch["mapped_products"] = 0
+            branch["unassigned_products"] = 0
+            branch["mapped_quantity"] = 0
+            branch["coverage"] = 0
+            branch["rack_enabled"] = False
+            branch["inventory_status"] = "No products yet"
 
     grand = overview.setdefault("grand", {})
-    grand["racks"] = sum(int(branch.get("racks", 0) or 0) for branch in branches)
-    grand["shelves"] = sum(int(branch.get("shelves", 0) or 0) for branch in branches)
+    grand["total_products"] = sum(int(b.get("total_products", 0) or 0) for b in branches)
+    grand["total_stock"] = sum(float(b.get("total_stock", 0) or 0) for b in branches)
+    grand["racks"] = sum(int(b.get("racks", 0) or 0) for b in branches)
+    grand["shelves"] = sum(int(b.get("shelves", 0) or 0) for b in branches)
+    grand["mapped_products"] = sum(int(b.get("mapped_products", 0) or 0) for b in branches)
+    grand["unassigned_products"] = sum(int(b.get("unassigned_products", 0) or 0) for b in branches)
+    grand["mapped_quantity"] = sum(float(b.get("mapped_quantity", 0) or 0) for b in branches)
+
+    grand["coverage"] = (
+        round(grand["mapped_products"] / grand["total_products"] * 100, 1)
+        if grand["total_products"]
+        else 0
+    )
     return overview
