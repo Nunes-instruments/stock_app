@@ -1,0 +1,2663 @@
+{% extends "base.html" %}
+
+{% block title %}
+Stock Movement
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+/* ============================================================
+   PAGE
+============================================================ */
+
+.stock-movement-page {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.stock-page-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+}
+
+.stock-page-heading h1 {
+    margin: 0;
+    color: #102f4d;
+    font-size: 27px;
+    font-weight: 950;
+}
+
+.stock-page-heading p {
+    margin: 5px 0 0;
+    color: #71879d;
+    font-size: 11px;
+}
+
+
+/* ============================================================
+   MAIN CARD
+============================================================ */
+
+.stock-form-card-new {
+    border: 1px solid #d5e2ed;
+    border-radius: 17px;
+    background: #ffffff;
+    overflow: hidden;
+    box-shadow:
+        0 6px 20px
+        rgba(18, 54, 86, 0.05);
+}
+
+.stock-section {
+    padding: 20px;
+}
+
+.stock-section + .stock-section {
+    border-top: 1px solid #dde7ef;
+}
+
+.stock-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.stock-section-number {
+    width: 39px;
+    height: 39px;
+    flex: 0 0 39px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #276fe8;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 950;
+}
+
+.stock-section-heading h2 {
+    margin: 0;
+    color: #123451;
+    font-size: 20px;
+    font-weight: 950;
+}
+
+.stock-section-heading p {
+    margin: 3px 0 0;
+    color: #7c90a4;
+    font-size: 9px;
+}
+
+
+/* ============================================================
+   MOVEMENT SELECTOR
+============================================================ */
+
+.movement-selector {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.movement-choice {
+    min-height: 83px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 13px;
+
+    border: 2px solid #dbe6ef;
+    border-radius: 14px;
+
+    background: #fafcfe;
+    cursor: pointer;
+
+    transition:
+        0.16s ease;
+}
+
+.movement-choice:hover {
+    transform: translateY(-1px);
+}
+
+.movement-choice .movement-icon {
+    width: 43px;
+    height: 43px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    font-size: 20px;
+    font-weight: 950;
+}
+
+.movement-choice strong {
+    display: block;
+    color: #153550;
+    font-size: 12px;
+    font-weight: 950;
+}
+
+.movement-choice small {
+    display: block;
+    margin-top: 4px;
+    color: #8092a4;
+    font-size: 8px;
+}
+
+.movement-choice.inward .movement-icon {
+    background: #e6f7ed;
+    color: #0c984b;
+}
+
+.movement-choice.outward .movement-icon {
+    background: #fff0f0;
+    color: #d84444;
+}
+
+.movement-choice.inward.active {
+    border-color: #39c878;
+    background: #f0fbf5;
+}
+
+.movement-choice.outward.active {
+    border-color: #ef7272;
+    background: #fff6f6;
+}
+
+
+/* ============================================================
+   FORM
+============================================================ */
+
+.stock-form-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+    gap: 15px 18px;
+}
+
+.stock-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.stock-field.full {
+    grid-column: 1 / -1;
+}
+
+.stock-field label {
+    color: #294b67;
+    font-size: 9px;
+    font-weight: 950;
+    text-transform: uppercase;
+}
+
+.stock-field input,
+.stock-field select,
+.stock-field textarea {
+    width: 100%;
+    min-height: 47px;
+    padding: 0 13px;
+
+    border: 1px solid #cbdceb;
+    border-radius: 10px;
+
+    background: #ffffff;
+    color: #173750;
+
+    font-size: 11px;
+
+    outline: none;
+}
+
+.stock-field textarea {
+    min-height: 78px;
+    padding-top: 12px;
+    resize: vertical;
+}
+
+.stock-field input:focus,
+.stock-field select:focus,
+.stock-field textarea:focus {
+    border-color: #4c91ee;
+    box-shadow:
+        0 0 0 3px
+        rgba(76, 145, 238, 0.10);
+}
+
+.stock-field input[readonly] {
+    background: #f4f8fb;
+    color: #60788d;
+}
+
+.field-help {
+    color: #8195a8;
+    font-size: 8px;
+}
+
+
+/* ============================================================
+   PRODUCT STATUS
+============================================================ */
+
+.product-status-card {
+    display: none;
+    grid-template-columns:
+        1.5fr repeat(3, 0.7fr);
+
+    gap: 1px;
+
+    margin-top: 17px;
+
+    border: 1px solid #d8e4ee;
+    border-radius: 13px;
+    overflow: hidden;
+
+    background: #d8e4ee;
+}
+
+.product-status-card.active {
+    display: grid;
+}
+
+.product-status-cell {
+    min-height: 73px;
+    padding: 13px;
+    background: #f9fbfd;
+}
+
+.product-status-cell small {
+    display: block;
+    color: #8395a7;
+    font-size: 7px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.product-status-cell strong {
+    display: block;
+    margin-top: 5px;
+    color: #123451;
+    font-size: 13px;
+    font-weight: 950;
+}
+
+.product-status-cell.quantity strong {
+    color: #078e46;
+    font-size: 21px;
+}
+
+
+/* ============================================================
+   QUANTITY CONTROL
+============================================================ */
+
+.quantity-area {
+    display: grid;
+    grid-template-columns:
+        0.8fr 1.4fr 0.8fr;
+    gap: 13px;
+    align-items: stretch;
+}
+
+.quantity-summary {
+    padding: 16px;
+    border: 1px solid #d5e2ed;
+    border-radius: 13px;
+    background: #f8fbfe;
+}
+
+.quantity-summary small {
+    display: block;
+    color: #8194a7;
+    font-size: 8px;
+    font-weight: 900;
+}
+
+.quantity-summary strong {
+    display: inline-block;
+    margin-top: 8px;
+    color: #123451;
+    font-size: 27px;
+    font-weight: 950;
+}
+
+.quantity-summary span {
+    margin-left: 4px;
+    color: #758b9f;
+    font-size: 9px;
+}
+
+.quantity-summary.after.inward strong {
+    color: #0c9a4c;
+}
+
+.quantity-summary.after.outward strong {
+    color: #d64242;
+}
+
+.quantity-control {
+    padding: 15px;
+    border: 1px solid #d5e2ed;
+    border-radius: 13px;
+    background: #f8fbfe;
+}
+
+.quantity-control-title {
+    margin-bottom: 9px;
+    color: #647b91;
+    font-size: 8px;
+    font-weight: 950;
+}
+
+.quantity-input-row {
+    display: grid;
+    grid-template-columns:
+        50px 1fr 50px;
+
+    border: 1px solid #c7d9e9;
+    border-radius: 10px;
+    overflow: hidden;
+
+    background: #ffffff;
+}
+
+.quantity-input-row button {
+    border: 0;
+    background: #f4f8fb;
+    color: #52718b;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.quantity-input-row input {
+    width: 100%;
+    min-height: 47px;
+    border: 0;
+    outline: 0;
+    text-align: center;
+    color: #123451;
+    font-size: 17px;
+    font-weight: 950;
+}
+
+.quick-quantity-row {
+    display: grid;
+    grid-template-columns:
+        repeat(4, 1fr);
+    gap: 7px;
+    margin-top: 8px;
+}
+
+.quick-quantity-row button {
+    min-height: 31px;
+    border: 1px solid #d6e2ec;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #587188;
+    font-size: 8px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+
+/* ============================================================
+   INWARD / OUTWARD DETAIL BOXES
+============================================================ */
+
+.movement-information {
+    margin-top: 16px;
+    padding: 17px;
+
+    border-radius: 13px;
+}
+
+.movement-information.inward {
+    border: 1px solid #b9e8cc;
+    background: #f1fbf5;
+}
+
+.movement-information.outward {
+    border: 1px solid #f0c5c5;
+    background: #fff6f6;
+}
+
+.movement-information.hidden {
+    display: none;
+}
+
+.movement-information h3 {
+    margin: 0 0 3px;
+    color: #153550;
+    font-size: 13px;
+    font-weight: 950;
+}
+
+.movement-information > p {
+    margin: 0 0 15px;
+    color: #7890a4;
+    font-size: 8px;
+}
+
+
+/* ============================================================
+   REVIEW BUTTON
+============================================================ */
+
+.review-stock-button {
+    width: 100%;
+    min-height: 67px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+
+    margin-top: 18px;
+
+    border: 0;
+    border-radius: 13px;
+
+    background: #2c72e5;
+    color: #ffffff;
+
+    cursor: pointer;
+}
+
+.review-stock-button.outward {
+    background: #dc4b4b;
+}
+
+.review-stock-button:disabled {
+    background: #aac6ef;
+    cursor: not-allowed;
+}
+
+.review-stock-button strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 950;
+}
+
+.review-stock-button small {
+    display: block;
+    margin-top: 3px;
+    font-size: 8px;
+    opacity: 0.85;
+}
+
+
+/* ============================================================
+   CONFIRMATION
+============================================================ */
+
+.stock-confirm-panel {
+    padding: 20px;
+    border: 1px solid #cfdeea;
+    border-radius: 16px;
+    background: #ffffff;
+}
+
+.stock-confirm-panel.hidden {
+    display: none;
+}
+
+.confirm-heading h2 {
+    margin: 0;
+    color: #113450;
+    font-size: 20px;
+    font-weight: 950;
+}
+
+.confirm-heading p {
+    margin: 5px 0 0;
+    color: #768da1;
+    font-size: 9px;
+}
+
+.confirm-movement-banner {
+    margin-top: 15px;
+    padding: 13px 16px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 950;
+}
+
+.confirm-movement-banner.inward {
+    background: #eaf8ef;
+    color: #078a43;
+}
+
+.confirm-movement-banner.outward {
+    background: #fff0f0;
+    color: #cb3d3d;
+}
+
+.confirm-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 13px;
+}
+
+.confirm-item {
+    padding: 13px;
+    border: 1px solid #dae5ed;
+    border-radius: 10px;
+    background: #f8fbfd;
+}
+
+.confirm-item small {
+    display: block;
+    color: #8193a5;
+    font-size: 7px;
+    font-weight: 900;
+}
+
+.confirm-item strong {
+    display: block;
+    margin-top: 5px;
+    color: #163653;
+    font-size: 12px;
+    font-weight: 950;
+}
+
+.confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 16px;
+}
+
+.confirm-actions button {
+    min-height: 42px;
+    padding: 0 17px;
+    border-radius: 9px;
+    font-size: 9px;
+    font-weight: 950;
+    cursor: pointer;
+}
+
+.confirm-cancel {
+    border: 1px solid #cbdbe8;
+    background: #ffffff;
+    color: #46657e;
+}
+
+.confirm-save {
+    border: 0;
+    background: #2871e6;
+    color: #ffffff;
+}
+
+.confirm-save.outward {
+    background: #dc4949;
+}
+
+
+/* ============================================================
+   3D ANIMATION
+============================================================ */
+
+.stock-3d-panel.hidden {
+    display: none;
+}
+
+.stock-3d-panel {
+    min-height: 600px;
+    overflow: hidden;
+
+    border: 1px solid #cbdbe7;
+    border-radius: 16px;
+
+    background: #071421;
+}
+
+.stock-3d-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 15px 18px;
+
+    background: #0d2235;
+    color: #ffffff;
+}
+
+.stock-3d-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 950;
+}
+
+.stock-3d-header p {
+    margin: 4px 0 0;
+    color: #b9ccdc;
+    font-size: 8px;
+}
+
+.exit-3d-button {
+    min-height: 36px;
+    padding: 0 13px;
+    border: 1px solid #49627a;
+    border-radius: 8px;
+    background: #173149;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.three-storage-container {
+    position: relative;
+    width: 100%;
+    height: 520px;
+}
+
+#stock3dCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+
+/* ============================================================
+   SUCCESS
+============================================================ */
+
+.success-panel.hidden {
+    display: none;
+}
+
+.success-panel {
+    padding: 22px;
+    border: 1px solid #bce7ca;
+    border-radius: 15px;
+    background: #eefaf2;
+    text-align: center;
+}
+
+.success-panel.outward {
+    border-color: #f0c4c4;
+    background: #fff3f3;
+}
+
+.success-panel h2 {
+    margin: 5px 0;
+    color: #123451;
+}
+
+.success-big-check {
+    font-size: 34px;
+}
+
+.success-values {
+    display: flex;
+    justify-content: center;
+    gap: 22px;
+    margin-top: 14px;
+}
+
+.success-values span {
+    color: #7890a3;
+    font-size: 9px;
+}
+
+.success-values strong {
+    display: block;
+    margin-top: 4px;
+    color: #123451;
+    font-size: 18px;
+}
+
+
+/* ============================================================
+   MESSAGE
+============================================================ */
+
+.message {
+    min-height: 1px;
+    font-size: 10px;
+}
+
+.message.error {
+    color: #c93f3f;
+}
+
+.message.success {
+    color: #078b45;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1000px) {
+
+    .quantity-area {
+        grid-template-columns:
+            1fr;
+    }
+
+    .confirm-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+
+    .stock-form-grid,
+    .movement-selector {
+        grid-template-columns:
+            1fr;
+    }
+
+    .product-status-card {
+        grid-template-columns:
+            1fr;
+    }
+
+    .confirm-grid {
+        grid-template-columns:
+            1fr;
+    }
+}
+
+/* ============================================================
+   V5.0 UI REFRESH — PRESENTATION ONLY
+   Existing IDs, form fields and JavaScript wiring are unchanged.
+============================================================ */
+.stock-movement-page {
+    gap: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.stock-page-heading {
+    padding: 2px 2px 4px;
+}
+
+.stock-page-heading h1 {
+    color: #111827;
+    font-size: clamp(28px, 2.25vw, 36px);
+    font-weight: 800;
+    letter-spacing: -.035em;
+}
+
+.stock-page-heading p {
+    margin-top: 7px;
+    color: #667085;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.stock-form-card-new {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+    box-shadow: none;
+}
+
+.stock-form-card-new > form {
+    display: grid;
+    gap: 16px;
+}
+
+.stock-section {
+    padding: 24px;
+    border: 1px solid #e1e7ef !important;
+    border-radius: 17px;
+    background: #ffffff;
+    box-shadow: 0 8px 26px rgba(15, 23, 42, .045);
+}
+
+.stock-section + .stock-section {
+    border-top: 1px solid #e1e7ef !important;
+}
+
+.stock-section-heading {
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.stock-section-number {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    border-radius: 11px;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #dbeafe;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.stock-section-heading h2 {
+    color: #172033;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -.02em;
+}
+
+.stock-section-heading p {
+    margin-top: 5px;
+    color: #7a8798;
+    font-size: 12.5px;
+    line-height: 1.45;
+}
+
+.movement-selector {
+    gap: 14px;
+}
+
+.movement-choice {
+    min-height: 76px;
+    justify-content: flex-start;
+    padding: 13px 18px;
+    border-width: 1px;
+    border-radius: 13px;
+    background: #fbfcfe;
+    box-shadow: none;
+}
+
+.movement-choice:hover {
+    transform: none;
+    border-color: #becbd9;
+    background: #f8fafc;
+}
+
+.movement-choice .movement-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 18px;
+}
+
+.movement-choice strong {
+    color: #172033;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: .01em;
+}
+
+.movement-choice small {
+    margin-top: 3px;
+    color: #7a8798;
+    font-size: 11.5px;
+    line-height: 1.4;
+}
+
+.movement-choice.inward.active {
+    border-color: #86d7ad;
+    background: #f6fcf8;
+    box-shadow: inset 3px 0 0 #22a866;
+}
+
+.movement-choice.outward.active {
+    border-color: #efb1b1;
+    background: #fff9f9;
+    box-shadow: inset 3px 0 0 #d95a5a;
+}
+
+.stock-form-grid {
+    gap: 17px 18px;
+}
+
+.stock-field {
+    gap: 8px;
+}
+
+.stock-field label {
+    color: #344054;
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: .015em;
+    text-transform: none;
+}
+
+.stock-field input,
+.stock-field select,
+.stock-field textarea {
+    min-height: 46px;
+    padding: 0 14px;
+    border: 1px solid #d6dee8;
+    border-radius: 10px;
+    color: #172033;
+    font-size: 14px;
+    line-height: 1.4;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .02);
+}
+
+.stock-field textarea {
+    min-height: 88px;
+    padding-top: 12px;
+}
+
+.stock-field input::placeholder,
+.stock-field textarea::placeholder {
+    color: #98a2b3;
+}
+
+.stock-field input:focus,
+.stock-field select:focus,
+.stock-field textarea:focus {
+    border-color: #7da7ea;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .08);
+}
+
+.field-help {
+    color: #8491a3;
+    font-size: 11.5px;
+    line-height: 1.4;
+}
+
+.product-status-card {
+    margin-top: 20px;
+    border: 1px solid #e1e7ef;
+    border-radius: 13px;
+    background: #e1e7ef;
+}
+
+.product-status-cell {
+    min-height: 78px;
+    padding: 14px 16px;
+    background: #fafbfc;
+}
+
+.product-status-cell small {
+    color: #7a8798;
+    font-size: 10px;
+    font-weight: 750;
+}
+
+.product-status-cell strong {
+    margin-top: 6px;
+    color: #172033;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.product-status-cell.quantity strong {
+    color: #172033;
+    font-size: 18px;
+}
+
+.quantity-area {
+    grid-template-columns: minmax(160px, .7fr) minmax(360px, 1.6fr) minmax(160px, .7fr);
+    gap: 14px;
+}
+
+.quantity-summary,
+.quantity-control {
+    padding: 17px;
+    border: 1px solid #e0e6ed;
+    border-radius: 13px;
+    background: #fafbfc;
+}
+
+.quantity-summary small,
+.quantity-control-title {
+    color: #667085;
+    font-size: 10.5px;
+    font-weight: 750;
+    letter-spacing: .03em;
+}
+
+.quantity-summary strong {
+    margin-top: 9px;
+    color: #172033;
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.quantity-summary span {
+    color: #7a8798;
+    font-size: 11.5px;
+}
+
+.quantity-input-row {
+    grid-template-columns: 46px 1fr 46px;
+    border-color: #d6dee8;
+    border-radius: 10px;
+}
+
+.quantity-input-row button {
+    background: #f8fafc;
+    color: #475467;
+    font-size: 19px;
+}
+
+.quantity-input-row button:hover {
+    background: #eef2f6;
+}
+
+.quantity-input-row input {
+    min-height: 46px;
+    color: #172033;
+    font-size: 16px;
+    font-weight: 750;
+}
+
+.quick-quantity-row {
+    gap: 8px;
+    margin-top: 9px;
+}
+
+.quick-quantity-row button {
+    min-height: 34px;
+    border-color: #dce3eb;
+    border-radius: 8px;
+    color: #475467;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.quick-quantity-row button:hover {
+    border-color: #b9c6d5;
+    background: #f8fafc;
+}
+
+.movement-information {
+    margin-top: 18px;
+    padding: 20px;
+    border-radius: 13px;
+}
+
+.movement-information.inward {
+    border: 1px solid #cae9d7;
+    background: #f8fcf9;
+}
+
+.movement-information.outward {
+    border: 1px solid #efd4d4;
+    background: #fffafa;
+}
+
+.movement-information h3 {
+    margin: 0;
+    color: #172033;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.movement-information p {
+    margin: 5px 0 17px;
+    color: #7a8798;
+    font-size: 11.5px;
+}
+
+.review-stock-button {
+    min-height: 58px;
+    margin-top: 18px;
+    border: 1px solid #cfd8e3;
+    border-radius: 12px;
+    background: #172033;
+    color: #ffffff;
+    box-shadow: 0 7px 16px rgba(15, 23, 42, .10);
+}
+
+.review-stock-button:hover {
+    background: #0f172a;
+    border-color: #0f172a;
+}
+
+.review-stock-button > span:first-child {
+    font-size: 16px;
+}
+
+.review-stock-button strong {
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.review-stock-button small {
+    margin-top: 2px;
+    color: #cbd5e1;
+    font-size: 10.5px;
+}
+
+.stock-confirm-panel {
+    padding: 24px;
+    border-color: #e1e7ef;
+    border-radius: 17px;
+    box-shadow: 0 8px 26px rgba(15, 23, 42, .045);
+}
+
+.confirm-heading h2 {
+    color: #172033;
+    font-size: 21px;
+    font-weight: 800;
+}
+
+.confirm-heading p {
+    color: #7a8798;
+    font-size: 12px;
+}
+
+.confirm-grid {
+    gap: 11px;
+}
+
+.confirm-item {
+    padding: 14px;
+    border-color: #e1e7ef;
+    border-radius: 10px;
+    background: #fafbfc;
+}
+
+.confirm-item small {
+    color: #7a8798;
+    font-size: 10px;
+    font-weight: 750;
+}
+
+.confirm-item strong {
+    margin-top: 6px;
+    color: #172033;
+    font-size: 13.5px;
+    font-weight: 800;
+}
+
+.confirm-actions button {
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.message {
+    font-size: 12px;
+}
+
+@media (max-width: 1000px) {
+    .quantity-area {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .stock-section {
+        padding: 18px;
+    }
+
+    .stock-page-heading h1 {
+        font-size: 28px;
+    }
+}
+
+</style>
+
+
+<div class="stock-movement-page">
+
+
+    <!-- =====================================================
+         PAGE TITLE
+    ====================================================== -->
+
+    <section class="stock-page-heading">
+
+        <div>
+
+            <h1>
+                Stock Movement
+            </h1>
+
+            <p>
+                Receive stock into inventory or dispatch stock out of inventory.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         FORM CARD
+    ====================================================== -->
+
+    <section class="stock-form-card-new">
+
+        <form
+            id="stockForm"
+            autocomplete="off"
+        >
+
+
+            <!-- =================================================
+                 STEP 1 - MOVEMENT TYPE
+            ================================================== -->
+
+            <div class="stock-section">
+
+                <div class="stock-section-heading">
+
+                    <span class="stock-section-number">
+                        1
+                    </span>
+
+                    <div>
+
+                        <h2>
+                            Select Movement
+                        </h2>
+
+                        <p>
+                            Choose whether stock is entering or leaving inventory.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <input
+                    type="hidden"
+                    id="movementType"
+                    name="movement_type"
+                    value="inward"
+                >
+
+
+                <div class="movement-selector">
+
+
+                    <!-- INWARD -->
+
+                    <button
+                        type="button"
+                        id="movementInward"
+                        class="movement-choice inward active"
+                    >
+
+                        <span class="movement-icon">
+                            ↓
+                        </span>
+
+                        <span>
+
+                            <strong>
+                                INWARD STOCK
+                            </strong>
+
+                            <small>
+                                Purchase received, return or transfer into storage
+                            </small>
+
+                        </span>
+
+                    </button>
+
+
+                    <!-- OUTWARD -->
+
+                    <button
+                        type="button"
+                        id="movementOutward"
+                        class="movement-choice outward"
+                    >
+
+                        <span class="movement-icon">
+                            ↑
+                        </span>
+
+                        <span>
+
+                            <strong>
+                                OUTWARD STOCK
+                            </strong>
+
+                            <small>
+                                Sold, delivery, issue or transfer out
+                            </small>
+
+                        </span>
+
+                    </button>
+
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 STEP 2 - PRODUCT
+            ================================================== -->
+
+            <div class="stock-section">
+
+                <div class="stock-section-heading">
+
+                    <span class="stock-section-number">
+                        2
+                    </span>
+
+                    <div>
+
+                        <h2>
+                            Product Details
+                        </h2>
+
+                        <p>
+                            Identify the product involved in this movement.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stock-form-grid">
+
+
+                    <!-- PRODUCT ID -->
+
+                    <div class="stock-field">
+
+                        <label for="productId">
+                            Product ID
+                        </label>
+
+                        <input
+                            id="productId"
+                            name="product_id"
+                            type="text"
+                            placeholder="Example: GAS-001"
+                            required
+                        >
+
+                        <small class="field-help">
+                            Enter an existing Product ID or the configured Product Master ID.
+                        </small>
+
+                    </div>
+
+
+                    <!-- CATEGORY -->
+
+                    <div class="stock-field">
+
+                        <label for="category">
+                            Category
+                        </label>
+
+                        <select
+                            id="category"
+                            name="category"
+                            required
+                        >
+
+                            <option value="">
+                                Loading Categories...
+                            </option>
+
+                        </select>
+
+                        <small
+                            id="categoryLoadStatus"
+                            class="field-help"
+                        >
+                            Loading current storage categories...
+                        </small>
+
+                    </div>
+
+
+                    <!-- PRODUCT NAME -->
+
+                    <div class="stock-field full">
+
+                        <label for="productName">
+                            Product Name
+                        </label>
+
+                        <input
+                            id="productName"
+                            name="product_name"
+                            type="text"
+                            placeholder="Example: Gas Leak Detector"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- BRAND -->
+
+                    <div class="stock-field">
+
+                        <label for="brand">
+                            Brand
+                        </label>
+
+                        <input
+                            id="brand"
+                            name="brand"
+                            type="text"
+                            placeholder="Brand / Manufacturer"
+                        >
+
+                    </div>
+
+
+                    <!-- MODEL -->
+
+                    <div class="stock-field">
+
+                        <label for="model">
+                            Model
+                        </label>
+
+                        <input
+                            id="model"
+                            name="model"
+                            type="text"
+                            placeholder="Model number"
+                        >
+
+                    </div>
+
+
+                    <!-- LOCATION -->
+
+                    <div class="stock-field">
+
+                        <label for="location">
+                            Storage Location
+                        </label>
+
+                        <input
+                            id="location"
+                            name="location"
+                            type="text"
+                            placeholder="Example: Category Storage"
+                        >
+
+                    </div>
+
+
+                    <!-- UNIT -->
+
+                    <div class="stock-field">
+
+                        <label for="unit">
+                            Unit
+                        </label>
+
+                        <select
+                            id="unit"
+                            name="unit"
+                        >
+
+                            <option value="Nos">
+                                Nos
+                            </option>
+
+                            <option value="Sets">
+                                Sets
+                            </option>
+
+                            <option value="Pieces">
+                                Pieces
+                            </option>
+
+                            <option value="Units">
+                                Units
+                            </option>
+
+                            <option value="Kg">
+                                Kg
+                            </option>
+
+                            <option value="Ltr">
+                                Ltr
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- PRODUCT LOOKUP STATUS -->
+
+                <div
+                    id="productStatusCard"
+                    class="product-status-card"
+                >
+
+                    <div class="product-status-cell">
+
+                        <small>
+                            PRODUCT
+                        </small>
+
+                        <strong id="productStatusName">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div class="product-status-cell">
+
+                        <small>
+                            PRODUCT ID
+                        </small>
+
+                        <strong id="productStatusId">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div class="product-status-cell quantity">
+
+                        <small>
+                            CURRENT STOCK
+                        </small>
+
+                        <strong id="productStatusStock">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="product-status-cell">
+
+                        <small>
+                            STATUS
+                        </small>
+
+                        <strong id="productRegistrationStatus">
+                            -
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- =================================================
+                 STEP 3 - QUANTITY
+            ================================================== -->
+
+            <div class="stock-section">
+
+                <div class="stock-section-heading">
+
+                    <span class="stock-section-number">
+                        3
+                    </span>
+
+                    <div>
+
+                        <h2>
+                            Quantity
+                        </h2>
+
+                        <p id="quantitySectionDescription">
+                            Enter how much stock is being received.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="quantity-area">
+
+
+                    <!-- CURRENT -->
+
+                    <div class="quantity-summary">
+
+                        <small>
+                            CURRENT STOCK
+                        </small>
+
+                        <strong id="currentStockValue">
+                            0
+                        </strong>
+
+                        <span id="currentStockUnit">
+                            Nos
+                        </span>
+
+                    </div>
+
+
+                    <!-- CONTROL -->
+
+                    <div class="quantity-control">
+
+                        <div
+                            id="quantityControlTitle"
+                            class="quantity-control-title"
+                        >
+                            QUANTITY TO INWARD
+                        </div>
+
+
+                        <div class="quantity-input-row">
+
+                            <button
+                                type="button"
+                                id="quantityMinus"
+                            >
+                                −
+                            </button>
+
+
+                            <input
+                                id="quantity"
+                                name="quantity"
+                                type="number"
+                                min="1"
+                                step="1"
+                                value="1"
+                                required
+                            >
+
+
+                            <button
+                                type="button"
+                                id="quantityPlus"
+                            >
+                                +
+                            </button>
+
+                        </div>
+
+
+                        <div class="quick-quantity-row">
+
+                            <button
+                                type="button"
+                                data-stock-quantity="1"
+                            >
+                                1
+                            </button>
+
+                            <button
+                                type="button"
+                                data-stock-quantity="5"
+                            >
+                                5
+                            </button>
+
+                            <button
+                                type="button"
+                                data-stock-quantity="10"
+                            >
+                                10
+                            </button>
+
+                            <button
+                                type="button"
+                                data-stock-quantity="20"
+                            >
+                                20
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- AFTER -->
+
+                    <div
+                        id="afterQuantityCard"
+                        class="quantity-summary after inward"
+                    >
+
+                        <small id="afterQuantityLabel">
+                            AFTER INWARD
+                        </small>
+
+                        <strong id="afterStockValue">
+                            1
+                        </strong>
+
+                        <span id="afterStockUnit">
+                            Nos
+                        </span>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- =================================================
+                     INWARD INFORMATION
+                ================================================== -->
+
+                <div
+                    id="inwardInformation"
+                    class="movement-information inward"
+                >
+
+                    <h3>
+                        ↓ Inward Information
+                    </h3>
+
+                    <p>
+                        Complete the receiving information for this stock.
+                    </p>
+
+
+                    <div class="stock-form-grid">
+
+
+                        <div class="stock-field">
+
+                            <label for="inwardReason">
+                                Inward Reason
+                            </label>
+
+                            <select
+                                id="inwardReason"
+                                name="inward_reason"
+                            >
+
+                                <option value="purchase_received">
+                                    Purchase Received
+                                </option>
+
+                                <option value="customer_return">
+                                    Customer Return
+                                </option>
+
+                                <option value="transfer_in">
+                                    Transfer In
+                                </option>
+
+                                <option value="opening_stock">
+                                    Opening Stock
+                                </option>
+
+                                <option value="stock_adjustment">
+                                    Stock Adjustment
+                                </option>
+
+                                <option value="other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="stock-field">
+
+                            <label for="inwardSource">
+                                Supplier / Source
+                            </label>
+
+                            <input
+                                id="inwardSource"
+                                name="inward_source"
+                                type="text"
+                                placeholder="Supplier or source name"
+                            >
+
+                        </div>
+
+
+                        <div class="stock-field">
+
+                            <label for="inwardReference">
+                                PO / Invoice / GRN Reference
+                            </label>
+
+                            <input
+                                id="inwardReference"
+                                name="inward_reference"
+                                type="text"
+                                placeholder="PO, invoice or GRN number"
+                            >
+
+                        </div>
+
+
+                        <div class="stock-field">
+
+                            <label for="inwardReceivedBy">
+                                Received By / Department
+                            </label>
+
+                            <input
+                                id="inwardReceivedBy"
+                                name="inward_received_by"
+                                type="text"
+                                placeholder="Employee or department"
+                            >
+
+                        </div>
+
+
+                        <div class="stock-field full">
+
+                            <label for="inwardRemarks">
+                                Inward Remarks
+                            </label>
+
+                            <textarea
+                                id="inwardRemarks"
+                                name="inward_remarks"
+                                placeholder="Optional inward remarks"
+                            ></textarea>
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     OUTWARD INFORMATION
+                ================================================== -->
+
+                <div
+                    id="outwardInformation"
+                    class="movement-information outward hidden"
+                >
+
+                    <h3>
+                        ↑ Outward Information
+                    </h3>
+
+                    <p>
+                        Complete the dispatch information for this stock.
+                    </p>
+
+
+                    <div class="stock-form-grid">
+
+
+                        <div class="stock-field">
+
+                            <label for="outwardReason">
+                                Outward Reason
+                            </label>
+
+                            <select
+                                id="outwardReason"
+                                name="outward_reason"
+                            >
+
+                                <option value="sold">
+                                    Sold / Customer Delivery
+                                </option>
+
+                                <option value="internal_issue">
+                                    Internal Issue
+                                </option>
+
+                                <option value="transfer_out">
+                                    Transfer Out
+                                </option>
+
+                                <option value="supplier_return">
+                                    Return to Supplier
+                                </option>
+
+                                <option value="damaged">
+                                    Damaged / Scrap
+                                </option>
+
+                                <option value="stock_adjustment">
+                                    Stock Adjustment
+                                </option>
+
+                                <option value="other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="stock-field">
+
+                            <label for="outwardDestination">
+                                Customer / Destination
+                            </label>
+
+                            <input
+                                id="outwardDestination"
+                                name="outward_destination"
+                                type="text"
+                                placeholder="Customer, department or destination"
+                            >
+
+                        </div>
+
+
+                        <div class="stock-field">
+
+                            <label for="outwardReference">
+                                Invoice / Delivery Challan
+                            </label>
+
+                            <input
+                                id="outwardReference"
+                                name="outward_reference"
+                                type="text"
+                                placeholder="Invoice or delivery challan number"
+                            >
+
+                        </div>
+
+
+                        <div class="stock-field">
+
+                            <label for="outwardIssuedTo">
+                                Issued To / Handed Over To
+                            </label>
+
+                            <input
+                                id="outwardIssuedTo"
+                                name="outward_issued_to"
+                                type="text"
+                                placeholder="Person receiving the stock"
+                            >
+
+                        </div>
+
+
+                        <div class="stock-field full">
+
+                            <label for="outwardRemarks">
+                                Outward Remarks
+                            </label>
+
+                            <textarea
+                                id="outwardRemarks"
+                                name="outward_remarks"
+                                placeholder="Optional outward remarks"
+                            ></textarea>
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     REVIEW
+                ================================================== -->
+
+                <button
+                    id="reviewButton"
+                    type="button"
+                    class="review-stock-button"
+                >
+
+                    <span id="reviewMovementIcon">
+                        ↓
+                    </span>
+
+                    <span>
+
+                        <strong id="addButtonText">
+                            REVIEW INWARD
+                        </strong>
+
+                        <small id="reviewButtonHint">
+                            Check details before confirming
+                        </small>
+
+                    </span>
+
+                </button>
+
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+    <!-- =====================================================
+         CONFIRMATION
+    ====================================================== -->
+
+    <section
+        id="confirmPanel"
+        class="stock-confirm-panel hidden"
+    >
+
+
+        <div class="confirm-heading">
+
+            <h2 id="confirmTitle">
+                Confirm Inward Stock
+            </h2>
+
+            <p id="confirmDescription">
+                Review the stock movement before saving.
+            </p>
+
+        </div>
+
+
+        <div
+            id="confirmMovementBanner"
+            class="confirm-movement-banner inward"
+        >
+            ↓ INWARD STOCK
+        </div>
+
+
+        <div class="confirm-grid">
+
+
+            <div class="confirm-item">
+
+                <small>
+                    PRODUCT
+                </small>
+
+                <strong id="confirmProduct">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="confirm-item">
+
+                <small>
+                    PRODUCT ID
+                </small>
+
+                <strong id="confirmProductId">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="confirm-item">
+
+                <small>
+                    CURRENT
+                </small>
+
+                <strong id="confirmCurrentStock">
+                    0 Nos
+                </strong>
+
+            </div>
+
+
+            <div class="confirm-item">
+
+                <small id="confirmMovementQuantityLabel">
+                    INWARD
+                </small>
+
+                <strong id="confirmQty">
+                    +0 Nos
+                </strong>
+
+            </div>
+
+
+            <div class="confirm-item">
+
+                <small>
+                    AFTER MOVEMENT
+                </small>
+
+                <strong id="confirmNewStock">
+                    0 Nos
+                </strong>
+
+            </div>
+
+
+            <div class="confirm-item">
+
+                <small>
+                    REASON
+                </small>
+
+                <strong id="confirmReason">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="confirm-item">
+
+                <small>
+                    REFERENCE
+                </small>
+
+                <strong id="confirmReference">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="confirm-item">
+
+                <small>
+                    SOURCE / DESTINATION
+                </small>
+
+                <strong id="confirmParty">
+                    -
+                </strong>
+
+            </div>
+
+
+        </div>
+
+
+        <div class="confirm-actions">
+
+            <button
+                id="cancelConfirm"
+                type="button"
+                class="confirm-cancel"
+            >
+                ← Go Back
+            </button>
+
+
+            <button
+                id="confirmAdd"
+                type="button"
+                class="confirm-save"
+            >
+                ✓ CONFIRM INWARD
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         3D MOVEMENT ANIMATION
+    ====================================================== -->
+
+    <section
+        id="stockAnimation"
+        class="stock-3d-panel hidden"
+    >
+
+
+        <div class="stock-3d-header">
+
+            <div>
+
+                <h2 id="animationStatus">
+                    Preparing Stock Movement
+                </h2>
+
+                <p id="animationDescription">
+                    Locating the correct storage cabinet...
+                </p>
+
+            </div>
+
+
+            <button
+                id="exit3DButton"
+                type="button"
+                class="exit-3d-button"
+            >
+                ✕ Exit
+            </button>
+
+        </div>
+
+
+        <div
+            id="threeStorageContainer"
+            class="three-storage-container"
+        >
+
+            <canvas id="stock3dCanvas"></canvas>
+
+        </div>
+
+
+        <!-- Existing IDs retained for app.js compatibility -->
+
+        <div style="display:none;">
+
+            <span id="machineStatus">
+                READY
+            </span>
+
+            <span id="machineProductName"></span>
+            <span id="machineProductId"></span>
+
+            <span id="previousStockValue">0</span>
+            <span id="addingStockValue">0</span>
+            <span id="newStockValue">0</span>
+
+            <span id="incomingProductName"></span>
+            <span id="incomingProductId"></span>
+            <span id="incomingQty"></span>
+
+            <span id="detailProductName"></span>
+            <span id="detailColumnNumber"></span>
+            <span id="detailProductId"></span>
+            <span id="detailCategory"></span>
+            <span id="detailBrand"></span>
+            <span id="detailModel"></span>
+            <span id="detailLocation"></span>
+            <span id="detailUnit"></span>
+            <span id="detailRemarks"></span>
+
+            <span id="detailPrevious"></span>
+            <span id="detailAdding"></span>
+            <span id="detailAvailable"></span>
+
+            <span id="progressFind"></span>
+            <span id="progressWheel"></span>
+            <span id="progressOpen"></span>
+            <span id="progressStore"></span>
+            <span id="progressComplete"></span>
+
+            <span id="machineMessage"></span>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =====================================================
+         SUCCESS
+    ====================================================== -->
+
+    <section
+        id="successPanel"
+        class="success-panel hidden"
+    >
+
+        <div class="success-big-check">
+            ✓
+        </div>
+
+        <p id="successMovementText">
+            STOCK MOVEMENT COMPLETED
+        </p>
+
+        <h2 id="successProductName">
+            Product
+        </h2>
+
+
+        <div class="success-values">
+
+            <span>
+
+                Previous
+
+                <strong id="successOld">
+                    0
+                </strong>
+
+            </span>
+
+
+            <span>
+
+                <span id="successMovementLabel">
+                    Inward
+                </span>
+
+                <strong id="successAdded">
+                    0
+                </strong>
+
+            </span>
+
+
+            <span>
+
+                Available Now
+
+                <strong id="successNew">
+                    0
+                </strong>
+
+            </span>
+
+        </div>
+
+
+        <button
+            id="addAnotherButton"
+            type="button"
+            class="confirm-save"
+            style="
+                margin-top:17px;
+                min-height:42px;
+                padding:0 18px;
+                border-radius:9px;
+                cursor:pointer;
+            "
+        >
+            New Stock Movement
+        </button>
+
+    </section>
+
+
+    <div
+        id="message"
+        class="message"
+    ></div>
+
+
+</div>
+
+
+<!-- =========================================================
+     CATEGORY MASTER LOADER
+
+     Add Stock uses EXACTLY the same category master
+     as Storage View.
+========================================================== -->
+
+<script>
+
+(function () {
+
+    "use strict";
+
+
+    const categorySelect =
+        document.getElementById(
+            "category"
+        );
+
+
+    const categoryStatus =
+        document.getElementById(
+            "categoryLoadStatus"
+        );
+
+
+    if (!categorySelect) {
+        return;
+    }
+
+
+    function cleanText(value) {
+
+        return String(
+            value || ""
+        )
+            .trim()
+            .replace(
+                /\s+/g,
+                " "
+            );
+    }
+
+
+    async function loadCategories() {
+
+        const selectedBefore =
+            categorySelect.value;
+
+
+        categorySelect.disabled =
+            true;
+
+
+        categorySelect.innerHTML = `
+            <option value="">
+                Loading Categories...
+            </option>
+        `;
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/storage-categories",
+                    {
+                        method:
+                            "GET",
+
+                        headers: {
+                            "Accept":
+                                "application/json"
+                        },
+
+                        cache:
+                            "no-store"
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (
+                !response.ok ||
+                data.success === false
+            ) {
+
+                throw new Error(
+                    data.message ||
+                    "Unable to load categories."
+                );
+            }
+
+
+            const records =
+                Array.isArray(
+                    data.categories
+                )
+                    ? data.categories
+                    : [];
+
+
+            categorySelect.innerHTML = `
+                <option value="">
+                    Choose Category
+                </option>
+            `;
+
+
+            const added =
+                new Set();
+
+
+            records.forEach(
+                function (record) {
+
+                    const category =
+                        cleanText(
+                            record.category ||
+                            record.category_name ||
+                            record.name
+                        );
+
+
+                    if (!category) {
+                        return;
+                    }
+
+
+                    const key =
+                        category.toUpperCase();
+
+
+                    if (added.has(key)) {
+                        return;
+                    }
+
+
+                    added.add(
+                        key
+                    );
+
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+
+                    option.value =
+                        category;
+
+
+                    option.textContent =
+                        category;
+
+
+                    categorySelect.appendChild(
+                        option
+                    );
+                }
+            );
+
+
+            if (
+                selectedBefore &&
+                Array.from(
+                    categorySelect.options
+                ).some(
+                    function (option) {
+
+                        return (
+                            option.value ===
+                            selectedBefore
+                        );
+                    }
+                )
+            ) {
+
+                categorySelect.value =
+                    selectedBefore;
+            }
+
+
+            categorySelect.disabled =
+                false;
+
+
+            if (categoryStatus) {
+
+                categoryStatus.textContent =
+                    (
+                        added.size +
+                        (
+                            added.size === 1
+                                ? " category available"
+                                : " categories available"
+                        )
+                    );
+
+
+                categoryStatus.style.color =
+                    "#16894b";
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Unable to load storage categories:",
+                error
+            );
+
+
+            categorySelect.innerHTML = `
+                <option value="">
+                    Unable to load categories
+                </option>
+            `;
+
+
+            categorySelect.disabled =
+                true;
+
+
+            if (categoryStatus) {
+
+                categoryStatus.textContent =
+                    "Category master could not be loaded.";
+
+
+                categoryStatus.style.color =
+                    "#c74444";
+            }
+        }
+    }
+
+
+    if (
+        document.readyState ===
+        "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            loadCategories
+        );
+
+    } else {
+
+        loadCategories();
+    }
+
+
+    window.refreshAddStockCategories =
+        loadCategories;
+
+
+})();
+
+</script>
+
+
+{% endblock %}

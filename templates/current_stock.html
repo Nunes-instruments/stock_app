@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Current Stock{% endblock %}
+
+{% block content %}
+<section class="page-heading modern-page-heading current-stock-page-heading">
+    <div class="current-stock-heading-copy">
+        <h1>Current Stock</h1>
+        <p class="page-description">Search stock, verify the online product source, and open complete product details.</p>
+    </div>
+
+    <a href="{{ url_for('add_stock_page') }}" class="page-main-action modern-primary-action">
+        <span class="button-svg-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        </span>
+        Add Stock
+    </a>
+</section>
+
+<section class="stock-search-card modern-search-card current-stock-search-summary">
+    <div class="search-box modern-search-box current-stock-search-box">
+        <span class="search-input-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        </span>
+        <input id="stockSearch" type="text" placeholder="Search product, Product ID, model, brand, category or location..." autocomplete="off">
+    </div>
+
+    <div class="stock-search-count" title="Available products" aria-label="Available product count">
+        <span class="count-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+        </span>
+        <strong id="visibleProductCount">{{ products|length }}</strong>
+    </div>
+</section>
+
+<section class="simple-panel stock-list-panel modern-stock-panel current-stock-list-only">
+
+    <div class="table-scroll modern-table-scroll">
+        <table id="stockTable" class="stock-table modern-stock-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Brand / Model</th>
+                    <th class="center-column">Available</th>
+                    <th>Location</th>
+                    <th>Online Source</th>
+                    <th class="center-column">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                {% set image_info = product.image_info or {} %}
+                <tr class="current-stock-row" data-product-enrichment-scope>
+                    <td>
+                        <div class="product-cell modern-product-cell">
+                            <div class="product-letter auto-product-image-frame modern-product-thumb">
+                                <img
+                                    data-auto-product-image
+                                    data-product-name="{{ product.product_name }}"
+                                    data-product-brand="{{ product.brand or '' }}"
+                                    data-product-model="{{ product.model or '' }}"
+                                    {% if product.image_url %}src="{{ product.image_url }}"{% endif %}
+                                    alt="{{ product.product_name }}"
+                                    loading="lazy"
+                                >
+                                <span class="auto-product-fallback">
+                                    <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                                </span>
+                            </div>
+                            <div class="product-primary-copy">
+                                <strong class="product-name">{{ product.product_name }}</strong>
+                                <small class="product-code">{{ product.product_id }}</small>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td><span class="category-text modern-category-chip">{{ product.category }}</span></td>
+
+                    <td>
+                        <div class="brand-model">
+                            <strong>{{ product.brand or 'Not assigned' }}</strong>
+                            <small>{{ product.model or 'Model not given' }}</small>
+                        </div>
+                    </td>
+
+                    <td class="center-column">
+                        <div class="stock-quantity modern-stock-quantity {% if product.current_quantity|float > 0 %}in-stock{% else %}out-stock{% endif %}">
+                            <strong>{{ product.current_quantity }}</strong>
+                            <span>{{ product.unit }}</span>
+                        </div>
+                    </td>
+
+                    <td>
+                        <div class="modern-location">
+                            <span class="location-pin" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></svg></span>
+                            <span>{{ product.location or 'Not assigned' }}</span>
+                        </div>
+                    </td>
+
+                    <td>
+                        <div class="online-source-cell">
+                            <div class="source-status-line">
+                                <span
+                                    class="product-link-status pending"
+                                    data-product-link-status
+                                    data-product-name="{{ product.product_name }}"
+                                    data-product-brand="{{ product.brand or '' }}"
+                                    data-product-model="{{ product.model or '' }}"
+                                >{{ image_info.get('match_status', 'Checking source…') }}</span>
+                                <span data-product-match-score {% if not image_info.get('match_score') %}hidden{% endif %} class="match-score">
+                                    {% if image_info.get('match_score') %}{{ image_info.get('match_score') }}% match{% endif %}
+                                </span>
+                            </div>
+                            <div class="page-status-line">
+                                <span class="page-status-label">Page:</span>
+                                <span class="product-page-status unknown" data-product-page-status>{{ image_info.get('page_status', 'Checking…') }}</span>
+                            </div>
+                            <a
+                                class="source-link-button"
+                                data-product-source-link
+                                href="{{ image_info.get('product_url', '') }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                {% if not image_info.get('product_url') %}hidden{% endif %}
+                            >Open product link <span>↗</span></a>
+                        </div>
+                    </td>
+
+                    <td class="center-column">
+                        <button
+                            type="button"
+                            class="stock-detail-button"
+                            data-open-product-details
+                            data-product-id="{{ product.product_id }}"
+                            data-product-name="{{ product.product_name }}"
+                            data-product-category="{{ product.category }}"
+                            data-product-brand="{{ product.brand or '' }}"
+                            data-product-model="{{ product.model or '' }}"
+                            data-product-quantity="{{ product.current_quantity }}"
+                            data-product-unit="{{ product.unit }}"
+                            data-product-location="{{ product.location or '' }}"
+                            data-product-image="{{ product.image_url or '' }}"
+                        >
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>
+                            View
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty-row">
+                        <div class="empty-stock modern-empty-stock">
+                            <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></div>
+                            <h3>No stock available</h3>
+                            <p>Add your first product to start using this branch.</p>
+                            <a href="{{ url_for('add_stock_page') }}" class="empty-action">Add First Stock</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="noSearchResult" class="no-search-result hidden modern-no-search-result">
+        <div class="no-result-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></div>
+        <strong>No matching product found</strong>
+        <p>Try another product name, Product ID, model, brand, category or location.</p>
+    </div>
+</section>
+
+<div id="productDetailsDrawer" class="product-details-backdrop hidden" aria-hidden="true">
+    <aside class="product-details-drawer" role="dialog" aria-modal="true" aria-labelledby="drawerProductName">
+        <div class="details-drawer-header">
+            <div>
+                <span class="details-kicker">PRODUCT DETAILS</span>
+                <h2 id="drawerProductName">Product</h2>
+                <p id="drawerProductMeta">—</p>
+            </div>
+            <button type="button" class="details-close-button" data-close-product-details aria-label="Close details">×</button>
+        </div>
+
+        <div class="details-product-hero" data-product-enrichment-scope id="drawerEnrichmentScope">
+            <div class="details-product-image auto-product-image-frame">
+                <img id="drawerProductImage" alt="" data-auto-product-image>
+                <span class="auto-product-fallback"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
+            </div>
+            <div class="details-stock-summary">
+                <small>Available now</small>
+                <strong id="drawerStockValue">0 Nos</strong>
+                <span id="drawerStockStatus" class="drawer-stock-status">Stock status</span>
+            </div>
+        </div>
+
+        <div class="details-section">
+            <div class="details-section-title">Inventory information</div>
+            <div class="details-grid">
+                <div><small>Product ID</small><strong id="drawerProductId">—</strong></div>
+                <div><small>Branch</small><strong>{{ active_branch_name }}</strong></div>
+                <div><small>Category</small><strong id="drawerCategory">—</strong></div>
+                <div><small>Location</small><strong id="drawerLocation">—</strong></div>
+                <div><small>Brand</small><strong id="drawerBrand">—</strong></div>
+                <div><small>Model</small><strong id="drawerModel">—</strong></div>
+            </div>
+        </div>
+
+        <div class="details-section online-verification-section" id="drawerOnlineSection">
+            <div class="details-section-title">Online product verification</div>
+            <div class="verification-cards">
+                <div class="verification-card">
+                    <small>Source match</small>
+                    <span class="product-link-status pending" data-product-link-status>Checking source…</span>
+                    <span class="match-score" data-product-match-score hidden></span>
+                </div>
+                <div class="verification-card">
+                    <small>Product page status</small>
+                    <span class="product-page-status unknown" data-product-page-status>Checking…</span>
+                </div>
+            </div>
+            <a class="drawer-source-link" data-product-source-link target="_blank" rel="noopener noreferrer" hidden>
+                Open verified/source product page
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 13v6H5V5h6"/></svg>
+            </a>
+            <p class="verification-note">“Verified match” requires a strong name/model match. When a source page does not clearly publish stock availability, the system reports “Page active” instead of guessing.</p>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    "use strict";
+
+    const drawer = document.getElementById("productDetailsDrawer");
+    const drawerScope = document.getElementById("drawerEnrichmentScope");
+    const drawerImage = document.getElementById("drawerProductImage");
+
+    function text(id, value) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value || "—";
+    }
+
+    function openDetails(button) {
+        if (!drawer || !button) return;
+
+        const data = button.dataset;
+        const quantity = Number(data.productQuantity || 0);
+        const unit = data.productUnit || "Nos";
+
+        text("drawerProductName", data.productName);
+        text("drawerProductMeta", (data.productBrand || "Brand not assigned") + (data.productModel ? " · " + data.productModel : ""));
+        text("drawerProductId", data.productId);
+        text("drawerCategory", data.productCategory);
+        text("drawerLocation", data.productLocation || "Not assigned");
+        text("drawerBrand", data.productBrand || "Not assigned");
+        text("drawerModel", data.productModel || "Not assigned");
+        text("drawerStockValue", String(quantity) + " " + unit);
+        text("drawerStockStatus", quantity > 0 ? "In stock" : "No stock available");
+
+        const stockStatus = document.getElementById("drawerStockStatus");
+        if (stockStatus) stockStatus.className = "drawer-stock-status " + (quantity > 0 ? "available" : "empty");
+
+        drawer.classList.remove("hidden");
+        drawer.setAttribute("aria-hidden", "false");
+        document.body.classList.add("details-drawer-open");
+
+        drawerImage.dataset.imageHydrated = "0";
+        drawerImage.dataset.productName = data.productName || "";
+        drawerImage.dataset.productBrand = data.productBrand || "";
+        drawerImage.dataset.productModel = data.productModel || "";
+        drawerImage.alt = data.productName || "Product";
+        drawerImage.classList.remove("is-loaded");
+        if (data.productImage) drawerImage.src = data.productImage;
+        else drawerImage.removeAttribute("src");
+
+        drawerScope.dataset.productName = data.productName || "";
+        drawerScope.dataset.productBrand = data.productBrand || "";
+        drawerScope.dataset.productModel = data.productModel || "";
+
+        if (window.ProductImages && typeof window.ProductImages.resolveInfo === "function") {
+            window.ProductImages.resolveInfo(
+                data.productName || "",
+                data.productBrand || "",
+                data.productModel || "",
+                data.productImage || ""
+            ).then(function (info) {
+                if (info.image_url) {
+                    drawerImage.onload = function () { drawerImage.classList.add("is-loaded"); };
+                    drawerImage.src = info.image_url;
+                }
+                window.ProductImages.applyInfoToScope(drawer, info);
+            });
+        }
+    }
+
+    function closeDetails() {
+        if (!drawer) return;
+        drawer.classList.add("hidden");
+        drawer.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("details-drawer-open");
+    }
+
+    document.querySelectorAll("[data-open-product-details]").forEach(function (button) {
+        button.addEventListener("click", function () { openDetails(button); });
+    });
+
+    document.querySelectorAll("[data-close-product-details]").forEach(function (button) {
+        button.addEventListener("click", closeDetails);
+    });
+
+    if (drawer) {
+        drawer.addEventListener("click", function (event) {
+            if (event.target === drawer) closeDetails();
+        });
+    }
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeDetails();
+    });
+})();
+</script>
+{% endblock %}

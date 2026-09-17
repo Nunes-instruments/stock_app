@@ -1,0 +1,1086 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Dashboard
+{% endblock %}
+
+
+{% block content %}
+
+<style>
+
+/* ============================================================
+   DASHBOARD
+============================================================ */
+
+.dashboard-page {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+
+/* ============================================================
+   PAGE HEADER
+============================================================ */
+
+.dashboard-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+
+    padding: 4px 2px;
+}
+
+.dashboard-heading-text h1 {
+    margin: 0;
+
+    color: #102f4d;
+
+    font-size: 27px;
+    font-weight: 950;
+}
+
+.dashboard-heading-text p {
+    margin: 5px 0 0;
+
+    color: #73879b;
+
+    font-size: 12px;
+}
+
+
+/* ============================================================
+   SUMMARY CARDS
+============================================================ */
+
+.dashboard-summary-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        );
+
+    gap: 14px;
+}
+
+.dashboard-summary-card {
+    min-height: 112px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 18px;
+
+    border: 1px solid #d7e3ee;
+    border-radius: 15px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 5px 18px
+        rgba(18, 55, 86, 0.05);
+}
+
+.dashboard-summary-icon {
+    width: 48px;
+    height: 48px;
+
+    flex: 0 0 48px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 13px;
+
+    background: #eaf3ff;
+
+    color: #276fe5;
+
+    font-size: 21px;
+}
+
+.dashboard-summary-icon.green {
+    background: #e9f8ef;
+
+    color: #10944b;
+}
+
+.dashboard-summary-icon.red {
+    background: #fff0f0;
+
+    color: #d24747;
+}
+
+.dashboard-summary-icon.orange {
+    background: #fff5e8;
+
+    color: #d9871e;
+}
+
+.dashboard-summary-content small {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #7f92a5;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.05em;
+}
+
+.dashboard-summary-content strong {
+    display: block;
+
+    color: #102f4d;
+
+    font-size: 25px;
+    font-weight: 950;
+}
+
+.dashboard-summary-content span {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #8495a6;
+
+    font-size: 9px;
+}
+
+
+/* ============================================================
+   QUICK ACTIONS
+============================================================ */
+
+.dashboard-actions {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        );
+
+    gap: 12px;
+}
+
+.dashboard-action {
+    min-height: 72px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 13px 15px;
+
+    border: 1px solid #d4e1ed;
+    border-radius: 13px;
+
+    background: #ffffff;
+
+    color: #173750;
+
+    text-decoration: none;
+
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.dashboard-action:hover {
+    transform: translateY(-2px);
+
+    border-color: #a8c8e8;
+
+    box-shadow:
+        0 8px 22px
+        rgba(26, 68, 108, 0.08);
+}
+
+.dashboard-action-icon {
+    width: 40px;
+    height: 40px;
+
+    flex: 0 0 40px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 11px;
+
+    background: #edf5ff;
+
+    font-size: 18px;
+}
+
+.dashboard-action strong {
+    display: block;
+
+    color: #153550;
+
+    font-size: 11px;
+    font-weight: 950;
+}
+
+.dashboard-action small {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #8193a5;
+
+    font-size: 8px;
+}
+
+
+/* ============================================================
+   RECENT MOVEMENT CARD
+============================================================ */
+
+.recent-stock-card {
+    overflow: hidden;
+
+    border: 1px solid #d4e1ed;
+    border-radius: 16px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 6px 20px
+        rgba(19, 55, 88, 0.05);
+}
+
+.recent-stock-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    padding: 18px 19px;
+
+    border-bottom: 1px solid #dce6ef;
+}
+
+.recent-stock-header h2 {
+    margin: 0;
+
+    color: #12324f;
+
+    font-size: 18px;
+    font-weight: 950;
+}
+
+.recent-stock-header p {
+    margin: 4px 0 0;
+
+    color: #7d90a4;
+
+    font-size: 9px;
+}
+
+.recent-view-all {
+    min-height: 38px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 15px;
+
+    border: 1px solid #c8dced;
+    border-radius: 9px;
+
+    background: #ffffff;
+
+    color: #285378;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    text-decoration: none;
+}
+
+
+/* ============================================================
+   TABLE
+============================================================ */
+
+.recent-stock-scroll {
+    width: 100%;
+
+    overflow-x: auto;
+}
+
+.recent-stock-table {
+    width: 100%;
+
+    min-width: 1000px;
+
+    border-collapse: collapse;
+}
+
+.recent-stock-table th {
+    padding: 13px 16px;
+
+    border-bottom: 1px solid #d9e4ee;
+
+    background: #f6f9fc;
+
+    color: #647b91;
+
+    text-align: left;
+
+    font-size: 8px;
+    font-weight: 950;
+
+    letter-spacing: 0.04em;
+}
+
+.recent-stock-table td {
+    padding: 14px 16px;
+
+    border-bottom: 1px solid #e2eaf2;
+
+    color: #304b64;
+
+    font-size: 10px;
+
+    vertical-align: middle;
+}
+
+.recent-stock-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.recent-stock-table tbody tr:hover td {
+    background: #fafcff;
+}
+
+
+/* ============================================================
+   PRODUCT
+============================================================ */
+
+.recent-product strong {
+    display: block;
+
+    color: #143451;
+
+    font-size: 11px;
+    font-weight: 950;
+}
+
+.recent-product small {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #8194a7;
+
+    font-size: 8px;
+}
+
+
+/* ============================================================
+   MOVEMENT BADGES
+============================================================ */
+
+.movement-type-badge {
+    min-width: 76px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 5px;
+
+    padding: 7px 9px;
+
+    border-radius: 999px;
+
+    font-size: 8px;
+    font-weight: 950;
+}
+
+.movement-type-badge.inward {
+    border: 1px solid #bce6ca;
+
+    background: #eaf8ef;
+
+    color: #078943;
+}
+
+.movement-type-badge.outward {
+    border: 1px solid #f2c7c7;
+
+    background: #fff0f0;
+
+    color: #c93d3d;
+}
+
+
+/* ============================================================
+   QUANTITY BADGES
+============================================================ */
+
+.movement-quantity {
+    min-width: 62px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 7px 10px;
+
+    border-radius: 999px;
+
+    font-size: 10px;
+    font-weight: 950;
+}
+
+.movement-quantity.inward {
+    background: #e7f7ed;
+
+    color: #098c43;
+}
+
+.movement-quantity.outward {
+    background: #fff0f0;
+
+    color: #d13d3d;
+}
+
+
+/* ============================================================
+   STOCK VALUES
+============================================================ */
+
+.stock-number {
+    color: #173751;
+
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.stock-number.final {
+    color: #082c4d;
+
+    font-size: 13px;
+    font-weight: 950;
+}
+
+
+/* ============================================================
+   EMPTY
+============================================================ */
+
+.recent-empty {
+    padding: 50px 20px;
+
+    text-align: center;
+
+    color: #8194a7;
+
+    font-size: 11px;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1050px) {
+
+    .dashboard-summary-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+    .dashboard-actions {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+}
+
+
+@media (max-width: 650px) {
+
+    .dashboard-summary-grid,
+    .dashboard-actions {
+        grid-template-columns:
+            1fr;
+    }
+
+    .dashboard-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+</style>
+
+
+<div class="dashboard-page">
+
+
+    <!-- =====================================================
+         PAGE HEADING
+    ====================================================== -->
+
+    <section class="dashboard-heading">
+
+        <div class="dashboard-heading-text">
+
+            <h1>
+                Stock Management
+            </h1>
+
+            <p>
+                Inventory overview and latest stock movement activity.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         SUMMARY
+    ====================================================== -->
+
+    <section class="dashboard-summary-grid">
+
+
+        <!-- TOTAL PRODUCTS -->
+
+        <article class="dashboard-summary-card">
+
+            <div class="dashboard-summary-icon">
+                📦
+            </div>
+
+            <div class="dashboard-summary-content">
+
+                <small>
+                    Total Products
+                </small>
+
+                <strong>
+                    {{ summary.total_products | default(0) | int }}
+                </strong>
+
+                <span>
+                    Products registered
+                </span>
+
+            </div>
+
+        </article>
+
+
+        <!-- TOTAL STOCK -->
+
+        <article class="dashboard-summary-card">
+
+            <div class="dashboard-summary-icon green">
+                📊
+            </div>
+
+            <div class="dashboard-summary-content">
+
+                <small>
+                    Total Stock
+                </small>
+
+                <strong>
+                    {{ summary.total_stock_quantity | default(0) | int }}
+                </strong>
+
+                <span>
+                    Total available quantity
+                </span>
+
+            </div>
+
+        </article>
+
+
+        <!-- INWARD TODAY -->
+
+        <article class="dashboard-summary-card">
+
+            <div class="dashboard-summary-icon green">
+                ↓
+            </div>
+
+            <div class="dashboard-summary-content">
+
+                <small>
+                    Inward Today
+                </small>
+
+                <strong>
+                    {{ summary.stock_added_today | default(0) | int }}
+                </strong>
+
+                <span>
+                    Stock received today
+                </span>
+
+            </div>
+
+        </article>
+
+
+        <!-- IMPORTS -->
+
+        <article class="dashboard-summary-card">
+
+            <div class="dashboard-summary-icon orange">
+                📄
+            </div>
+
+            <div class="dashboard-summary-content">
+
+                <small>
+                    Excel Imports
+                </small>
+
+                <strong>
+                    {{ total_imports | default(0) | int }}
+                </strong>
+
+                <span>
+                    Import operations completed
+                </span>
+
+            </div>
+
+        </article>
+
+
+    </section>
+
+
+    <!-- =====================================================
+         QUICK ACTIONS
+    ====================================================== -->
+
+    <section class="dashboard-actions">
+
+
+        <a
+            href="{{ url_for('add_stock_page') }}"
+            class="dashboard-action"
+        >
+
+            <span class="dashboard-action-icon">
+                ➕
+            </span>
+
+            <span>
+
+                <strong>
+                    Stock Movement
+                </strong>
+
+                <small>
+                    Inward or outward stock
+                </small>
+
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('current_stock') }}"
+            class="dashboard-action"
+        >
+
+            <span class="dashboard-action-icon">
+                📋
+            </span>
+
+            <span>
+
+                <strong>
+                    Current Stock
+                </strong>
+
+                <small>
+                    View available inventory
+                </small>
+
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('storage_view') }}"
+            class="dashboard-action"
+        >
+
+            <span class="dashboard-action-icon">
+                🗄️
+            </span>
+
+            <span>
+
+                <strong>
+                    Storage View
+                </strong>
+
+                <small>
+                    Preview cabinets and products
+                </small>
+
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('import_excel') }}"
+            class="dashboard-action"
+        >
+
+            <span class="dashboard-action-icon">
+                📥
+            </span>
+
+            <span>
+
+                <strong>
+                    Import Excel
+                </strong>
+
+                <small>
+                    Import stock from Excel
+                </small>
+
+            </span>
+
+        </a>
+
+
+    </section>
+
+
+    <!-- =====================================================
+         RECENT STOCK MOVEMENT
+    ====================================================== -->
+
+    <section class="recent-stock-card">
+
+
+        <div class="recent-stock-header">
+
+            <div>
+
+                <h2>
+                    Recent Stock Movement
+                </h2>
+
+                <p>
+                    Latest inward and outward inventory changes.
+                </p>
+
+            </div>
+
+
+            <a
+                href="{{ url_for('import_history') }}"
+                class="recent-view-all"
+            >
+                View All ›
+            </a>
+
+        </div>
+
+
+        <div class="recent-stock-scroll">
+
+            <table class="recent-stock-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            PRODUCT
+                        </th>
+
+                        <th>
+                            TYPE
+                        </th>
+
+                        <th>
+                            PREVIOUS
+                        </th>
+
+                        <th>
+                            MOVEMENT
+                        </th>
+
+                        <th>
+                            NOW AVAILABLE
+                        </th>
+
+                        <th>
+                            DATE
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% if recent_entries %}
+
+                        {% for entry in recent_entries %}
+
+
+                            {# =========================================
+                               Determine inward / outward.
+
+                               Primary:
+                               movement_type returned by stock_service.
+
+                               Safe fallback:
+                               compare previous and new quantity.
+                            ========================================== #}
+
+                            {% set previous =
+                                entry.previous_quantity
+                                | default(0)
+                            %}
+
+                            {% set current =
+                                entry.new_quantity
+                                | default(0)
+                            %}
+
+                            {% set movement_quantity =
+                                entry.quantity_added
+                                | default(0)
+                            %}
+
+
+                            {% if entry.movement_type is defined %}
+
+                                {% set movement_type =
+                                    entry.movement_type
+                                    | lower
+                                %}
+
+                            {% elif current < previous %}
+
+                                {% set movement_type =
+                                    'outward'
+                                %}
+
+                            {% else %}
+
+                                {% set movement_type =
+                                    'inward'
+                                %}
+
+                            {% endif %}
+
+
+                            <tr>
+
+
+                                <!-- PRODUCT -->
+
+                                <td>
+
+                                    <div class="recent-product">
+
+                                        <strong>
+                                            {{
+                                                entry.product_name
+                                                | default(
+                                                    'Unknown Product',
+                                                    true
+                                                )
+                                            }}
+                                        </strong>
+
+                                        <small>
+                                            {{
+                                                entry.product_id
+                                                | default(
+                                                    '-',
+                                                    true
+                                                )
+                                            }}
+                                        </small>
+
+                                    </div>
+
+                                </td>
+
+
+                                <!-- MOVEMENT TYPE -->
+
+                                <td>
+
+                                    {% if movement_type == 'outward' %}
+
+                                        <span
+                                            class="movement-type-badge outward"
+                                        >
+                                            ↑ OUTWARD
+                                        </span>
+
+                                    {% else %}
+
+                                        <span
+                                            class="movement-type-badge inward"
+                                        >
+                                            ↓ INWARD
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- PREVIOUS -->
+
+                                <td>
+
+                                    <span class="stock-number">
+                                        {{
+                                            previous
+                                            | int
+                                        }}
+                                    </span>
+
+                                </td>
+
+
+                                <!-- MOVEMENT -->
+
+                                <td>
+
+                                    {% if movement_type == 'outward' %}
+
+                                        <span
+                                            class="movement-quantity outward"
+                                        >
+                                            −{{
+                                                movement_quantity
+                                                | int
+                                            }}
+                                        </span>
+
+                                    {% else %}
+
+                                        <span
+                                            class="movement-quantity inward"
+                                        >
+                                            +{{
+                                                movement_quantity
+                                                | int
+                                            }}
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- NOW AVAILABLE -->
+
+                                <td>
+
+                                    <span class="stock-number final">
+
+                                        {{
+                                            current
+                                            | int
+                                        }}
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- DATE -->
+
+                                <td>
+
+                                    {{
+                                        entry.stock_date
+                                        | default(
+                                            '-',
+                                            true
+                                        )
+                                    }}
+
+                                </td>
+
+
+                            </tr>
+
+
+                        {% endfor %}
+
+                    {% else %}
+
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                class="recent-empty"
+                            >
+
+                                No stock movement has been recorded yet.
+
+                            </td>
+
+                        </tr>
+
+
+                    {% endif %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,20 @@
+# NUNES Stock line-ending policy
+# Windows launch/setup files use CRLF. Source/web files remain LF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.txt text eol=crlf
+*.py text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+VERSION text eol=lf
+*.db binary
+*.xlsx binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.zip binary
+*.rar binary

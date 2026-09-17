@@ -1,0 +1,65 @@
+NUNES STOCK v2.0.0 - SETUP ORDER
+================================
+
+IMPORTANT ARCHITECTURE
+1. GitHub stores CODE only.
+2. Main Server PC stores LIVE STOCK DATA in C:\ProgramData\NunesStock\data.
+3. Staff/Owner PCs use browser desktop icons; they do not store separate databases.
+4. GitHub updates cannot overwrite live stock data.
+
+FIRST TIME - DO THIS IN THIS ORDER
+----------------------------------
+A. On the MAIN SERVER PC install Git for Windows + Python 3.12 once.
+B. Extract this ZIP to a normal folder.
+C. Run PUBLISH_TO_GITHUB.bat.
+   - Sign in to GitHub when requested.
+   - This publishes CODE to Nunes-instruments/stock_app.
+   - .db / uploads / runtime data are ignored and are NOT uploaded.
+D. Run SETUP_MAIN_SERVER.bat as Administrator.
+   - It preserves existing stock data first.
+   - It installs/clones app code into C:\NunesStock\app.
+   - It stores persistent data in C:\ProgramData\NunesStock\data.
+   - It creates the Owner and Update desktop shortcuts.
+   - It starts the server and configures automatic start/update checks.
+E. On each STAFF PC run SETUP_STAFF_PC.bat and enter the main server IP.
+F. On an OWNER PC run SETUP_OWNER_PC.bat and enter the main server IP.
+
+DAILY USE
+---------
+- Main server: starts automatically after Windows sign-in.
+- Staff/owner: double-click NUNES Stock desktop icon.
+- All users see the same central live data.
+- If the main server PC is OFF, client PCs cannot use the app.
+
+FUTURE CODE UPDATE
+------------------
+1. Change code in the GitHub repository / push a new commit to main.
+2. Main server checks GitHub every 15 minutes.
+3. Before applying a new version it creates a database backup.
+4. It pulls code and restarts only NUNES Stock.
+5. Staff/owner uses the new server version on their next page load/refresh.
+6. For immediate update, double-click NUNES Stock - Update Server on the main server.
+
+BACKUP
+------
+Run CREATE_BACKUP.bat any time.
+Backups: C:\ProgramData\NunesStock\data\backups
+
+OLD TEST DATA
+-------------
+The supplied package has explicit TEST001 / Manual Test / sample import transactions removed from the supplied main database.
+Normal startup NEVER performs cleanup automatically.
+CLEAN_OLD_TEST_DATA.bat remains as a one-time maintenance tool for an old legacy copy and makes a backup first.
+
+SERVER URL
+----------
+Main server itself: http://127.0.0.1:5000
+Staff/Owner PCs:    http://MAIN-SERVER-IP:5000
+
+GITHUB FIRST-PUBLISH NOTE
+-------------------------
+PUBLISH_TO_GITHUB.bat now sets a repository-only Git author automatically.
+If an earlier attempt stopped at "Author identity unknown", simply run this updated
+PUBLISH_TO_GITHUB.bat again. Do NOT delete the .git folder and do NOT delete stock data.
+The LF/CRLF messages are harmless line-ending warnings; v2.0.1 controls them using
+.gitattributes.

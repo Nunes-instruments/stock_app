@@ -1,0 +1,3612 @@
+{% extends "base.html" %}
+
+{% block title %}
+Storage View
+{% endblock %}
+
+
+{% block content %}
+
+<style>
+
+/* ============================================================
+   STORAGE VIEW
+   PREVIEW / INSPECTION MODE
+============================================================ */
+
+.sidebar {
+    display: none !important;
+}
+
+.topbar {
+    display: none !important;
+}
+
+.main {
+    width: 100% !important;
+    max-width: none !important;
+
+    height: 100vh !important;
+    min-height: 100vh !important;
+
+    margin: 0 !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    background: #edf3f9;
+}
+
+.page-content {
+    width: 100% !important;
+    max-width: none !important;
+
+    margin: 0 !important;
+    padding: 8px 10px 40px !important;
+
+    overflow: visible !important;
+}
+
+
+/* ============================================================
+   APP
+============================================================ */
+
+#storageViewApp {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+
+/* ============================================================
+   MAIN TOOLBAR
+============================================================ */
+
+.storage-main-toolbar {
+    position: sticky;
+
+    top: 0;
+
+    z-index: 120;
+
+    min-height: 58px;
+
+    display: grid;
+
+    grid-template-columns:
+        auto
+        1fr
+        auto;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 8px 10px;
+
+    border: 1px solid #294762;
+    border-radius: 14px;
+
+    background: #10283f;
+
+    box-shadow:
+        0 8px 25px
+        rgba(11, 31, 51, 0.20);
+}
+
+
+.storage-toolbar-left,
+.storage-toolbar-right {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+
+.storage-home-button {
+    min-height: 40px;
+
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 13px;
+
+    border: 1px solid #42627e;
+    border-radius: 9px;
+
+    background: #1b3854;
+
+    color: #ffffff;
+
+    text-decoration: none;
+
+    font-size: 9px;
+    font-weight: 900;
+}
+
+
+.storage-machine-state {
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    color: #ffffff;
+
+    font-size: 9px;
+    font-weight: 900;
+}
+
+
+.storage-machine-dot {
+    width: 9px;
+    height: 9px;
+
+    border-radius: 50%;
+
+    background: #31d879;
+
+    box-shadow:
+        0 0 0 5px
+        rgba(49, 216, 121, 0.11);
+}
+
+
+/* ============================================================
+   NAVIGATION
+============================================================ */
+
+.storage-navigation {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 6px;
+}
+
+
+.storage-nav-button,
+.storage-all-button,
+.machine-action-button {
+    min-height: 40px;
+
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 5px;
+
+    padding: 0 12px;
+
+    border-radius: 9px;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+
+.storage-nav-button,
+.machine-action-button {
+    border: 1px solid #40617d;
+
+    background: #193650;
+
+    color: #ffffff;
+}
+
+
+.storage-all-button {
+    border: 0;
+
+    background: #2b70e4;
+
+    color: #ffffff;
+}
+
+
+.storage-nav-button:hover,
+.machine-action-button:hover:not(:disabled) {
+    background: #28506f;
+}
+
+
+.storage-all-button:hover {
+    background: #2165d7;
+}
+
+
+.storage-nav-button:disabled,
+.machine-action-button:disabled {
+    opacity: 0.42;
+
+    cursor: not-allowed;
+}
+
+
+.machine-action-button.primary {
+    background: #2c70dc;
+
+    border-color: #4385eb;
+}
+
+
+.add-category-button {
+    background: #ffffff !important;
+
+    color: #205fc8 !important;
+
+    border-color: #bcd3f5 !important;
+}
+
+
+/* ============================================================
+   3D WAREHOUSE
+============================================================ */
+
+.storage-warehouse-card {
+    scroll-margin-top: 74px;
+
+    overflow: hidden;
+
+    border: 1px solid #c8d8e7;
+    border-radius: 15px;
+
+    background: #071421;
+
+    box-shadow:
+        0 10px 30px
+        rgba(10, 33, 57, 0.10);
+}
+
+
+#threeStorageContainer {
+    position: relative;
+
+    width: 100%;
+
+    height: calc(100vh - 160px);
+    min-height: 580px;
+
+    overflow: hidden;
+
+    background: #071421;
+}
+
+
+#stock3dCanvas {
+    display: block;
+
+    width: 100% !important;
+    height: 100% !important;
+}
+
+
+/* ============================================================
+   EDGE NAVIGATION
+============================================================ */
+
+.storage-warehouse-arrow {
+    position: absolute;
+
+    top: 50%;
+
+    z-index: 45;
+
+    width: 58px;
+    height: 58px;
+
+    display: grid;
+
+    place-items: center;
+
+    border: 1px solid
+        rgba(
+            147,
+            197,
+            253,
+            0.65
+        );
+
+    border-radius: 50%;
+
+    background:
+        rgba(
+            7,
+            25,
+            44,
+            0.88
+        );
+
+    color: #ffffff;
+
+    font-size: 27px;
+    font-weight: 950;
+
+    cursor: pointer;
+
+    transform:
+        translateY(-50%);
+
+    box-shadow:
+        0 10px 28px
+        rgba(3, 14, 28, 0.28);
+}
+
+
+.storage-warehouse-arrow:hover {
+    background: #2563eb;
+
+    transform:
+        translateY(-50%)
+        scale(1.06);
+}
+
+
+.storage-warehouse-arrow.left {
+    left: 18px;
+}
+
+
+.storage-warehouse-arrow.right {
+    right: 18px;
+}
+
+
+.storage-warehouse-arrow small {
+    display: none;
+}
+
+
+/* ============================================================
+   3D HELP
+============================================================ */
+
+.storage-select-help {
+    position: absolute;
+
+    left: 50%;
+    bottom: 17px;
+
+    z-index: 40;
+
+    transform:
+        translateX(-50%);
+
+    padding: 9px 16px;
+
+    border-radius: 999px;
+
+    background:
+        rgba(
+            5,
+            21,
+            37,
+            0.92
+        );
+
+    color: #ffffff;
+
+    font-size: 9px;
+    font-weight: 850;
+
+    pointer-events: none;
+}
+
+
+/* ============================================================
+   VIEW PRODUCTS BUTTON
+============================================================ */
+
+.storage-view-products-button {
+    position: absolute;
+
+    right: 22px;
+    bottom: 18px;
+
+    z-index: 50;
+
+    min-height: 42px;
+
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    padding: 0 16px;
+
+    border: 1px solid #8ebcf8;
+    border-radius: 10px;
+
+    background:
+        rgba(
+            37,
+            99,
+            235,
+            0.93
+        );
+
+    color: #ffffff;
+
+    font-size: 9px;
+    font-weight: 950;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 24px
+        rgba(37, 99, 235, 0.28);
+}
+
+
+.storage-view-products-button:hover {
+    background: #1d5fd5;
+}
+
+
+/* ============================================================
+   PRODUCT TABLE
+============================================================ */
+
+.storage-product-table-card {
+    scroll-margin-top: 75px;
+
+    overflow: hidden;
+
+    border: 1px solid #cad9e8;
+    border-radius: 16px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 8px 26px
+        rgba(17, 48, 78, 0.07);
+}
+
+
+.storage-table-header {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    padding: 17px 18px;
+
+    border-bottom: 1px solid #d7e3ee;
+
+    background:
+        linear-gradient(
+            180deg,
+            #ffffff,
+            #f4f8fc
+        );
+}
+
+
+.storage-table-heading {
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+}
+
+
+.storage-table-heading-icon {
+    width: 45px;
+    height: 45px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 12px;
+
+    background: #e6f1ff;
+
+    font-size: 20px;
+}
+
+
+.storage-table-category-kicker {
+    margin-bottom: 3px;
+
+    color: #2a6bd7;
+
+    font-size: 7px;
+    font-weight: 950;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.05em;
+}
+
+
+.storage-table-heading h2 {
+    margin: 0;
+
+    color: #123451;
+
+    font-size: 21px;
+    font-weight: 950;
+}
+
+
+.storage-table-heading p {
+    margin: 4px 0 0;
+
+    color: #74899e;
+
+    font-size: 9px;
+}
+
+
+.storage-table-header-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+}
+
+
+.storage-table-count {
+    min-width: 90px;
+
+    padding: 10px 13px;
+
+    text-align: center;
+
+    border: 1px solid #bed7fa;
+    border-radius: 10px;
+
+    background: #edf5ff;
+
+    color: #235fc4;
+
+    font-size: 9px;
+    font-weight: 950;
+}
+
+
+.manage-category-button {
+    min-height: 39px;
+
+    padding: 0 14px;
+
+    border: 1px solid #bdd5f5;
+    border-radius: 9px;
+
+    background: #ffffff;
+
+    color: #23496a;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+
+/* ============================================================
+   TABLE
+============================================================ */
+
+.storage-table-scroll {
+    width: 100%;
+
+    overflow-x: auto;
+}
+
+
+.storage-products-table {
+    width: 100%;
+
+    min-width: 1320px;
+
+    border-collapse: separate;
+    border-spacing: 0;
+
+    table-layout: fixed;
+}
+
+
+.storage-products-table th {
+    padding: 13px 11px;
+
+    border-right: 1px solid #cddae7;
+    border-bottom: 2px solid #adc3da;
+
+    background:
+        linear-gradient(
+            180deg,
+            #eaf3fc,
+            #dce8f5
+        );
+
+    color: #16334f;
+
+    font-size: 8px;
+    font-weight: 950;
+
+    text-align: left;
+
+    text-transform: uppercase;
+}
+
+
+.storage-products-table td {
+    padding: 13px 11px;
+
+    border-right: 1px solid #e1e9f1;
+    border-bottom: 1px solid #e1e9f1;
+
+    background: #ffffff;
+
+    color: #304960;
+
+    font-size: 9px;
+
+    vertical-align: middle;
+}
+
+
+.storage-products-table tbody tr {
+    cursor: pointer;
+}
+
+
+.storage-products-table tbody tr:hover td {
+    background: #f4f9ff;
+}
+
+
+.storage-products-table tbody tr.storage-row-selected td {
+    background: #eaf4ff;
+}
+
+
+.storage-products-table tbody tr.storage-row-selected {
+    box-shadow:
+        inset 5px 0 0
+        #2e73e8;
+}
+
+
+.col-sno {
+    width: 60px;
+}
+
+.col-image {
+    width: 90px;
+}
+
+.col-product {
+    width: 240px;
+}
+
+.col-id {
+    width: 125px;
+}
+
+.col-brand-model {
+    width: 195px;
+}
+
+.col-category {
+    width: 205px;
+}
+
+.col-location {
+    width: 125px;
+}
+
+.col-stock {
+    width: 115px;
+}
+
+.col-unit {
+    width: 85px;
+}
+
+.col-column {
+    width: 145px;
+}
+
+
+/* ============================================================
+   TABLE PRODUCT IMAGE
+============================================================ */
+
+.storage-table-dp {
+    width: 58px;
+    height: 58px;
+
+    display: grid;
+
+    place-items: center;
+
+    overflow: hidden;
+
+    border: 3px solid #89c1fa;
+    border-radius: 50%;
+
+    background: #ffffff;
+
+    font-size: 21px;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(53, 129, 221, 0.07);
+}
+
+
+.storage-table-dp img {
+    width: 85%;
+    height: 85%;
+
+    object-fit: contain;
+}
+
+
+.storage-product-name strong {
+    display: block;
+
+    color: #123451;
+
+    font-size: 10px;
+    font-weight: 950;
+}
+
+
+.storage-product-name small {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #8395a8;
+
+    font-size: 7px;
+}
+
+
+.storage-stock-pill {
+    min-width: 76px;
+
+    display: inline-flex;
+
+    justify-content: center;
+
+    padding: 7px 9px;
+
+    border: 1px solid #bde4ca;
+    border-radius: 999px;
+
+    background: #ecf9f1;
+
+    color: #078c3f;
+
+    font-size: 9px;
+    font-weight: 950;
+}
+
+
+.storage-column-pill {
+    min-width: 93px;
+
+    display: inline-flex;
+
+    justify-content: center;
+
+    padding: 7px 9px;
+
+    border: 1px solid #b9d5fa;
+    border-radius: 9px;
+
+    background: #edf5ff;
+
+    color: #215ec9;
+
+    font-size: 9px;
+    font-weight: 950;
+}
+
+
+/* ============================================================
+   TABLE MESSAGE
+============================================================ */
+
+.storage-table-selection-message {
+    min-height: 37px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 0 15px;
+
+    border-top: 1px solid #dce6ef;
+
+    color: #5f7890;
+
+    font-size: 8px;
+}
+
+
+.storage-table-selection-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: #377fee;
+}
+
+
+/* ============================================================
+   SELECTED PRODUCT DETAILS
+   CRYSTAL CLEAR CARD
+============================================================ */
+
+.storage-selected-summary {
+    scroll-margin-top: 78px;
+
+    display: none;
+
+    grid-template-columns:
+        125px
+        minmax(0, 1fr)
+        165px;
+
+    gap: 18px;
+
+    align-items: stretch;
+
+    padding: 18px;
+
+    border: 1px solid #bcd3e8;
+    border-radius: 17px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #ffffff 0%,
+            #f4f9ff 100%
+        );
+
+    box-shadow:
+        0 12px 30px
+        rgba(15, 55, 91, 0.08);
+}
+
+
+.storage-selected-summary.active {
+    display: grid;
+}
+
+
+.storage-selected-summary-dp {
+    min-height: 125px;
+
+    display: grid;
+
+    place-items: center;
+
+    border: 1px solid #c9def2;
+    border-radius: 15px;
+
+    background: #ffffff;
+}
+
+
+.storage-selected-summary-dp img {
+    display: none;
+
+    width: 105px;
+    height: 105px;
+
+    object-fit: contain;
+}
+
+
+.storage-selected-summary-fallback {
+    width: 86px;
+    height: 86px;
+
+    display: grid;
+
+    place-items: center;
+
+    border: 4px solid #86beF7;
+    border-radius: 50%;
+
+    background: #f5faff;
+
+    font-size: 34px;
+}
+
+
+.storage-selected-summary-info {
+    min-width: 0;
+}
+
+
+.storage-selected-product-kicker {
+    margin-bottom: 5px;
+
+    color: #2870dc;
+
+    font-size: 7px;
+    font-weight: 950;
+
+    text-transform: uppercase;
+}
+
+
+#storageSelectedSummaryName {
+    display: block;
+
+    color: #102f4d;
+
+    font-size: 24px;
+    font-weight: 950;
+
+    line-height: 1.2;
+}
+
+
+#storageSelectedSummaryMeta {
+    display: block;
+
+    margin-top: 5px;
+
+    color: #6f8599;
+
+    font-size: 9px;
+}
+
+
+/* ============================================================
+   SPECIFICATION GRID
+============================================================ */
+
+.storage-product-detail-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        );
+
+    gap: 9px;
+
+    margin-top: 15px;
+}
+
+
+.storage-product-detail-item {
+    min-height: 72px;
+
+    padding: 11px 12px;
+
+    border: 1px solid #d7e4ee;
+    border-radius: 10px;
+
+    background: #ffffff;
+}
+
+
+.storage-product-detail-item small {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #7b91a5;
+
+    font-size: 7px;
+    font-weight: 950;
+
+    text-transform: uppercase;
+}
+
+
+.storage-product-detail-item strong {
+    display: block;
+
+    color: #153653;
+
+    font-size: 11px;
+    font-weight: 950;
+
+    line-height: 1.35;
+
+    overflow-wrap: anywhere;
+}
+
+
+.storage-product-detail-item.stock {
+    border-color: #b8e5c7;
+
+    background: #edf9f1;
+}
+
+
+.storage-product-detail-item.stock strong {
+    color: #078d43;
+
+    font-size: 15px;
+}
+
+
+.storage-selected-summary-column {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    min-height: 126px;
+
+    padding: 15px;
+
+    border: 1px solid #bce3c8;
+    border-radius: 14px;
+
+    background: #edf9f1;
+
+    text-align: center;
+}
+
+
+.storage-selected-summary-column small {
+    color: #688375;
+
+    font-size: 7px;
+    font-weight: 950;
+}
+
+
+.storage-selected-summary-column strong {
+    display: block;
+
+    margin-top: 9px;
+
+    color: #078d43;
+
+    font-size: 16px;
+    font-weight: 950;
+}
+
+
+/* ============================================================
+   PREVIEW NOTICE
+============================================================ */
+
+.storage-preview-notice {
+    padding: 12px 15px;
+
+    border: 1px solid #c4d9ee;
+    border-radius: 11px;
+
+    background: #f2f8ff;
+
+    color: #506e87;
+
+    font-size: 9px;
+
+    line-height: 1.5;
+}
+
+
+.storage-preview-notice strong {
+    color: #245ebd;
+}
+
+
+/* ============================================================
+   STATUS
+============================================================ */
+
+.storage-status-message {
+    min-height: 38px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 0 14px;
+
+    border: 1px solid #d4e1ec;
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    color: #60798f;
+
+    font-size: 9px;
+}
+
+
+.storage-status-message.success {
+    border-color: #b8e4c6;
+
+    background: #edf9f1;
+
+    color: #087f40;
+}
+
+
+.storage-status-message.error {
+    border-color: #efc4c4;
+
+    background: #fff3f3;
+
+    color: #c43e3e;
+}
+
+
+/* ============================================================
+   PERMANENT UP BUTTON
+============================================================ */
+
+.storage-back-to-cabinet {
+    position: fixed;
+
+    right: 24px;
+    bottom: 24px;
+
+    z-index: 300;
+
+    width: 58px;
+    height: 58px;
+
+    display: grid;
+
+    place-items: center;
+
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+
+    background:
+        linear-gradient(
+            135deg,
+            #327df0,
+            #1958cb
+        );
+
+    color: #ffffff;
+
+    font-size: 25px;
+    font-weight: 950;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 12px 30px
+        rgba(31, 94, 209, 0.34);
+}
+
+
+.storage-back-to-cabinet:hover {
+    transform: translateY(-3px);
+
+    box-shadow:
+        0 15px 34px
+        rgba(31, 94, 209, 0.40);
+}
+
+
+.storage-back-to-cabinet::after {
+    content: "Back to Cabinets";
+
+    position: absolute;
+
+    right: 68px;
+
+    min-width: 100px;
+
+    padding: 7px 9px;
+
+    border-radius: 8px;
+
+    background: #10283f;
+
+    color: #ffffff;
+
+    font-size: 7px;
+    font-weight: 850;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    transition: opacity 0.15s ease;
+}
+
+
+.storage-back-to-cabinet:hover::after {
+    opacity: 1;
+}
+
+
+/* ============================================================
+   CATEGORY MODAL
+============================================================ */
+
+.storage-category-modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 500;
+
+    display: grid;
+
+    place-items: center;
+
+    padding: 20px;
+
+    background:
+        rgba(
+            5,
+            20,
+            35,
+            0.62
+        );
+
+    backdrop-filter: blur(5px);
+}
+
+
+.storage-category-modal.hidden {
+    display: none;
+}
+
+
+.storage-category-modal-card {
+    width: min(
+        620px,
+        95vw
+    );
+
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    border-radius: 16px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 25px 60px
+        rgba(3, 20, 38, 0.30);
+}
+
+
+.storage-category-modal-accent {
+    height: 6px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #327cf0,
+            #26a46d
+        );
+}
+
+
+.storage-category-modal-content {
+    padding: 19px;
+}
+
+
+.storage-category-modal-header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 15px;
+}
+
+
+.storage-category-modal-title {
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+}
+
+
+.storage-category-modal-icon {
+    width: 42px;
+    height: 42px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 11px;
+
+    background: #eaf3ff;
+
+    color: #2563d8;
+
+    font-size: 19px;
+}
+
+
+.storage-category-modal-title small {
+    color: #7c91a4;
+
+    font-size: 7px;
+    font-weight: 950;
+}
+
+
+.storage-category-modal-title h2 {
+    margin: 3px 0 0;
+
+    color: #123451;
+
+    font-size: 19px;
+    font-weight: 950;
+}
+
+
+.storage-modal-close {
+    width: 34px;
+    height: 34px;
+
+    border: 1px solid #d4e0ea;
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    color: #5c7488;
+
+    cursor: pointer;
+}
+
+
+.storage-category-form {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 14px;
+
+    margin-top: 18px;
+}
+
+
+.storage-category-field label {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #31516b;
+
+    font-size: 8px;
+    font-weight: 950;
+}
+
+
+.storage-category-field input {
+    width: 100%;
+    min-height: 44px;
+
+    padding: 0 12px;
+
+    border: 1px solid #cbdbe9;
+    border-radius: 9px;
+
+    outline: none;
+}
+
+
+.storage-product-type-input-row {
+    display: grid;
+
+    grid-template-columns:
+        1fr
+        auto;
+
+    gap: 8px;
+}
+
+
+.storage-add-product-type {
+    min-width: 90px;
+
+    border: 0;
+    border-radius: 9px;
+
+    background: #2b70df;
+
+    color: #ffffff;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+
+.storage-product-type-list {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+
+    min-height: 40px;
+}
+
+
+.storage-category-modal-error {
+    min-height: 18px;
+
+    color: #c64040;
+
+    font-size: 8px;
+}
+
+
+.storage-category-modal-actions {
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 9px;
+
+    margin-top: 8px;
+}
+
+
+.storage-category-modal-actions-right {
+    display: flex;
+
+    gap: 8px;
+}
+
+
+.storage-category-modal-actions button {
+    min-height: 39px;
+
+    padding: 0 14px;
+
+    border-radius: 8px;
+
+    font-size: 8px;
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+
+.storage-category-delete {
+    border: 1px solid #efbcbc;
+
+    background: #fff3f3;
+
+    color: #ca3e3e;
+}
+
+
+.storage-category-cancel {
+    border: 1px solid #cfdeea;
+
+    background: #ffffff;
+
+    color: #4f6a80;
+}
+
+
+.storage-category-save {
+    border: 0;
+
+    background: #2b70df;
+
+    color: #ffffff;
+}
+
+
+/* ============================================================
+   HIDDEN COMPATIBILITY ELEMENTS
+============================================================ */
+
+.storage-legacy-hidden {
+    display: none !important;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1050px) {
+
+    .storage-main-toolbar {
+        grid-template-columns:
+            1fr;
+    }
+
+    .storage-navigation {
+        order: 3;
+    }
+
+    .storage-toolbar-right {
+        justify-content: flex-end;
+    }
+
+    .storage-selected-summary {
+        grid-template-columns:
+            110px
+            1fr;
+    }
+
+    .storage-selected-summary-column {
+        grid-column:
+            1 / -1;
+    }
+
+    .storage-product-detail-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+}
+
+
+@media (max-width: 700px) {
+
+    #threeStorageContainer {
+        min-height: 480px;
+
+        height: 70vh;
+    }
+
+    .storage-selected-summary {
+        grid-template-columns:
+            1fr;
+    }
+
+    .storage-product-detail-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    .storage-table-header {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .storage-warehouse-arrow {
+        width: 46px;
+        height: 46px;
+    }
+}
+
+
+/* ============================================================
+   ADVANCED SHELF RACK MODE (V4.9)
+   Added alongside the existing open-rack model.
+   The original open-rack CSS/model is intentionally untouched.
+============================================================ */
+
+.storage-rack-modebar {
+    position: sticky;
+    top: 0;
+    z-index: 150;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 10px;
+    border: 1px solid #c5d3e0;
+    border-radius: 14px;
+    background: rgba(255,255,255,.97);
+    box-shadow: 0 8px 24px rgba(15,43,70,.10);
+    backdrop-filter: blur(10px);
+}
+
+.storage-rack-mode-left,
+.storage-rack-mode-actions,
+.storage-rack-mode-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.storage-rack-home {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 13px;
+    border: 1px solid #c6d5e2;
+    border-radius: 10px;
+    background: #fff;
+    color: #16324b;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.storage-rack-branch {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 10px;
+    color: #526b80;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.storage-rack-branch::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22b96d;
+    box-shadow: 0 0 0 4px rgba(34,185,109,.12);
+}
+
+.storage-rack-mode-button {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 15px;
+    border: 1px solid #c6d5e2;
+    border-radius: 10px;
+    background: #f7fafc;
+    color: #29465f;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.storage-rack-mode-button:hover {
+    border-color: #91b8f8;
+    background: #eef5ff;
+    color: #174ea6;
+    transform: translateY(-1px);
+}
+
+.storage-rack-mode-button.active {
+    border-color: #286ce6;
+    background: #286ce6;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(40,108,230,.22);
+}
+
+.storage-rack-mode-button.storage-rack-show-3d {
+    min-width: 190px;
+    min-height: 44px;
+    padding: 0 18px;
+    border-color: #1f66e5;
+    background: #286ce6;
+    color: #ffffff;
+    font-size: 13px;
+    box-shadow: 0 8px 20px rgba(40,108,230,.22);
+}
+
+.storage-rack-mode-button.storage-rack-show-3d:hover,
+.storage-rack-mode-button.storage-rack-show-3d.active {
+    border-color: #1658c8;
+    background: #1f63d7;
+    color: #ffffff;
+}
+
+.storage-rack-mode-button.storage-rack-show-open {
+    min-width: 150px;
+    min-height: 44px;
+    font-size: 12px;
+}
+
+.storage-rack-mode-hint {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 10px;
+    color: #667f94;
+    font-size: 10px;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+.storage-rack-action {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #c6d5e2;
+    border-radius: 10px;
+    background: #fff;
+    color: #16324b;
+    font-size: 21px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.storage-rack-action:disabled {
+    opacity: .42;
+    cursor: not-allowed;
+}
+
+.storage-rack-file-action {
+    width: auto;
+    min-width: 112px;
+    padding: 0 12px;
+    display: inline-flex;
+    gap: 7px;
+    font-size: 11px;
+}
+
+#shelfRackFileInput {
+    display: none;
+}
+
+.storage-shelf-stage {
+    position: relative;
+    min-height: calc(100vh - 90px);
+    overflow: hidden;
+    border: 1px solid #c6d4df;
+    border-radius: 16px;
+    background: #e8edf2;
+    box-shadow: 0 12px 32px rgba(17,43,65,.12);
+}
+
+.storage-shelf-stage.hidden {
+    display: none !important;
+}
+
+#shelfRackCanvasWrap {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 105px);
+    min-height: 620px;
+    overflow: hidden;
+}
+
+#shelfRackCanvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    cursor: grab;
+}
+
+#shelfRackCanvas.dragging {
+    cursor: grabbing;
+}
+
+.shelf-rack-scene-title {
+    position: absolute;
+    left: 18px;
+    top: 18px;
+    z-index: 20;
+    max-width: 430px;
+    padding: 12px 14px;
+    border: 1px solid rgba(188,205,219,.90);
+    border-radius: 12px;
+    background: rgba(255,255,255,.90);
+    box-shadow: 0 7px 20px rgba(16,46,72,.11);
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+}
+
+.shelf-rack-scene-title strong {
+    display: block;
+    color: #102f4a;
+    font-size: 15px;
+    font-weight: 950;
+}
+
+.shelf-rack-scene-title span {
+    display: block;
+    margin-top: 4px;
+    color: #60788d;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.shelf-rack-details {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 24;
+    width: min(330px, calc(100% - 36px));
+    padding: 15px;
+    border: 1px solid rgba(187,204,217,.96);
+    border-radius: 14px;
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 10px 28px rgba(14,42,66,.16);
+    backdrop-filter: blur(10px);
+}
+
+.shelf-rack-details-kicker {
+    color: #667f94;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.shelf-rack-details h3 {
+    margin: 5px 0 2px;
+    color: #102f4a;
+    font-size: 18px;
+    font-weight: 950;
+    line-height: 1.25;
+}
+
+.shelf-rack-details-meta {
+    color: #74899b;
+    font-size: 10px;
+}
+
+.shelf-rack-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.shelf-rack-detail-grid div {
+    min-height: 55px;
+    padding: 9px 10px;
+    border: 1px solid #d6e1e9;
+    border-radius: 9px;
+    background: #f8fafc;
+}
+
+.shelf-rack-detail-grid small {
+    display: block;
+    color: #7b8fa0;
+    font-size: 8px;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.shelf-rack-detail-grid strong {
+    display: block;
+    margin-top: 4px;
+    color: #17354f;
+    font-size: 12px;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+}
+
+.shelf-rack-scene-footer {
+    position: absolute;
+    left: 50%;
+    bottom: 17px;
+    z-index: 20;
+    transform: translateX(-50%);
+    max-width: calc(100% - 36px);
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: rgba(16,39,58,.88);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.shelf-rack-busy {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    display: none;
+    place-items: center;
+    background: rgba(238,243,247,.72);
+    backdrop-filter: blur(3px);
+}
+
+.shelf-rack-busy.active {
+    display: grid;
+}
+
+.shelf-rack-busy-card {
+    padding: 14px 18px;
+    border: 1px solid #c8d7e3;
+    border-radius: 12px;
+    background: #fff;
+    color: #17354f;
+    font-size: 12px;
+    font-weight: 900;
+    box-shadow: 0 12px 30px rgba(16,43,66,.14);
+}
+
+
+/* ============================================================
+   V5.3 HORIZONTAL 3D SHELF RACK
+   Default 3 wide racks + dynamic rack creation + product preview.
+============================================================ */
+#shelfRackCanvas {
+    display: none !important;
+}
+
+.storage-rack-action {
+    text-decoration: none;
+    user-select: none;
+}
+
+.storage-rack-wide-action {
+    width: auto;
+    min-width: 88px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 11px;
+    line-height: 1;
+}
+
+#shelfRackAddRack {
+    border-color: #9fc0ef;
+    background: #eef5ff;
+    color: #205fc4;
+}
+
+#shelfRackAddProduct {
+    border-color: #b7dfc5;
+    background: #effaf3;
+    color: #147444;
+}
+
+#shelfRackFastViewport {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    padding: 122px 390px 88px 34px;
+    overflow: auto;
+    perspective: 1750px;
+    perspective-origin: 48% 40%;
+    cursor: grab;
+    background:
+        radial-gradient(circle at 42% 18%, rgba(255,255,255,.98), rgba(240,245,249,.90) 34%, rgba(224,232,239,.96) 74%),
+        linear-gradient(180deg, #edf3f7 0%, #dce5ec 100%);
+}
+
+#shelfRackFastViewport.dragging {
+    cursor: grabbing;
+}
+
+#shelfRackFastViewport.panning {
+    cursor: move;
+}
+
+#shelfRackFastViewport::before {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 35%;
+    pointer-events: none;
+    background:
+        linear-gradient(rgba(110,130,146,.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(110,130,146,.10) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(208,218,226,.10), rgba(188,202,213,.42));
+    background-size: 42px 42px, 42px 42px, auto;
+    transform: perspective(780px) rotateX(58deg) translateY(38%);
+    transform-origin: bottom;
+}
+
+#shelfRackFastWorld {
+    position: relative;
+    z-index: 2;
+    width: max-content;
+    min-width: 100%;
+    min-height: 500px;
+    display: flex;
+    flex-direction: row;
+    align-items: end;
+    justify-content: flex-start;
+    gap: 34px;
+    padding: 18px 22px 28px;
+    transform-style: preserve-3d;
+    transform-origin: center bottom;
+    opacity: 0;
+    transition: opacity .10s ease, transform .10s ease-out;
+    will-change: transform;
+}
+
+#shelfRackFastWorld.ready {
+    opacity: 1;
+}
+
+.fast-rack-unit {
+    position: relative;
+    flex: 0 0 430px;
+    width: 430px;
+    height: 450px;
+    display: flex;
+    flex-direction: column;
+    transform-style: preserve-3d;
+    filter: drop-shadow(0 20px 20px rgba(20,42,58,.18));
+}
+
+.fast-rack-header {
+    position: relative;
+    z-index: 5;
+    margin: 0 18px -2px;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 16px;
+    border: 2px solid #71818f;
+    border-bottom: 0;
+    border-radius: 9px 9px 0 0;
+    background: linear-gradient(180deg, #ffffff 0%, #edf3f7 100%);
+    box-shadow: inset 0 -4px 0 rgba(116,136,151,.11);
+}
+
+.fast-rack-header strong {
+    color: #17344d;
+    font-size: 14px;
+    font-weight: 950;
+    letter-spacing: .06em;
+}
+
+.fast-rack-header span {
+    color: #718596;
+    font-size: 10px;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.fast-rack-frame {
+    position: relative;
+    flex: 1;
+    margin: 0 16px;
+    padding: 12px 17px 14px;
+    display: grid;
+    grid-template-rows: repeat(5, minmax(0,1fr));
+    gap: 7px;
+    border: 2px solid #6e7e8c;
+    border-top-width: 5px;
+    background:
+        linear-gradient(90deg, rgba(255,255,255,.66), rgba(231,238,243,.80)),
+        #dfe7ec;
+    box-shadow:
+        inset 0 0 0 4px rgba(255,255,255,.56),
+        inset 15px 0 22px rgba(106,127,143,.12),
+        inset -15px 0 22px rgba(106,127,143,.12);
+    transform: translateZ(8px);
+    transform-style: preserve-3d;
+}
+
+.fast-rack-post {
+    position: absolute;
+    top: -5px;
+    bottom: -14px;
+    width: 12px;
+    z-index: 5;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #73828d, #c6d0d6 48%, #6f7e89);
+    box-shadow: 0 0 0 1px rgba(74,92,105,.45);
+}
+.fast-rack-post-left { left: -10px; }
+.fast-rack-post-right { right: -10px; }
+
+.fast-rack-shelf {
+    position: relative;
+    min-height: 0;
+    padding: 8px 7px 12px;
+    display: flex;
+    align-items: end;
+    border-radius: 5px 5px 2px 2px;
+    background: linear-gradient(180deg, rgba(255,255,255,.44), rgba(212,229,232,.31));
+    transform-style: preserve-3d;
+}
+
+.fast-rack-shelf::before {
+    content: "";
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    bottom: 9px;
+    height: 7px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, rgba(220,242,240,.95), rgba(142,169,173,.86));
+    box-shadow: 0 6px 9px rgba(52,76,89,.16);
+    transform: translateZ(8px) rotateX(4deg);
+}
+
+.fast-rack-shelf-edge {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 4px;
+    height: 6px;
+    border-radius: 1px;
+    background: linear-gradient(180deg, #85949f, #596a77);
+    box-shadow: 0 3px 0 rgba(83,101,114,.18);
+}
+
+.fast-rack-shelf-products {
+    position: relative;
+    z-index: 4;
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: end;
+    gap: 7px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+    transform: translateZ(18px);
+}
+.fast-rack-shelf-products::-webkit-scrollbar { display: none; }
+
+.fast-rack-product {
+    position: relative;
+    flex: 0 0 72px;
+    min-width: 72px;
+    height: 64px;
+    padding: 5px 5px 4px;
+    display: grid;
+    grid-template-rows: 20px minmax(0,1fr) 13px;
+    align-items: center;
+    border: 1px solid #8796a1;
+    border-radius: 6px 6px 3px 3px;
+    background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(223,232,238,.99));
+    color: #17344d;
+    box-shadow:
+        2px 3px 0 #6f7f8a,
+        5px 6px 8px rgba(39,61,75,.13);
+    transform: translateZ(12px);
+    transform-style: preserve-3d;
+    cursor: pointer;
+    transition: transform .10s ease, border-color .10s ease, box-shadow .10s ease;
+    text-align: left;
+}
+
+.fast-rack-product:nth-child(3n+2) {
+    background: linear-gradient(145deg, #fff8e5, #e8dfca);
+}
+.fast-rack-product:nth-child(3n) {
+    background: linear-gradient(145deg, #eef6ec, #d8e4d6);
+}
+
+.fast-rack-product:hover,
+.fast-rack-product.selected {
+    z-index: 20;
+    border-color: #1e63cf;
+    transform: translateY(-5px) translateZ(26px) scale(1.06);
+    box-shadow:
+        2px 3px 0 #4b6f9f,
+        0 9px 18px rgba(29,80,148,.24);
+}
+
+.fast-rack-product.selected {
+    outline: 2px solid rgba(40,108,230,.22);
+    outline-offset: 2px;
+}
+
+.fast-rack-package-mark {
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 4px;
+    background: #173e63;
+    color: #fff;
+    font-size: 8px;
+    font-weight: 950;
+    letter-spacing: -.02em;
+}
+
+.fast-rack-package-name {
+    min-width: 0;
+    align-self: center;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    color: #18364f;
+    font-size: 8px;
+    font-weight: 850;
+    line-height: 1.08;
+}
+
+.fast-rack-package-stock {
+    justify-self: end;
+    min-width: 20px;
+    padding: 1px 4px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.80);
+    color: #203b51;
+    font-size: 8px;
+    font-weight: 950;
+    text-align: center;
+}
+
+.fast-rack-empty-slot {
+    display: block;
+    width: 100%;
+    height: 40px;
+}
+
+.fast-rack-base {
+    height: 20px;
+    margin: 0 6px;
+    border: 1px solid #687985;
+    border-radius: 0 0 8px 8px;
+    background: linear-gradient(180deg, #a9b6bf, #73828e);
+    box-shadow: 0 8px 12px rgba(31,49,61,.18);
+    transform: translateZ(2px);
+}
+
+/* Verified real-product image preview shown under the detail fields. */
+.shelf-rack-product-image-panel {
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid #d4e1ea;
+    border-radius: 12px;
+    background: #f8fafc;
+    overflow: hidden;
+}
+
+.shelf-rack-product-image-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.shelf-rack-product-image-title strong {
+    color: #17354f;
+    font-size: 11px;
+    font-weight: 950;
+}
+
+.shelf-rack-product-image-title span {
+    color: #7890a3;
+    font-size: 8px;
+    font-weight: 750;
+}
+
+.shelf-rack-product-image-frame {
+    position: relative;
+    min-height: 210px;
+    margin-top: 10px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid #d7e2ea;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.shelf-rack-product-image-frame img {
+    width: 100%;
+    height: 210px;
+    display: block;
+    object-fit: contain;
+    padding: 10px;
+    background: #ffffff;
+}
+
+.shelf-rack-product-image-empty {
+    max-width: 230px;
+    padding: 22px 14px;
+    color: #6f8496;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.45;
+}
+
+.shelf-rack-product-image-status {
+    margin-top: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: #667f94;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.shelf-rack-product-image-status a {
+    color: #1f63d7;
+    font-weight: 900;
+    text-decoration: none;
+}
+
+.shelf-rack-product-image-status a:hover {
+    text-decoration: underline;
+}
+
+.shelf-rack-details {
+    max-height: calc(100% - 36px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+@media (max-width: 1280px) {
+    #shelfRackFastViewport {
+        padding-right: 30px;
+        padding-top: 122px;
+    }
+
+    .shelf-rack-details {
+        width: 320px;
+    }
+}
+
+@media (max-width: 980px) {
+    .storage-rack-modebar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .storage-rack-mode-left,
+    .storage-rack-mode-actions {
+        flex-wrap: wrap;
+    }
+
+    #shelfRackFastViewport {
+        padding: 118px 20px 340px;
+    }
+
+    .shelf-rack-details {
+        top: auto;
+        right: 14px;
+        bottom: 54px;
+        width: min(360px, calc(100% - 28px));
+        max-height: 300px;
+    }
+
+    .fast-rack-unit {
+        flex-basis: 390px;
+        width: 390px;
+    }
+}
+
+</style>
+
+
+<div id="storageViewApp" data-active-branch="{{ active_branch_key }}" data-active-branch-name="{{ active_branch_name }}">
+
+
+
+
+    <!-- =====================================================
+         STORAGE MODE SWITCH + ADVANCED SHELF RACK
+         Main branch: Shelf Rack + existing Open Rack
+         Other branches: Shelf Rack only
+    ====================================================== -->
+
+<style>
+/* V5.5 targeted Shelf Rack controls/editing only */
+#shelfRackRemoveRack { min-width: 74px; }
+.shelf-rack-edit-name {
+    width: 100%; border: 1px solid transparent; border-radius: 9px; padding: 6px 8px;
+    margin: 1px 0 3px; background: #f7fbff; color: #10283f; font: inherit; font-size: 18px; font-weight: 900;
+}
+.shelf-rack-edit-name:focus { border-color: #75a7f4; outline: 0; background: #fff; box-shadow: 0 0 0 3px rgba(43,112,228,.10); }
+.shelf-rack-edit-grid label { display: flex; flex-direction: column; gap: 4px; }
+.shelf-rack-edit-grid input {
+    width: 100%; min-width: 0; border: 1px solid #cedbea; border-radius: 8px; padding: 7px 8px;
+    background: #fff; color: #10283f; font-size: 11px; font-weight: 800; box-sizing: border-box;
+}
+.shelf-rack-edit-grid input:focus { outline: 0; border-color: #5e95ea; box-shadow: 0 0 0 3px rgba(43,112,228,.10); }
+.shelf-rack-edit-grid input[readonly] { background: #f1f5f9; color: #66798b; cursor: default; }
+.shelf-rack-edit-actions { display: flex; align-items: center; gap: 9px; margin-top: 9px; }
+#shelfRackSaveProduct, #shelfRackRetryImage {
+    border: 1px solid #2b70e4; border-radius: 8px; background: #2b70e4; color: #fff; padding: 7px 10px;
+    font-size: 10px; font-weight: 900; cursor: pointer;
+}
+#shelfRackSaveProduct:disabled, #shelfRackRetryImage:disabled { opacity: .45; cursor: not-allowed; }
+#shelfRackSaveStatus { color: #60758a; font-size: 9px; font-weight: 800; }
+.shelf-rack-image-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#shelfRackRetryImage { background: #fff; color: #205fc8; padding: 5px 8px; }
+.shelf-rack-image-tip { margin-top: 7px; color: #66798b; font-size: 9px; line-height: 1.35; font-weight: 700; }
+</style>
+
+    <section class="storage-rack-modebar" aria-label="Storage view mode">
+
+        <div class="storage-rack-mode-left">
+            <a href="{{ url_for('dashboard') }}" class="storage-rack-home">← Home</a>
+
+            <div class="storage-rack-mode-buttons">
+                <button id="shelfRackModeButton" type="button" class="storage-rack-mode-button storage-rack-show-3d active" aria-controls="shelfRackStage">
+                    Show 3D Shelf Rack
+                </button>
+
+                {% if active_branch_key == 'main' %}
+                <button id="openRackModeButton" type="button" class="storage-rack-mode-button storage-rack-show-open" aria-controls="storageAnimationStage">
+                    Show Open Rack
+                </button>
+                {% endif %}
+
+                <span class="storage-rack-mode-hint">Use these buttons to switch the storage design.</span>
+            </div>
+
+            <span class="storage-rack-branch">{{ active_branch_name }}</span>
+        </div>
+
+        <div class="storage-rack-mode-actions" aria-label="Shelf rack stock actions">
+            <a href="{{ url_for('add_stock_page') }}" id="shelfRackAddProduct" class="storage-rack-action storage-rack-wide-action" title="Add a new product or stock item">
+                + Product
+            </a>
+
+            <button id="shelfRackAddRack" type="button" class="storage-rack-action storage-rack-wide-action" title="Add another horizontal rack">
+                + Rack
+            </button>
+
+            <button id="shelfRackRemoveRack" type="button" class="storage-rack-action storage-rack-wide-action" title="Remove the last horizontal rack">
+                − Rack
+            </button>
+
+            <button id="shelfRackQuickAdd" type="button" class="storage-rack-action" title="Add one unit to the selected product" aria-label="Add one unit" disabled>+</button>
+            <button id="shelfRackQuickRemove" type="button" class="storage-rack-action" title="Remove one unit from the selected product" aria-label="Remove one unit" disabled>−</button>
+
+            <label for="shelfRackFileInput" class="storage-rack-action storage-rack-file-action" title="Import an Excel stock file">
+                Attach Excel
+            </label>
+            <input id="shelfRackFileInput" type="file" accept=".xlsx" aria-label="Attach Excel stock file">
+        </div>
+
+    </section>
+
+
+    <section id="shelfRackStage" class="storage-shelf-stage">
+        <div id="shelfRackCanvasWrap">
+            <canvas id="shelfRackCanvas" aria-hidden="true"></canvas>
+
+            <div id="shelfRackFastViewport" aria-label="Interactive horizontal 3D shelf racks">
+                <div id="shelfRackFastWorld" role="group" aria-label="Three horizontal storage racks"></div>
+            </div>
+
+            <div class="shelf-rack-scene-title">
+                <strong id="shelfRackSceneTitle">3D Shelf Rack · 3 Horizontal Racks</strong>
+                <span id="shelfRackSceneDescription">Products are arranged across wide horizontal racks. Left-drag to tilt, right-click + drag to move the scene, scroll to zoom, and click a product for its verified image preview.</span>
+            </div>
+
+            <aside class="shelf-rack-details" id="shelfRackDetails" aria-live="polite">
+                <div class="shelf-rack-details-kicker">Selected Product · Type directly to edit</div>
+                <input id="shelfRackDetailName" class="shelf-rack-edit-name" type="text" value="" placeholder="Select a product" autocomplete="off">
+                <div class="shelf-rack-details-meta" id="shelfRackDetailMeta">Click a product, edit any field, then Save Changes.</div>
+
+                <div class="shelf-rack-detail-grid shelf-rack-edit-grid">
+                    <label><small>Product ID</small><input id="shelfRackDetailId" type="text" value="" autocomplete="off"></label>
+                    <label><small>Stock</small><input id="shelfRackDetailStock" type="number" min="0" step="any" value="0"></label>
+                    <label><small>Category</small><input id="shelfRackDetailCategory" type="text" value="" autocomplete="off"></label>
+                    <label><small>Rack Position</small><input id="shelfRackDetailPosition" type="text" value="" readonly></label>
+                    <label><small>Brand</small><input id="shelfRackDetailBrand" type="text" value="" autocomplete="off"></label>
+                    <label><small>Model</small><input id="shelfRackDetailModel" type="text" value="" autocomplete="off"></label>
+                    <label><small>Location</small><input id="shelfRackDetailLocation" type="text" value="" autocomplete="off"></label>
+                    <label><small>Unit</small><input id="shelfRackDetailUnit" type="text" value="Nos" autocomplete="off"></label>
+                </div>
+
+                <div class="shelf-rack-edit-actions">
+                    <button id="shelfRackSaveProduct" type="button" disabled>Save Changes</button>
+                    <span id="shelfRackSaveStatus">Select a product to edit.</span>
+                </div>
+
+                <div class="shelf-rack-product-image-panel" aria-label="Verified product image preview">
+                    <div class="shelf-rack-product-image-title">
+                        <strong>Product Image</strong>
+                        <span>Verified online source only</span>
+                    </div>
+
+                    <div class="shelf-rack-product-image-frame">
+                        <img id="shelfRackProductPreviewImage" hidden alt="">
+                        <div id="shelfRackProductPreviewEmpty" class="shelf-rack-product-image-empty">
+                            Select a product to load its verified image.
+                        </div>
+                    </div>
+
+                    <div class="shelf-rack-product-image-status">
+                        <span id="shelfRackProductPreviewStatus">Waiting for product selection</span>
+                        <div class="shelf-rack-image-actions">
+                            <button id="shelfRackRetryImage" type="button" disabled>Retry Image</button>
+                            <a id="shelfRackProductPreviewSource" href="#" target="_blank" rel="noopener noreferrer" hidden>Open source page ↗</a>
+                        </div>
+                    </div>
+                    <div class="shelf-rack-image-tip">For exact image matching, type the correct Brand and Model above and save first.</div>
+                </div>
+            </aside>
+
+            <div id="shelfRackSceneFooter" class="shelf-rack-scene-footer">3 racks · {{ products|length }} products · ready</div>
+
+            <div id="shelfRackBusy" class="shelf-rack-busy" aria-hidden="true">
+                <div id="shelfRackBusyText" class="shelf-rack-busy-card">Updating stock…</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =====================================================
+         TOOLBAR
+    ====================================================== -->
+
+    <header id="openRackToolbar" class="storage-main-toolbar">
+
+
+        <div class="storage-toolbar-left">
+
+            <a
+                href="{{ url_for('dashboard') }}"
+                class="storage-home-button"
+            >
+                ← Home
+            </a>
+
+
+            <div class="storage-machine-state">
+
+                <span class="storage-machine-dot"></span>
+
+                <strong id="stageStatus">
+                    ALL STORAGE
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             FIRST / PREVIOUS / NEXT / LAST
+
+             Next storage_view.js update will synchronize BOTH:
+             3D cabinet + product table.
+        ================================================== -->
+
+        <nav
+            class="storage-navigation"
+            aria-label="Storage category navigation"
+        >
+
+            <button
+                id="firstStorageButton"
+                type="button"
+                class="storage-nav-button"
+            >
+                ⏮ First
+            </button>
+
+
+            <button
+                id="previousStorageButton"
+                type="button"
+                class="storage-nav-button"
+            >
+                ← Previous
+            </button>
+
+
+            <button
+                id="nextStorageButton"
+                type="button"
+                class="storage-nav-button"
+            >
+                Next →
+            </button>
+
+
+            <button
+                id="lastStorageButton"
+                type="button"
+                class="storage-nav-button"
+            >
+                Last ⏭
+            </button>
+
+
+            <button
+                id="backToAllStorageButton"
+                type="button"
+                class="storage-all-button"
+            >
+                All Storage
+            </button>
+
+        </nav>
+
+
+        <div class="storage-toolbar-right">
+
+
+            <button
+                id="focusColumnButton"
+                type="button"
+                class="machine-action-button"
+                disabled
+            >
+                🎯 Focus
+            </button>
+
+
+            <button
+                id="inspectBoxButton"
+                type="button"
+                class="machine-action-button primary"
+                disabled
+            >
+                👁 Inspect
+            </button>
+
+
+            <button
+                id="openStorageCategoryModalButton"
+                type="button"
+                class="machine-action-button add-category-button"
+            >
+                ＋ Add Category
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         3D WAREHOUSE
+    ====================================================== -->
+
+    <section
+        id="storageAnimationStage"
+        class="storage-warehouse-card"
+    >
+
+        <div id="threeStorageContainer">
+
+            <canvas id="stock3dCanvas"></canvas>
+
+
+            <!-- LEFT ARROW -->
+
+            <button
+                id="warehousePreviousArrow"
+                type="button"
+                class="storage-warehouse-arrow left"
+                aria-label="Previous storage category"
+            >
+                <span>‹</span>
+                <small>Previous</small>
+            </button>
+
+
+            <!-- RIGHT ARROW -->
+
+            <button
+                id="warehouseNextArrow"
+                type="button"
+                class="storage-warehouse-arrow right"
+                aria-label="Next storage category"
+            >
+                <span>›</span>
+                <small>Next</small>
+            </button>
+
+
+            <!-- HELP -->
+
+            <div
+                id="storageSelectHelp"
+                class="storage-select-help"
+            >
+                👆 Click a cabinet to open and inspect it · Use ‹ › to move between categories
+            </div>
+
+
+            <!--
+                IMPORTANT:
+
+                Cabinet click should ONLY:
+                1. select cabinet
+                2. open cabinet
+                3. move camera closer
+                4. show clear cabinet details
+
+                It should NOT automatically scroll down.
+
+                This button will be wired in storage_view.js
+                to intentionally go to the product table.
+            -->
+
+            <button
+                id="storageViewProductsButton"
+                type="button"
+                class="storage-view-products-button"
+            >
+                View Category Products ↓
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         PREVIEW NOTICE
+    ====================================================== -->
+
+    <div class="storage-preview-notice">
+
+        <strong>Storage View is now inspection-only.</strong>
+
+        View categories, cabinets, products and current quantities here.
+        Use <strong>Add Stock</strong> for INWARD and OUTWARD transactions.
+
+    </div>
+
+
+    <!-- =====================================================
+         CATEGORY PRODUCT TABLE
+    ====================================================== -->
+
+    <section
+        id="storageProductTableCard"
+        class="storage-product-table-card"
+    >
+
+
+        <div class="storage-table-header">
+
+
+            <div class="storage-table-heading">
+
+                <div class="storage-table-heading-icon">
+                    📦
+                </div>
+
+
+                <div>
+
+                    <div class="storage-table-category-kicker">
+                        SELECTED STORAGE CATEGORY
+                    </div>
+
+
+                    <h2 id="storageCategoryTitle">
+                        Select a Category
+                    </h2>
+
+
+                    <p id="storageCategorySubtitle">
+                        Open a cabinet above, then choose View Category Products.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="storage-table-header-actions">
+
+
+                <div
+                    id="storageVisibleProductCount"
+                    class="storage-table-count"
+                >
+                    0 Products
+                </div>
+
+
+                <button
+                    id="manageStorageCategoryButton"
+                    type="button"
+                    class="manage-category-button"
+                >
+                    ⚙ Manage Category
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="storage-table-scroll">
+
+
+            <table class="storage-products-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th class="col-sno">
+                            S.NO
+                        </th>
+
+                        <th class="col-image">
+                            IMAGE
+                        </th>
+
+                        <th class="col-product">
+                            PRODUCT NAME
+                        </th>
+
+                        <th class="col-id">
+                            PRODUCT ID
+                        </th>
+
+                        <th class="col-brand-model">
+                            BRAND / MODEL
+                        </th>
+
+                        <th class="col-category">
+                            CATEGORY
+                        </th>
+
+                        <th class="col-location">
+                            LOCATION
+                        </th>
+
+                        <th class="col-stock">
+                            STOCK
+                        </th>
+
+                        <th class="col-unit">
+                            UNIT
+                        </th>
+
+                        <th class="col-column">
+                            STORAGE POSITION
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="storageProductTableBody">
+
+                    <tr>
+
+                        <td
+                            colspan="10"
+                            style="
+                                padding:48px 20px;
+                                text-align:center;
+                                color:#70869a;
+                                font-weight:800;
+                            "
+                        >
+                            Select and open a storage cabinet above.
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            id="storageTableSelectionMessage"
+            class="storage-table-selection-message"
+        >
+
+            <span class="storage-table-selection-dot"></span>
+
+            <span>
+                Use First / Previous / Next / Last to browse categories.
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         SELECTED PRODUCT DETAILS
+    ====================================================== -->
+
+    <section
+        id="storageSelectedSummary"
+        class="storage-selected-summary"
+        aria-live="polite"
+    >
+
+
+        <!-- PRODUCT IMAGE -->
+
+        <div class="storage-selected-summary-dp">
+
+            <img
+                id="storageSelectedSummaryImage"
+                alt="Selected product"
+            >
+
+
+            <div
+                id="storageSelectedSummaryFallback"
+                class="storage-selected-summary-fallback"
+            >
+                📦
+            </div>
+
+        </div>
+
+
+        <!-- DETAILS -->
+
+        <div class="storage-selected-summary-info">
+
+
+            <div class="storage-selected-product-kicker">
+                SELECTED PRODUCT DETAILS
+            </div>
+
+
+            <strong id="storageSelectedSummaryName">
+                -
+            </strong>
+
+
+            <span id="storageSelectedSummaryMeta">
+                Select a product from the category table.
+            </span>
+
+
+            <div class="storage-product-detail-grid">
+
+
+                <div class="storage-product-detail-item">
+
+                    <small>
+                        Product ID
+                    </small>
+
+                    <strong id="storageSelectedDetailId">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="storage-product-detail-item">
+
+                    <small>
+                        Category
+                    </small>
+
+                    <strong id="storageSelectedDetailCategory">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="storage-product-detail-item">
+
+                    <small>
+                        Brand
+                    </small>
+
+                    <strong id="storageSelectedDetailBrand">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="storage-product-detail-item">
+
+                    <small>
+                        Model
+                    </small>
+
+                    <strong id="storageSelectedDetailModel">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="storage-product-detail-item">
+
+                    <small>
+                        Location
+                    </small>
+
+                    <strong id="storageSelectedDetailLocation">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="storage-product-detail-item">
+
+                    <small>
+                        Unit
+                    </small>
+
+                    <strong id="storageSelectedDetailUnit">
+                        Nos
+                    </strong>
+
+                </div>
+
+
+                <div class="storage-product-detail-item stock">
+
+                    <small>
+                        Available Stock
+                    </small>
+
+                    <strong id="storageSelectedDetailStock">
+                        0 Nos
+                    </strong>
+
+                </div>
+
+
+                <div class="storage-product-detail-item">
+
+                    <small>
+                        Registration
+                    </small>
+
+                    <strong id="storageSelectedDetailStatus">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="storage-product-detail-item online-detail-item">
+
+                    <small>
+                        Source Match
+                    </small>
+
+                    <strong id="storageSelectedLinkStatus" class="product-link-status pending" data-product-link-status>
+                        Select a product
+                    </strong>
+
+                </div>
+
+
+                <div class="storage-product-detail-item online-detail-item">
+
+                    <small>
+                        Online Page Status
+                    </small>
+
+                    <strong id="storageSelectedPageStatus" class="product-page-status unknown" data-product-page-status>
+                        Not checked
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+            <div class="storage-online-source-actions">
+                <a
+                    id="storageSelectedProductLink"
+                    class="storage-source-link-button"
+                    data-product-source-link
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    hidden
+                >
+                    Open source product page ↗
+                </a>
+                <span id="storageSelectedMatchScore" class="match-score" data-product-match-score hidden></span>
+            </div>
+
+        </div>
+
+
+        <!-- STORAGE POSITION -->
+
+        <div class="storage-selected-summary-column">
+
+            <small>
+                STORAGE POSITION
+            </small>
+
+            <strong id="storageSelectedSummaryColumn">
+                CAB---
+            </strong>
+
+            <span
+                style="
+                    display:block;
+                    margin-top:7px;
+                    color:#6d8877;
+                    font-size:7px;
+                    font-weight:850;
+                "
+            >
+                Category cabinet location
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         STATUS MESSAGE
+    ====================================================== -->
+
+    <div
+        id="storageActionMessage"
+        class="storage-status-message"
+    >
+        Select a cabinet to begin.
+    </div>
+
+
+    <!-- =====================================================
+         PERMANENT ↑ BUTTON
+
+         This remains available even when user scrolls down.
+         Next storage_view.js will connect this button.
+    ====================================================== -->
+
+    <button
+        id="storageBackToWarehouseButton"
+        type="button"
+        class="storage-back-to-cabinet"
+        aria-label="Back to 3D cabinets"
+        title="Back to 3D cabinets"
+    >
+        ↑
+    </button>
+
+
+    <!-- =====================================================
+         ADD / EDIT CATEGORY MODAL
+    ====================================================== -->
+
+    <section
+        id="storageAddCategoryModal"
+        class="storage-category-modal hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="storageAddCategoryTitle"
+    >
+
+        <div class="storage-category-modal-card">
+
+
+            <div class="storage-category-modal-accent"></div>
+
+
+            <div class="storage-category-modal-content">
+
+
+                <div class="storage-category-modal-header">
+
+
+                    <div class="storage-category-modal-title">
+
+                        <div class="storage-category-modal-icon">
+                            ＋
+                        </div>
+
+
+                        <div>
+
+                            <small>
+                                STORAGE MASTER
+                            </small>
+
+                            <h2 id="storageAddCategoryTitle">
+                                Add New Category
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        id="closeStorageCategoryModal"
+                        type="button"
+                        class="storage-modal-close"
+                        aria-label="Close"
+                    >
+                        ✕
+                    </button>
+
+                </div>
+
+
+                <form
+                    id="storageAddCategoryForm"
+                    class="storage-category-form"
+                >
+
+
+                    <div class="storage-category-field">
+
+                        <label for="newStorageCategoryName">
+                            CATEGORY NAME
+                        </label>
+
+                        <input
+                            id="newStorageCategoryName"
+                            type="text"
+                            placeholder="Example: ELECTRICAL TESTING & MEASURING"
+                            autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <div class="storage-category-field">
+
+                        <label for="newStorageProductType">
+                            PRODUCT TYPES
+                        </label>
+
+
+                        <div class="storage-product-type-input-row">
+
+                            <input
+                                id="newStorageProductType"
+                                type="text"
+                                placeholder="Example: Insulation Tester"
+                                autocomplete="off"
+                            >
+
+
+                            <button
+                                id="addStorageProductType"
+                                type="button"
+                                class="storage-add-product-type"
+                            >
+                                ＋ Add
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="storageProductTypeList"
+                        class="storage-product-type-list"
+                    ></div>
+
+
+                    <div
+                        id="storageCategoryModalError"
+                        class="storage-category-modal-error"
+                    ></div>
+
+
+                    <div class="storage-category-modal-actions">
+
+
+                        <!--
+                            storage_view.js creates/controls
+                            delete button when editing.
+                        -->
+
+                        <div id="storageDeleteCategorySlot"></div>
+
+
+                        <div class="storage-category-modal-actions-right">
+
+                            <button
+                                id="cancelStorageCategory"
+                                type="button"
+                                class="storage-category-cancel"
+                            >
+                                Cancel
+                            </button>
+
+
+                            <button
+                                id="createStorageCategory"
+                                type="submit"
+                                class="storage-category-save"
+                            >
+                                ＋ Create Category
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         HIDDEN LEGACY COMPATIBILITY
+
+         The current storage_view.js still contains the old
+         inward/outward controller. These hidden elements stop
+         the old script from breaking while we replace that
+         logic in the NEXT storage_view.js update.
+
+         They are NOT visible to the user.
+    ====================================================== -->
+
+    <div class="storage-legacy-hidden">
+
+
+        <section
+            id="storageStockSection"
+            class="disabled"
+        >
+
+            <span id="selectedStockProductLabel"></span>
+
+            <input
+                id="storageMovementType"
+                type="hidden"
+                value="inward"
+            >
+
+
+            <button
+                id="stockMovementInward"
+                type="button"
+                disabled
+            ></button>
+
+
+            <button
+                id="stockMovementOutward"
+                type="button"
+                disabled
+            ></button>
+
+
+            <span id="storageCurrentQuantity">0</span>
+            <span id="storageCurrentUnit">Nos</span>
+
+
+            <input
+                id="storageAddQuantity"
+                type="number"
+                value="0"
+                disabled
+            >
+
+
+            <button
+                id="quantityMinus"
+                type="button"
+                disabled
+            ></button>
+
+
+            <button
+                id="quantityPlus"
+                type="button"
+                disabled
+            ></button>
+
+
+            <button
+                type="button"
+                data-add-quantity="1"
+                disabled
+            ></button>
+
+
+            <button
+                type="button"
+                data-add-quantity="5"
+                disabled
+            ></button>
+
+
+            <button
+                type="button"
+                data-add-quantity="10"
+                disabled
+            ></button>
+
+
+            <button
+                type="button"
+                data-add-quantity="20"
+                disabled
+            ></button>
+
+
+            <div id="storageAfterMovementCard"></div>
+
+            <span id="storageNewQuantity">0</span>
+            <span id="storageNewUnit">Nos</span>
+
+            <span id="storageMovementQuantityLabel"></span>
+            <span id="storageAfterMovementLabel"></span>
+            <span id="storageAfterMovementHint"></span>
+
+            <button
+                id="storageAddButton"
+                type="button"
+                disabled
+            ></button>
+
+
+            <!-- INWARD -->
+
+            <div id="storageInwardDetails">
+
+                <select id="storageInwardReason">
+
+                    <option value="purchase_received">
+                        Purchase Received
+                    </option>
+
+                </select>
+
+                <input id="storageInwardSource">
+                <input id="storageInwardReference">
+                <input id="storageInwardReceivedBy">
+
+                <textarea id="storageInwardRemarks"></textarea>
+
+            </div>
+
+
+            <!-- OUTWARD -->
+
+            <div id="storageOutwardDetails">
+
+                <select id="storageOutwardReason">
+
+                    <option value="sold">
+                        Sold
+                    </option>
+
+                </select>
+
+                <input id="storageOutwardDestination">
+                <input id="storageOutwardReference">
+                <input id="storageOutwardIssuedTo">
+
+                <textarea id="storageOutwardRemarks"></textarea>
+
+            </div>
+
+
+            <!-- LEGACY -->
+
+            <select id="storageMovementReason"></select>
+
+            <input id="storageMovementReference">
+
+            <textarea id="storageMovementRemarks"></textarea>
+
+        </section>
+
+
+        <!-- OLD CONFIRMATION -->
+
+        <section
+            id="storageConfirmPanel"
+            class="hidden"
+        >
+
+            <img
+                id="confirmProductImage"
+                alt=""
+            >
+
+            <span id="confirmProductImageFallback"></span>
+
+            <span id="confirmStorageMovementType"></span>
+            <span id="confirmStorageProduct"></span>
+            <span id="confirmStorageProductId"></span>
+            <span id="confirmStorageCurrent"></span>
+            <span id="confirmStorageAdding"></span>
+            <span id="confirmStorageNew"></span>
+            <span id="confirmStorageReason"></span>
+            <span id="confirmStorageReference"></span>
+
+            <button
+                id="cancelStorageAdd"
+                type="button"
+            ></button>
+
+            <button
+                id="confirmStorageAdd"
+                type="button"
+            ></button>
+
+        </section>
+
+
+        <!-- OLD DETAIL COMPATIBILITY -->
+
+        <div id="storageCategoryEmpty"></div>
+
+        <button
+            id="toggleProductDetails"
+            type="button"
+        ></button>
+
+        <span id="detailsToggleArrow"></span>
+
+        <div id="storageDetailsBody"></div>
+
+    </div>
+
+
+</div>
+
+
+<!-- =========================================================
+     DATABASE PRODUCT DATA
+========================================================== -->
+
+<script
+    id="storageProductsData"
+    type="application/json"
+>{{ products | tojson }}</script>
+
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for(
+        'static',
+        filename='shelf_rack_3d.js',
+        v='20260905_v5_4_verified_product_images'
+    ) }}"
+></script>
+
+<script
+    src="{{ url_for(
+        'static',
+        filename='storage_view.js',
+        v='20260826_v20_1'
+    ) }}"
+></script>
+
+{% endblock %}

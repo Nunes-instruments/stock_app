@@ -1,0 +1,28 @@
+# Runtime/business data must NEVER be stored in GitHub
+data/
+*.db
+*.db-shm
+*.db-wal
+Master_Stock*.xlsx
+uploads/
+processed/
+static/product_images/auto/
+
+# Python/runtime
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.log
+
+# Windows/editor
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+
+# Backups/packages
+backups/
+*.zip
+*.rar

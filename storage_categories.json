@@ -1,0 +1,168 @@
+[
+    {
+        "category": "GAS TESTING & ANALYSER",
+        "product_types": [
+            "Gas Leak Detector",
+            "Flue Gas Analyser",
+            "Methane Gas Analyser",
+            "Portable Oxygen Meter",
+            "Exhaust Gas Analyser",
+            "Hydrogen Ammonia Detector",
+            "Halogen Leak Detector",
+            "CO2 Meter"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "LABORATORY TESTING & MEASURING",
+        "product_types": [
+            "Viscometers",
+            "PH Meter",
+            "Refractometer",
+            "Titration Apparatus",
+            "Turbidity Meter",
+            "Microscope"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "HYDROLOGY INSTRUMENTS",
+        "product_types": [
+            "Water Conductivity Depth Sounder",
+            "Universal Water Current Meter",
+            "Water Velocity Logger",
+            "River Staff Gauge",
+            "Water Level Indicator",
+            "Digital Current Meter",
+            "Water Level Recorder",
+            "Echo Sounder",
+            "Flow Meter"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "METROLOGY TESTING & MEASURING",
+        "product_types": [
+            "Anemometer",
+            "Automatic Wind Monitor",
+            "Digital Rain Gauge",
+            "Wind Vane",
+            "Thermo Hygrometer",
+            "Weather Station"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "AGRICULTURE TESTING & MEASURING",
+        "product_types": [
+            "Soil Moisture",
+            "Chlorophyll Meter",
+            "Leaf Area Meter",
+            "Soil Moisture Meter",
+            "Soil Tensiometer",
+            "Soil Moisture Sensor",
+            "Grain Moisture Meter",
+            "Plant Testing Instruments"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "SOIL & WATER TESTING",
+        "product_types": [
+            "PH/EC/TDS Meter",
+            "Online PH/EC/TDS Meter",
+            "TDS/Con Meter",
+            "Water Hardness Meter",
+            "PH Meter",
+            "Conductivity Meter",
+            "Dissolved Oxygen Meter",
+            "Turbidity Meter"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "FOOD PROCESSING MACHINERIES",
+        "product_types": [
+            "Millet Dehusker",
+            "Roaster",
+            "Mini Destoner",
+            "Flour Sifter Machine",
+            "Destoner Cum Grader",
+            "Flour Blender Machine",
+            "Multi Mill Pulverizers",
+            "Pulverizer"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "JUICE PROCESSING MACHINERIES",
+        "product_types": [
+            "Juice Process",
+            "Automatic Juice",
+            "Mango Pulper",
+            "Aloe Vera Juice Extract",
+            "Steam Jacket Kettle",
+            "Blender Machine",
+            "Two Stage Pulveriser",
+            "Juice Extractor"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "PACKAGING MACHINERIES",
+        "product_types": [
+            "Sauce Filling",
+            "Ginger Garlic Packing",
+            "Automatic Pouch Pack",
+            "FFS Pouch Pack",
+            "Chikki Pouch Packing",
+            "Potato Chips Processing",
+            "Coconut Oil Pouch Pack",
+            "Cone Blender"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "SNACKS PROCESSING MACHINERIES",
+        "product_types": [
+            "Vegetable Cutting",
+            "Potato Slicer Machine",
+            "Potato Slicer",
+            "Potato Chips Cutter",
+            "Twist Muruku Making",
+            "Potato Chips Processing",
+            "Namkeen Machine"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "BAKERY PROCESSING MACHINERIES",
+        "product_types": [
+            "Bakery Gas Oven",
+            "Bakery Mixer Machine",
+            "Cake Kneader",
+            "Pop Corn Machine",
+            "Planetary Mixer",
+            "Bread Slicer",
+            "Electric Oven",
+            "Halwa Steamer"
+        ],
+        "is_default": true
+    },
+    {
+        "category": "SEED & GRAIN MACHINERIES",
+        "product_types": [
+            "Purity Work Board",
+            "Grain Moisture Tester",
+            "Lab Mini Grader Cleaner",
+            "Manual Vertical Divider",
+            "Seed Counter",
+            "Rice Polisher",
+            "Boerner Divider",
+            "Grinding Mill",
+            "Seed Blower",
+            "Moisture Mill"
+        ],
+        "is_default": true
+    }
+]

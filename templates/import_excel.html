@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}
+Add From Excel
+{% endblock %}
+
+
+{% block content %}
+
+<div class="excel-import-page">
+
+    <section class="excel-upload-card excel-upload-card-modern">
+
+        <div class="excel-upload-card-header">
+
+            <div>
+                <h2>Choose Excel File</h2>
+                <p>Upload your stock workbook to add the valid rows to this branch.</p>
+            </div>
+
+            <div class="excel-sheet-mark" aria-hidden="true">XLSX</div>
+
+        </div>
+
+
+        <form
+            method="POST"
+            enctype="multipart/form-data"
+            class="excel-upload-form"
+            id="excelUploadForm"
+        >
+
+            <input
+                class="excel-file-native"
+                id="excelFileInput"
+                type="file"
+                name="excel_file"
+                accept=".xlsx"
+                required
+            >
+
+            <label class="excel-file-picker" for="excelFileInput">
+
+                <span class="excel-file-picker-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 16V4"/>
+                        <path d="m7 9 5-5 5 5"/>
+                        <path d="M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"/>
+                    </svg>
+                </span>
+
+                <span class="excel-file-picker-copy">
+                    <strong>Select your Excel workbook</strong>
+                    <span>Click here to browse from your computer</span>
+                </span>
+
+                <span class="excel-file-picker-action">Choose file</span>
+
+            </label>
+
+
+            <div class="excel-selected-file" id="excelSelectedFile" aria-live="polite">
+                <span class="excel-selected-file-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                    </svg>
+                </span>
+
+                <span class="excel-selected-file-copy">
+                    <small>SELECTED FILE</small>
+                    <strong id="excelFileName">No file selected</strong>
+                </span>
+
+                <span class="excel-selected-file-type">.XLSX</span>
+            </div>
+
+
+            <div class="excel-upload-footer">
+
+                <div class="excel-upload-support-note">
+                    <span class="excel-upload-support-icon" aria-hidden="true">✓</span>
+                    <span>
+                        <strong>Excel workbook</strong>
+                        <small>Only .xlsx files are supported.</small>
+                    </span>
+                </div>
+
+                <button
+                    type="submit"
+                    class="confirm-button excel-upload-submit"
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 3v12"/>
+                        <path d="m7 10 5 5 5-5"/>
+                        <path d="M5 21h14"/>
+                    </svg>
+                    <span>UPLOAD &amp; ADD STOCK</span>
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+</div>
+
+
+{% if result %}
+
+<section class="summary-grid import-summary">
+
+    <div class="summary-card">
+
+        <span>
+            Total Rows
+        </span>
+
+        <strong>
+            {{ result.total_rows }}
+        </strong>
+
+    </div>
+
+
+    <div class="summary-card green-summary">
+
+        <span>
+            Added Successfully
+        </span>
+
+        <strong>
+            {{ result.success_rows }}
+        </strong>
+
+    </div>
+
+
+    <div class="summary-card">
+
+        <span>
+            Problems
+        </span>
+
+        <strong>
+            {{ result.failed_rows }}
+        </strong>
+
+    </div>
+
+
+    <div class="summary-card">
+
+        <span>
+            Quantity Added
+        </span>
+
+        <strong>
+            +{{ result.total_quantity_added }}
+        </strong>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+
+{% if preview %}
+
+<section class="simple-panel import-preview-panel">
+
+    <div class="import-preview-heading">
+        <div>
+            <span class="excel-upload-kicker">PREVIEW</span>
+            <h2>Excel Rows</h2>
+        </div>
+    </div>
+
+    <div class="table-scroll">
+
+        <table>
+
+            <thead>
+
+            <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Quantity</th>
+                <th>Result</th>
+            </tr>
+
+            </thead>
+
+
+            <tbody>
+
+            {% for row in preview %}
+
+            <tr>
+
+                <td>
+
+                    <strong>
+                        {{ row["Product Name"] }}
+                    </strong>
+
+                    <small class="table-sub">
+                        {{ row["Product ID"] }}
+                    </small>
+
+                </td>
+
+                <td>
+                    {{ row["Category"] }}
+                </td>
+
+                <td>
+                    {{ row["Quantity"] }}
+                </td>
+
+                <td>
+
+                    {% if row["Validation Status"] == "Ready" %}
+
+                    <span class="green-pill">
+                        ✓ Ready
+                    </span>
+
+                    {% else %}
+
+                    <span class="red-pill">
+                        Problem
+                    </span>
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+<script>
+(function () {
+    const input = document.getElementById('excelFileInput');
+    const fileName = document.getElementById('excelFileName');
+    const selected = document.getElementById('excelSelectedFile');
+
+    if (!input || !fileName || !selected) return;
+
+    input.addEventListener('change', function () {
+        if (input.files && input.files.length) {
+            fileName.textContent = input.files[0].name;
+            selected.classList.add('has-file');
+        } else {
+            fileName.textContent = 'No file selected';
+            selected.classList.remove('has-file');
+        }
+    });
+})();
+</script>
+
+{% endblock %}

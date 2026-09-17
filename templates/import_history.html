@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}
+Stock History
+{% endblock %}
+
+
+{% block content %}
+
+<section class="page-heading">
+
+    <p class="eyebrow">
+        PREVIOUS ENTRIES
+    </p>
+
+    <h1>
+        Stock History
+    </h1>
+
+</section>
+
+<section class="history-search-card" aria-label="Search stock history">
+    <span class="history-search-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m20 20-4-4"></path>
+        </svg>
+    </span>
+    <input
+        id="historySearch"
+        type="search"
+        placeholder="Search file, import number, rows, quantity or date..."
+        autocomplete="off"
+        aria-label="Search stock history"
+    >
+</section>
+
+<section class="simple-panel history-table-panel">
+
+    <div class="table-scroll">
+
+        <table>
+
+            <thead>
+
+            <tr>
+                <th>File</th>
+                <th>Rows</th>
+                <th>Added</th>
+                <th>Problems</th>
+                <th>Total Qty</th>
+                <th>Date</th>
+            </tr>
+
+            </thead>
+
+
+            <tbody>
+
+            {% for row in imports %}
+
+            <tr data-history-row>
+
+                <td>
+
+                    <strong>
+                        {{ row.file_name }}
+                    </strong>
+
+                    <small class="table-sub">
+                        {{ row.import_number }}
+                    </small>
+
+                </td>
+
+                <td>
+                    {{ row.total_rows }}
+                </td>
+
+                <td>
+                    <span class="green-pill">
+                        {{ row.success_rows }}
+                    </span>
+                </td>
+
+                <td>
+                    {{ row.failed_rows }}
+                </td>
+
+                <td>
+                    +{{ row.total_quantity_added }}
+                </td>
+
+                <td>
+                    {{ row.imported_at }}
+                </td>
+
+            </tr>
+
+            {% else %}
+
+            <tr>
+
+                <td
+                    colspan="6"
+                    class="empty-row"
+                >
+                    No Excel history available.
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+<div id="historyNoResults" class="history-no-results hidden">No matching stock history found.</div>
+
+<script>
+(function () {
+    const input = document.getElementById('historySearch');
+    const rows = Array.from(document.querySelectorAll('[data-history-row]'));
+    const noResults = document.getElementById('historyNoResults');
+    if (!input || !rows.length) return;
+
+    function filterHistory() {
+        const query = input.value.trim().toLowerCase();
+        let visible = 0;
+        rows.forEach(function (row) {
+            const match = !query || row.textContent.toLowerCase().includes(query);
+            row.hidden = !match;
+            if (match) visible += 1;
+        });
+        if (noResults) noResults.classList.toggle('hidden', visible !== 0);
+    }
+
+    input.addEventListener('input', filterHistory);
+})();
+</script>
+
+{% endblock %}
