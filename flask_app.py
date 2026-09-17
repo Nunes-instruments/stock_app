@@ -71,13 +71,9 @@ app.secret_key = get_flask_secret_key()
 # DEVELOPMENT / CACHE SETTINGS
 # =============================================================
 
-app.config[
-    "TEMPLATES_AUTO_RELOAD"
-] = True
+app.config["TEMPLATES_AUTO_RELOAD"] = False
 
-app.config[
-    "SEND_FILE_MAX_AGE_DEFAULT"
-] = 0
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 86400
 
 
 # =============================================================

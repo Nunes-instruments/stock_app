@@ -23,7 +23,7 @@
 
     <link
         rel="stylesheet"
-        href="{{ url_for('static', filename='style.css', v='20260905_modern_source_status_v4') }}"
+        href="{{ url_for('static', filename='style.css', v=app_version) }}"
     >
 
 
@@ -650,8 +650,9 @@
 ===================================================== -->
 
 <script
-    src="{{ url_for('static', filename='stock_3d.js', v='20260824_scroll_v2') }}">
+    src="{{ url_for('static', filename='stock_3d.js', v=app_version) }}">
 </script>
+{% endif %}
 
 
 <!-- =====================================================
@@ -659,7 +660,7 @@
 ===================================================== -->
 
 <script
-    src="{{ url_for('static', filename='product_images.js', v='20260905_source_link_status_v4') }}">
+    src="{{ url_for('static', filename='product_images.js', v=app_version) }}">
 </script>
 
 
@@ -668,7 +669,7 @@
 ===================================================== -->
 
 <script
-    src="{{ url_for('static', filename='app.js', v='20260826_v21_0') }}">
+    src="{{ url_for('static', filename='app.js', v=app_version) }}">
 </script>
 
 
