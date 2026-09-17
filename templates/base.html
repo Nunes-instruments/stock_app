@@ -640,8 +640,9 @@
      THREE.JS
 ===================================================== -->
 
+{% if request.endpoint == 'storage_view' %}
 <script
-    src="{{ url_for('static', filename='three.min.js', v='20260824_scroll_v2') }}">
+    src="{{ url_for('static', filename='three.min.js', v=app_version) }}">
 </script>
 
 
