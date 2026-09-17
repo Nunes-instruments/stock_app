@@ -1,11 +1,57 @@
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 
 from database import BRANCHES, get_connection, normalize_branch_key
+
+
+BASE_DIR = Path(__file__).resolve().parent
+MAIN_RACK_INVENTORY_FILE = BASE_DIR / "dashboard_data" / "main_rack_inventory.json"
+
+
+def get_main_rack_inventory():
+    """Load the approved rack master used by the executive dashboard.
+
+    This is a read-only dashboard source generated from the user's rack Excel.
+    It does not change stock quantities or create dummy shelf records.
+    """
+    if not MAIN_RACK_INVENTORY_FILE.exists():
+        return {
+            "summary": {
+                "rack_groups": 0,
+                "coded_racks": 0,
+                "occupied_shelves": 0,
+                "rack_stock_lines": 0,
+                "last_rack_unlocated_lines": 0,
+                "stock_lines_total": 0,
+                "unique_item_names": 0,
+                "rows_without_quantity": 0,
+                "scientific_items_unmapped": 0,
+            },
+            "racks": [],
+            "last_rack": {"label": "Last Rack", "item_count": 0, "items": []},
+            "unmapped_scientific_items": {
+                "label": "Glass Scientific Items",
+                "item_count": 0,
+                "items": [],
+            },
+        }
+
+    try:
+        return json.loads(MAIN_RACK_INVENTORY_FILE.read_text(encoding="utf-8"))
+    except Exception as error:
+        print("Unable to load dashboard rack inventory:", error)
+        return {
+            "summary": {"rack_groups": 0, "occupied_shelves": 0, "stock_lines_total": 0},
+            "racks": [],
+            "last_rack": {"label": "Last Rack", "item_count": 0, "items": []},
+            "unmapped_scientific_items": {"label": "Glass Scientific Items", "item_count": 0, "items": []},
+        }
 
 
 def _now() -> str:
@@ -214,7 +260,30 @@ def _branch_overview(branch_key):
 
 
 def get_company_overview():
+    rack_inventory = get_main_rack_inventory()
+    rack_summary = rack_inventory.get("summary") or {}
+
     branches = [_branch_overview(key) for key in BRANCHES]
+
+    # Main-company rack/shelf figures come from the real A-to-Last-Rack Excel
+    # supplied for this dashboard. We do not fabricate empty/dummy shelves.
+    for branch in branches:
+        if branch["key"] == "main":
+            branch["racks"] = int(rack_summary.get("rack_groups") or 0)
+            branch["shelves"] = int(rack_summary.get("occupied_shelves") or 0)
+            branch["rack_stock_lines"] = int(rack_summary.get("stock_lines_total") or 0)
+            branch["rack_preview"] = [
+                {
+                    "rack_code": rack.get("code"),
+                    "rack_name": rack.get("label"),
+                    "shelf_count": rack.get("shelf_count", 0),
+                    "product_count": rack.get("item_count", 0),
+                    "mapped_quantity": rack.get("listed_quantity_numeric", 0),
+                }
+                for rack in (rack_inventory.get("racks") or [])[:8]
+            ]
+        else:
+            branch["rack_stock_lines"] = 0
 
     grand = {
         "total_products": sum(x["total_products"] for x in branches),
@@ -234,7 +303,11 @@ def get_company_overview():
     for branch in branches:
         branch["stock_bar"] = round(branch["total_stock"] / max_stock * 100, 1)
 
-    return {"branches": branches, "grand": grand}
+    return {
+        "branches": branches,
+        "grand": grand,
+        "main_rack_inventory": rack_inventory,
+    }
 
 
 def _upsert_rack(cursor, rack_code, rack_name="", notes=""):
