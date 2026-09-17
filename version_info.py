@@ -1,3 +1,1 @@
-APP_NAME = "NUNES Stock"
-APP_VERSION = "2.1.5-test"
-BUILD_DATE = "2026-09-17"
+APP_NAME = "NUNES Stock"\nAPP_VERSION = "2.1.6-test"\nBUILD_DATE = "2026-09-17"\n

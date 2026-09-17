@@ -57,6 +57,8 @@ from storage_dual_master import (
     get_shelf_rack_payload,
     get_open_rack_payload,
     get_storage_dual_summary,
+    get_combined_storage_products,
+    get_combined_storage_summary,
     import_storage_excel,
 )
 
@@ -822,38 +824,47 @@ def storage_layout_template(kind):
 @app.route("/")
 def dashboard():
 
-    summary = (
-        get_dashboard_summary()
-    )
+    summary = get_dashboard_summary()
+    storage_dual_summary = get_storage_dual_summary()
 
-    recent_entries = (
-        get_recent_stock_entries(
-            limit=10
+    if get_active_branch_key() == DEFAULT_BRANCH_KEY:
+        combined_summary = get_combined_storage_summary()
+        combined_products = get_combined_storage_products()
+
+        summary["total_products"] = int(
+            combined_summary.get("total_products", 0) or 0
         )
-    )
+        summary["total_stock_quantity"] = float(
+            combined_summary.get("total_stock_quantity", 0) or 0
+        )
+
+        active_ids = {
+            normalize_text(item.get("product_id"))
+            for item in combined_products
+            if normalize_text(item.get("product_id"))
+        }
+
+        recent_entries = []
+        for entry in get_recent_stock_entries(limit=60):
+            entry_id = normalize_text(entry.get("product_id"))
+            if entry_id and entry_id in active_ids:
+                recent_entries.append(entry)
+            if len(recent_entries) >= 10:
+                break
+    else:
+        summary["total_products"] = 0
+        summary["total_stock_quantity"] = 0
+        summary["stock_added_today"] = 0
+        recent_entries = []
 
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
-
-        cursor.execute(
-            """
-            SELECT COUNT(*) AS total
-            FROM import_history
-            """
-        )
-
+        cursor.execute("SELECT COUNT(*) AS total FROM import_history")
         row = cursor.fetchone()
-
-        total_imports = (
-            row["total"]
-            if row
-            else 0
-        )
-
+        total_imports = row["total"] if row else 0
     finally:
-
         conn.close()
 
     return render_template(
@@ -861,8 +872,8 @@ def dashboard():
         summary=summary,
         recent_entries=recent_entries,
         total_imports=total_imports,
+        storage_dual_summary=storage_dual_summary,
     )
-
 
 # =============================================================
 # ADD STOCK / STOCK MOVEMENT PAGE
@@ -1367,9 +1378,10 @@ def stock_movement_api():
 )
 def current_stock():
 
-    products = (
-        get_all_products()
-    )
+    if get_active_branch_key() == DEFAULT_BRANCH_KEY:
+        products = get_combined_storage_products()
+    else:
+        products = []
 
     for product in products:
         product["image_info"] = get_cached_product_image_info(
@@ -1377,13 +1389,15 @@ def current_stock():
             product.get("brand"),
             product.get("model"),
         )
-        product["image_url"] = product["image_info"].get("image_url", "")
+        product["image_url"] = (
+            product.get("image_url")
+            or product["image_info"].get("image_url", "")
+        )
 
     return render_template(
         "current_stock.html",
         products=products,
     )
-
 
 # =============================================================
 # 3D STORAGE VIEW

@@ -140,6 +140,40 @@ def get_open_rack_payload():
     return _empty_payload()
 
 
+def get_combined_storage_products():
+    # Head Office visible inventory = 3D Shelf Rack + Open Rack.
+    combined = []
+
+    for source_name, payload in (
+        ("3D Shelf Rack", get_shelf_rack_payload()),
+        ("Open Rack", get_open_rack_payload()),
+    ):
+        for item in payload.get("products", []):
+            if not isinstance(item, dict):
+                continue
+            product = dict(item)
+            product["storage_source"] = source_name
+            combined.append(product)
+
+    return combined
+
+
+def get_combined_storage_summary():
+    products = get_combined_storage_products()
+    quantity = 0.0
+
+    for product in products:
+        try:
+            quantity += float(product.get("current_quantity") or 0)
+        except (TypeError, ValueError):
+            pass
+
+    return {
+        "total_products": len(products),
+        "total_stock_quantity": quantity,
+    }
+
+
 def get_storage_dual_summary():
     shelf = get_shelf_rack_payload()
     open_rack = get_open_rack_payload()

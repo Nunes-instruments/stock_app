@@ -423,6 +423,20 @@
         null;
 
 
+    // V6.1: right-click + hold + drag pans Open Rack.
+    let rightDragActive =
+        false;
+
+    let rightDragPointerId =
+        null;
+
+    let rightDragLastX =
+        0;
+
+    let rightDragLastY =
+        0;
+
+
     let cameraTween =
         null;
 
@@ -3957,13 +3971,75 @@
         "pointermove",
         function (event) {
 
+            if (rightDragActive) {
+
+                const dx =
+                    event.clientX -
+                    rightDragLastX;
+
+                const dy =
+                    event.clientY -
+                    rightDragLastY;
+
+                rightDragLastX =
+                    event.clientX;
+
+                rightDragLastY =
+                    event.clientY;
+
+                if (
+                    cameraTween &&
+                    cameraTween.cancel
+                ) {
+                    cameraTween.cancel();
+                }
+
+                const panScale =
+                    clamp(
+                        camera.position.z / 720,
+                        0.012,
+                        0.045
+                    );
+
+                const shiftX =
+                    -dx * panScale;
+
+                const shiftY =
+                    dy * panScale;
+
+                camera.position.x +=
+                    shiftX;
+
+                cameraTarget.x +=
+                    shiftX;
+
+                camera.position.y =
+                    clamp(
+                        camera.position.y + shiftY,
+                        1.0,
+                        11.5
+                    );
+
+                cameraTarget.y =
+                    clamp(
+                        cameraTarget.y + shiftY,
+                        0.4,
+                        9.0
+                    );
+
+                canvas.style.cursor =
+                    "grabbing";
+
+                event.preventDefault();
+                return;
+            }
+
             if (
                 animationBusy
             ) {
 
                 canvas.style.cursor =
                     "default";
-
 
                 return;
             }
@@ -3978,18 +4054,30 @@
             canvas.style.cursor =
                 cabinet
                     ? "pointer"
-                    : "default";
+                    : "grab";
         }
     );
 
 
     canvas.addEventListener(
         "pointerleave",
-        function () {
+        function (event) {
+
+            if (
+                rightDragActive &&
+                event.buttons === 0
+            ) {
+                rightDragActive =
+                    false;
+
+                rightDragPointerId =
+                    null;
+            }
 
             canvas.style.cursor =
-                "default";
-
+                rightDragActive
+                    ? "grabbing"
+                    : "default";
 
             pointerDownCabinet =
                 null;
@@ -4001,11 +4089,107 @@
         "pointerdown",
         function (event) {
 
+            if (event.button === 2) {
+
+                rightDragActive =
+                    true;
+
+                rightDragPointerId =
+                    event.pointerId;
+
+                rightDragLastX =
+                    event.clientX;
+
+                rightDragLastY =
+                    event.clientY;
+
+                pointerDownCabinet =
+                    null;
+
+                if (
+                    canvas.setPointerCapture
+                ) {
+                    try {
+                        canvas.setPointerCapture(
+                            event.pointerId
+                        );
+                    } catch (ignore) {}
+                }
+
+                canvas.style.cursor =
+                    "grabbing";
+
+                event.preventDefault();
+                return;
+            }
+
+            if (event.button !== 0) {
+                return;
+            }
+
             pointerDownCabinet =
                 getCabinetUnderPointer(
                     event
                 );
         }
+    );
+
+
+    // V6.1 RIGHT DRAG STOP
+    canvas.addEventListener(
+        "contextmenu",
+        function (event) {
+            event.preventDefault();
+        }
+    );
+
+
+    function stopOpenRackRightDrag(event) {
+
+        if (!rightDragActive) {
+            return;
+        }
+
+        if (
+            event &&
+            rightDragPointerId !== null &&
+            event.pointerId !== undefined &&
+            event.pointerId !== rightDragPointerId
+        ) {
+            return;
+        }
+
+        if (
+            canvas.releasePointerCapture &&
+            rightDragPointerId !== null
+        ) {
+            try {
+                canvas.releasePointerCapture(
+                    rightDragPointerId
+                );
+            } catch (ignore) {}
+        }
+
+        rightDragActive =
+            false;
+
+        rightDragPointerId =
+            null;
+
+        canvas.style.cursor =
+            "grab";
+    }
+
+
+    canvas.addEventListener(
+        "pointerup",
+        stopOpenRackRightDrag
+    );
+
+
+    canvas.addEventListener(
+        "pointercancel",
+        stopOpenRackRightDrag
     );
 
 
