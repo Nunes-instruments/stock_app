@@ -21,7 +21,8 @@ try {
     if($local -eq $remote){ Say '[OK] Already on the latest GitHub version.'; exit 0 }
 
     Say '[1/4] Creating database backup...'
-    & $RuntimePython scripts\backup_data.py | Out-Null
+    & $RuntimePython -m scripts.backup_data | Out-Null
+    if($LASTEXITCODE -ne 0){ throw 'Database backup failed. Update stopped before changing code.' }
 
     Say '[2/4] Stopping only the NUNES Stock server process...'
     $pidFile = Join-Path $DataDir 'server.pid'
@@ -36,8 +37,10 @@ try {
     git pull --ff-only origin main
     if($LASTEXITCODE -ne 0){ throw 'Git pull failed. Data was not changed.' }
     & $RuntimePython -m pip install --disable-pip-version-check -q -r requirements_portable.txt
+    if($LASTEXITCODE -ne 0){ throw 'Python dependency update failed.' }
 
     Say '[4/4] Starting updated server...'
     & (Join-Path $AppDir 'START_MAIN_SERVER.bat') --hidden
+    if($LASTEXITCODE -ne 0){ throw 'Updated code installed, but server restart failed. Check server.log.' }
     Say '[OK] Server updated. Staff/owner browsers will use the new version on refresh.'
 } finally { Pop-Location }

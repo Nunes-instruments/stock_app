@@ -2,8 +2,17 @@ from __future__ import annotations
 
 import shutil
 import sqlite3
+import sys
 from datetime import datetime
 from pathlib import Path
+
+# Allow this script to work both as:
+#   python scripts\backup_data.py
+# and:
+#   python -m scripts.backup_data
+APP_DIR = Path(__file__).resolve().parents[1]
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
 
 from runtime_paths import BACKUP_DIR, DB_DIR, DATA_DIR, STORAGE_CATEGORIES_FILE, ensure_runtime_dirs
 
