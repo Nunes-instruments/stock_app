@@ -2403,6 +2403,16 @@ Storage View
 </style>
 
 
+
+<style>
+.storage-source-totals{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.storage-source-pill{min-height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 11px;border:1px solid #b8cff0;border-radius:9px;background:#eef5ff;color:#1f5fbf;font-size:10px;font-weight:900}
+.storage-source-pill strong{color:#10283f;font-size:13px}
+#openRackFileInput{display:none}
+.storage-upload-busy{opacity:.65;pointer-events:none}
+#shelfRackAddProduct,#shelfRackQuickAdd,#shelfRackQuickRemove{display:none!important}
+</style>
+
 <div id="storageViewApp" data-active-branch="{{ active_branch_key }}" data-active-branch-name="{{ active_branch_name }}">
 
 
@@ -2461,6 +2471,12 @@ Storage View
             </div>
 
             <span class="storage-rack-branch">{{ active_branch_name }}</span>
+            {% if active_branch_key == 'main' %}
+            <div class="storage-source-totals" aria-label="Storage data source totals">
+                <span class="storage-source-pill">3D Shelf <strong>{{ storage_dual_summary.shelf_products|int }}</strong></span>
+                <span class="storage-source-pill">Open Rack <strong>{{ storage_dual_summary.open_rack_products|int }}</strong></span>
+            </div>
+            {% endif %}
         </div>
 
         <div class="storage-rack-mode-actions" aria-label="Shelf rack stock actions">
@@ -2479,10 +2495,10 @@ Storage View
             <button id="shelfRackQuickAdd" type="button" class="storage-rack-action" title="Add one unit to the selected product" aria-label="Add one unit" disabled>+</button>
             <button id="shelfRackQuickRemove" type="button" class="storage-rack-action" title="Remove one unit from the selected product" aria-label="Remove one unit" disabled>−</button>
 
-            <label for="shelfRackFileInput" class="storage-rack-action storage-rack-file-action" title="Import an Excel stock file">
-                Attach Excel
+            <label for="shelfRackFileInput" class="storage-rack-action storage-rack-file-action" title="Load a separate 3D Shelf Rack Excel file">
+                Attach 3D Shelf Excel
             </label>
-            <input id="shelfRackFileInput" type="file" accept=".xlsx" aria-label="Attach Excel stock file">
+            <input id="shelfRackFileInput" type="file" accept=".xlsx" aria-label="Attach 3D Shelf Rack Excel file">
         </div>
 
     </section>
@@ -2546,7 +2562,7 @@ Storage View
                 </div>
             </aside>
 
-            <div id="shelfRackSceneFooter" class="shelf-rack-scene-footer">3 racks · {{ products|length }} products · ready</div>
+            <div id="shelfRackSceneFooter" class="shelf-rack-scene-footer">3 racks · {{ shelf_products|length }} products · ready</div>
 
             <div id="shelfRackBusy" class="shelf-rack-busy" aria-hidden="true">
                 <div id="shelfRackBusyText" class="shelf-rack-busy-card">Updating stock…</div>
@@ -2666,13 +2682,15 @@ Storage View
             </button>
 
 
-            <button
-                id="openStorageCategoryModalButton"
-                type="button"
+            <label
+                for="openRackFileInput"
                 class="machine-action-button add-category-button"
+                data-open-rack-upload-label
+                title="Load the Open Rack master Excel"
             >
-                ＋ Add Category
-            </button>
+                Attach Open Rack Master
+            </label>
+            <input id="openRackFileInput" type="file" accept=".xlsx,.xls" aria-label="Attach Open Rack Master Excel">
 
         </div>
 
@@ -2827,6 +2845,7 @@ Storage View
                     id="manageStorageCategoryButton"
                     type="button"
                     class="manage-category-button"
+                    style="display:none"
                 >
                     ⚙ Manage Category
                 </button>
@@ -3582,10 +3601,10 @@ Storage View
      DATABASE PRODUCT DATA
 ========================================================== -->
 
-<script
-    id="storageProductsData"
-    type="application/json"
->{{ products | tojson }}</script>
+<script id="shelfRackProductsData" type="application/json">{{ shelf_products | tojson }}</script>
+<script id="openRackProductsData" type="application/json">{{ open_rack_products | tojson }}</script>
+<script id="storageProductsData" type="application/json">[]</script>
+<script src="{{ url_for('static', filename='storage_dual_upload.js', v=app_version) }}"></script>
 
 
 {% endblock %}

@@ -53,6 +53,13 @@ from runtime_paths import (
 )
 from version_info import APP_VERSION, BUILD_DATE
 
+from storage_dual_master import (
+    get_shelf_rack_payload,
+    get_open_rack_payload,
+    get_storage_dual_summary,
+    import_storage_excel,
+)
+
 from rack_shelf_document import (
     get_rack_shelf_inventory,
     import_rack_shelf_document,
@@ -685,9 +692,11 @@ def api_product_preview_image():
 @app.route("/company-dashboard")
 def all_company_dashboard():
     overview = apply_document_counts_to_overview(get_company_overview())
+    storage_dual_summary = get_storage_dual_summary()
     return render_template(
         "company_dashboard.html",
         overview=overview,
+        storage_dual_summary=storage_dual_summary,
     )
 
 
@@ -1389,23 +1398,71 @@ def current_stock():
 )
 def storage_view():
 
-    products = (
-        get_all_products()
-    )
-
-    for product in products:
-        product["image_info"] = get_cached_product_image_info(
-            product.get("product_name"),
-            product.get("brand"),
-            product.get("model"),
-        )
-        product["image_url"] = product["image_info"].get("image_url", "")
+    if get_active_branch_key() == DEFAULT_BRANCH_KEY:
+        shelf_payload = get_shelf_rack_payload()
+        open_payload = get_open_rack_payload()
+        storage_dual_summary = get_storage_dual_summary()
+    else:
+        shelf_payload = {"source_file": "", "products": [], "summary": {"products": 0, "quantity": 0, "groups": 0}}
+        open_payload = {"source_file": "", "products": [], "summary": {"products": 0, "quantity": 0, "groups": 0}}
+        storage_dual_summary = {
+            "shelf_products": 0,
+            "shelf_quantity": 0,
+            "shelf_groups": 0,
+            "shelf_source_file": "",
+            "open_rack_products": 0,
+            "open_rack_quantity": 0,
+            "open_rack_groups": 0,
+            "open_rack_source_file": "",
+        }
 
     return render_template(
         "storage_view.html",
-        products=products,
+        products=[],
+        shelf_products=shelf_payload.get("products", []),
+        open_rack_products=open_payload.get("products", []),
+        storage_dual_summary=storage_dual_summary,
     )
 
+
+@app.route("/storage-view/upload/shelf-rack", methods=["POST"])
+def storage_view_upload_shelf_rack():
+    if get_active_branch_key() != DEFAULT_BRANCH_KEY:
+        return json_error("3D Shelf Rack Excel is Head Office only.", 400)
+
+    uploaded = request.files.get("file")
+    if not uploaded or not normalize_text(uploaded.filename):
+        return json_error("Please select a 3D Shelf Rack Excel file.", 400)
+
+    try:
+        payload = import_storage_excel(uploaded, "shelf")
+        return jsonify({
+            "success": True,
+            "message": "3D Shelf Rack Excel loaded.",
+            "summary": payload.get("summary", {}),
+        })
+    except Exception as error:
+        return json_error(error, 400)
+
+
+@app.route("/storage-view/upload/open-rack", methods=["POST"])
+def storage_view_upload_open_rack():
+    if get_active_branch_key() != DEFAULT_BRANCH_KEY:
+        return json_error("Open Rack Master Excel is Head Office only.", 400)
+
+    uploaded = request.files.get("file")
+    if not uploaded or not normalize_text(uploaded.filename):
+        return json_error("Please select an Open Rack Master Excel file.", 400)
+
+    try:
+        payload = import_storage_excel(uploaded, "open")
+        return jsonify({
+            "success": True,
+            "message": "Open Rack Master Excel loaded.",
+            "summary": payload.get("summary", {}),
+        })
+    except Exception as error:
+        return json_error(error, 400)
 
 # =============================================================
 # STORAGE CATEGORIES API

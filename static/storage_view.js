@@ -569,7 +569,7 @@
 
         const source =
             byId(
-                "storageProductsData"
+                "openRackProductsData"
             );
 
 
@@ -896,140 +896,51 @@
 
     async function loadCategoriesFromBackend() {
 
-        const response =
-            await fetch(
-                "/api/storage-categories",
-                {
-                    method:
-                        "GET",
+        categoryRecords = [];
+        categoryProductTypes = {};
+        categoryMeta = {};
 
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    },
+        const seenByCategory = {};
 
-                    cache:
-                        "no-store"
-                }
-            );
+        databaseProducts.forEach(function (product) {
+            const category = normalize(product.category || "OPEN RACK");
+            const productId = safeText(product.product_id);
 
+            if (!category || !productId) return;
 
-        const data =
-            await readJsonResponse(
-                response
-            );
-
-
-        if (
-            !response.ok ||
-            data.success ===
-                false
-        ) {
-
-            throw new Error(
-                data.message ||
-                "Unable to load storage categories."
-            );
-        }
-
-
-        categoryRecords =
-            Array.isArray(
-                data.categories
-            )
-                ? data.categories
-                : [];
-
-
-        categoryProductTypes =
-            {};
-
-
-        categoryMeta =
-            {};
-
-
-        categoryRecords.forEach(
-            function (record) {
-
-                const category =
-                    normalize(
-                        record.category ||
-                        record.category_name ||
-                        record.name
-                    );
-
-
-                if (!category) {
-
-                    return;
-                }
-
-
-                const types =
-                    (
-                        record.productTypes ||
-                        record.product_types ||
-                        record.products ||
-                        []
-                    )
-                        .map(
-                            function (item) {
-
-                                return safeText(
-                                    item
-                                );
-                            }
-                        )
-                        .filter(Boolean);
-
-
-                categoryProductTypes[
-                    category
-                ] =
-                    types;
-
-
-                categoryMeta[
-                    category
-                ] = {
-
-                    id:
-                        record.id,
-
-                    isDefault:
-                        Boolean(
-                            record.isDefault ??
-                            record.is_default
-                        ),
-
-                    productCount:
-                        types.length
-                };
+            if (!categoryProductTypes[category]) {
+                categoryProductTypes[category] = [];
+                seenByCategory[category] = new Set();
             }
-        );
 
+            if (!seenByCategory[category].has(productId)) {
+                seenByCategory[category].add(productId);
+                categoryProductTypes[category].push(productId);
+            }
+        });
 
-        categoryNames =
-            Object.keys(
-                categoryProductTypes
-            );
+        categoryNames = Object.keys(categoryProductTypes);
 
+        categoryRecords = categoryNames.map(function (category, index) {
+            return {
+                id: index + 1,
+                category: category,
+                productTypes: categoryProductTypes[category],
+                isDefault: false
+            };
+        });
 
-        console.log(
-            "Storage categories loaded:",
-            categoryNames.length,
-            categoryNames
-        );
+        categoryNames.forEach(function (category, index) {
+            categoryMeta[category] = {
+                id: index + 1,
+                isDefault: false,
+                productCount: categoryProductTypes[category].length
+            };
+        });
 
-
-        if (
-            categoryNames.length ===
-            0
-        ) {
-
+        if (categoryNames.length === 0) {
             throw new Error(
-                "No storage categories were returned by the server."
+                "Open Rack Master has 0 products. Attach the Open Rack Master Excel."
             );
         }
     }
@@ -1063,6 +974,21 @@
 
 
         let product =
+            databaseProducts.find(
+                function (item) {
+                    return (
+                        normalize(item.category) === categoryNormal &&
+                        normalize(item.product_id) === productNormal
+                    );
+                }
+            );
+
+        if (product) {
+            return product;
+        }
+
+
+        product =
             databaseProducts.find(
                 function (item) {
 

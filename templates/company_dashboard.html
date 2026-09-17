@@ -24,6 +24,16 @@
 .actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:18px}.action{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:92px;padding:18px;border:1px solid #d8d8d8;border-radius:14px;background:#fff;text-decoration:none;transition:.15s ease}.action:hover{transform:translateY(-2px);border-color:#111;box-shadow:0 10px 24px rgba(0,0,0,.06)}.action strong{display:block;color:#111;font-size:15px;font-weight:950}.action small{display:block;margin-top:7px;color:#757575;font-size:12px;line-height:1.4}.arrow{color:#111;font-size:25px}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.company-grid{grid-template-columns:1fr}.company{border-right:0;border-bottom:1px solid #e8e8e8}.company:last-child{border-bottom:0}.actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.exec-head{align-items:flex-start;flex-direction:column}.kpis,.actions{grid-template-columns:1fr}}
+
+.storage-source-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.storage-source-card{display:flex;align-items:center;gap:16px;padding:22px;border-right:1px solid #dce7f2;background:linear-gradient(180deg,#fff,#f5f9fd)}
+.storage-source-card:last-child{border-right:0}
+.storage-source-icon{width:52px;height:52px;display:grid;place-items:center;border-radius:14px;background:#173a59;color:#fff;font-size:14px;font-weight:950;box-shadow:0 7px 18px rgba(23,58,89,.16)}
+.storage-source-card small{display:block;color:#4f7190;font-size:11px;font-weight:950;letter-spacing:.05em}
+.storage-source-card strong{display:block;margin-top:6px;color:#123451;font-size:22px;font-weight:950}
+.storage-source-card span{display:block;margin-top:6px;color:#6f8598;font-size:12px}
+@media(max-width:760px){.storage-source-grid{grid-template-columns:1fr}.storage-source-card{border-right:0;border-bottom:1px solid #dce7f2}.storage-source-card:last-child{border-bottom:0}}
+
 </style>
 <div class="exec">
 <section class="exec-head"><div><div class="exec-kicker">Nunes Inventory Control</div><h1>Company Overview</h1><p>Each company is shown separately. Head Office carries the rack-based inventory. Other offices are currently empty and display zero until their real stock is introduced.</p></div><div class="online">System online</div></section>
@@ -42,6 +52,32 @@
 {% if branch.key == 'main' %}<div class="company-note"><strong>Rack system active.</strong> Rack and shelf document management is available for Head Office.</div>{% else %}<div class="company-note"><strong>No products in this office yet.</strong> Products, stock, racks and shelves are currently set to 0.</div>{% endif %}
 </article>{% endfor %}
 </div></section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Head Office Storage Sources</h2>
+    <p>Show 3D Shelf Rack and Show Open Rack use two separate Excel files.</p>
+  </div>
+  <div class="storage-source-grid">
+    <article class="storage-source-card">
+      <div class="storage-source-icon">3D</div>
+      <div>
+        <small>SHOW 3D SHELF RACK</small>
+        <strong>{{ storage_dual_summary.shelf_products|int }} Products</strong>
+        <span>{{ storage_dual_summary.shelf_quantity|int }} total quantity · separate Shelf Excel</span>
+      </div>
+    </article>
+    <article class="storage-source-card">
+      <div class="storage-source-icon">OR</div>
+      <div>
+        <small>SHOW OPEN RACK</small>
+        <strong>{{ storage_dual_summary.open_rack_products|int }} Products</strong>
+        <span>{{ storage_dual_summary.open_rack_quantity|int }} total quantity · {{ storage_dual_summary.open_rack_groups|int }} rack groups</span>
+      </div>
+    </article>
+  </div>
+</section>
+
 <section class="section"><div class="section-head"><h2>Operations</h2><p>Large, clear actions for everyday stock work.</p></div><div class="actions">
 <a class="action" href="{{ url_for('rack_shelf_page') }}"><span><strong>Rack &amp; Shelf</strong><small>Head Office rack document and locations</small></span><span class="arrow">&rsaquo;</span></a>
 <a class="action" href="{{ url_for('storage_view') }}"><span><strong>Storage View</strong><small>Open the existing full storage workspace</small></span><span class="arrow">&rsaquo;</span></a>

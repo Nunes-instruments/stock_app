@@ -222,6 +222,8 @@ def import_rack_shelf_document(file_storage, branch_key="main"):
     key = normalize_branch_key(branch_key)
     if key != "main":
         raise ValueError("Rack & Shelf is available only for Head Office.")
+    if key != "main":
+        raise ValueError("Rack & Shelf is available only for Head Office.")
     filename = Path(_clean(file_storage.filename) or "rack_shelf.xlsx").name
     if not filename.lower().endswith((".xlsx", ".xls")):
         raise ValueError("Please upload an Excel .xlsx or .xls file.")

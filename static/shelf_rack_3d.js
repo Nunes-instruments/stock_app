@@ -104,7 +104,7 @@
     }
 
     function readProducts() {
-        const data = document.getElementById("storageProductsData");
+        const data = document.getElementById("shelfRackProductsData");
         if (!data) return [];
         try {
             const parsed = JSON.parse(data.textContent || "[]");
@@ -174,7 +174,17 @@
         });
     }
 
-    showShelfRack({ scroll: false });
+    let requestedMode = "";
+    try {
+        requestedMode = window.sessionStorage.getItem("nunes_storage_mode") || "";
+        window.sessionStorage.removeItem("nunes_storage_mode");
+    } catch (ignore) {}
+
+    if (requestedMode === "open" && isMainBranch) {
+        showOpenRack({ scroll: false });
+    } else {
+        showShelfRack({ scroll: false });
+    }
 
     /* ========================================================
        HORIZONTAL RACK LAYOUT
@@ -761,15 +771,20 @@
 
             setBusy(true, "Importing Excel…");
             const form = new FormData();
-            form.append("excel_file", file);
+            form.append("file", file);
 
             try {
-                const response = await fetch("/import-excel", {
+                const response = await fetch("/storage-view/upload/shelf-rack", {
                     method: "POST",
                     body: form,
                     credentials: "same-origin"
                 });
-                if (!response.ok) throw new Error("Excel import failed.");
+                let payload = {};
+                try { payload = await response.json(); } catch (ignore) {}
+                if (!response.ok || payload.success === false) {
+                    throw new Error(payload.message || "3D Shelf Excel import failed.");
+                }
+                try { window.sessionStorage.setItem("nunes_storage_mode", "shelf"); } catch (ignore) {}
                 window.location.reload();
             } catch (error) {
                 setBusy(false);
