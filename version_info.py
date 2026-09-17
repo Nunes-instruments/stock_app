@@ -1,3 +1,3 @@
 APP_NAME = "NUNES Stock"
-APP_VERSION = "2.1.6.2-test"
+APP_VERSION = "2.2.0-test"
 BUILD_DATE = "2026-09-17"

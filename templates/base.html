@@ -26,6 +26,11 @@
         href="{{ url_for('static', filename='style.css', v=app_version) }}"
     >
 
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='premium_ui_v62.css', v=app_version) }}"
+    >
+
 
     <!-- =====================================================
          GLOBAL APP SCROLL FIX
@@ -272,7 +277,7 @@
                 </span>
                 <span class="nav-button-content">
                     <strong>All Companies</strong>
-                    <small>Company / rack / shelf totals</small>
+                    <small>Company stock overview</small>
                 </span>
                 <span class="nav-button-arrow">›</span>
             </a>
@@ -405,25 +410,7 @@
 
             </a>
 
-
-            <!-- RACK & SHELF -->
-
-            <a
-                href="{{ url_for('rack_shelf_page') }}"
-                class="nav-button {% if request.endpoint in ['rack_shelf_page', 'rack_shelf_upload'] %}active{% endif %}"
-            >
-                <span class="nav-button-icon">
-                    <svg viewBox="0 0 24 24"><path d="M4 3h16v18H4z"/><path d="M4 9h16M4 15h16"/><path d="M8 6h.01M8 12h.01M8 18h.01"/></svg>
-                </span>
-                <span class="nav-button-content">
-                    <strong>Rack & Shelf</strong>
-                    <small>Upload layout & inspect stock</small>
-                </span>
-                <span class="nav-button-arrow">&rsaquo;</span>
-            </a>
-
-
-            <!-- ADD FROM EXCEL -->
+<!-- ADD FROM EXCEL -->
 
             <a
                 href="{{ url_for('import_excel') }}"

@@ -3967,12 +3967,16 @@
        CURSOR
     ======================================================== */
 
+    canvas.style.touchAction = "none";
+
     canvas.addEventListener(
         "pointermove",
         function (event) {
 
             if (rightDragActive) {
 
+                // V6.2 OPEN RACK ORBIT DRAG
+                // Right-click + hold + drag rotates the OLD/Open Rack view.
                 const dx =
                     event.clientX -
                     rightDragLastX;
@@ -3994,37 +3998,47 @@
                     cameraTween.cancel();
                 }
 
-                const panScale =
+                const offset =
+                    camera.position
+                        .clone()
+                        .sub(
+                            cameraTarget
+                        );
+
+                const spherical =
+                    new THREE.Spherical()
+                        .setFromVector3(
+                            offset
+                        );
+
+                spherical.theta -=
+                    dx * 0.009;
+
+                spherical.phi =
                     clamp(
-                        camera.position.z / 720,
-                        0.012,
-                        0.045
+                        spherical.phi +
+                        dy * 0.0065,
+                        0.48,
+                        1.48
                     );
 
-                const shiftX =
-                    -dx * panScale;
-
-                const shiftY =
-                    dy * panScale;
-
-                camera.position.x +=
-                    shiftX;
-
-                cameraTarget.x +=
-                    shiftX;
-
-                camera.position.y =
+                spherical.radius =
                     clamp(
-                        camera.position.y + shiftY,
-                        1.0,
-                        11.5
+                        spherical.radius,
+                        8.5,
+                        48
                     );
 
-                cameraTarget.y =
-                    clamp(
-                        cameraTarget.y + shiftY,
-                        0.4,
-                        9.0
+                offset.setFromSpherical(
+                    spherical
+                );
+
+                camera.position
+                    .copy(
+                        cameraTarget
+                    )
+                    .add(
+                        offset
                     );
 
                 canvas.style.cursor =
