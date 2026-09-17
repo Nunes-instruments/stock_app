@@ -31,6 +31,11 @@
         href="{{ url_for('static', filename='premium_ui_v62.css', v=app_version) }}"
     >
 
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='professional_ui_v7.css', v=app_version) }}"
+    >
+
 
     <!-- =====================================================
          GLOBAL APP SCROLL FIX
@@ -555,7 +560,7 @@
             <div class="topbar-title">
 
                 <strong>
-                    Instrument Stock Management
+                    NUNES Stock
                 </strong>
 
                 <small>
@@ -574,14 +579,14 @@
                             <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M8 21v-6h8v6M8 10h.01M12 10h.01M16 10h.01"/></svg>
                         </span>
                         <span class="branch-switcher-copy">
-                            <small>Active company</small>
+                            <small>Company</small>
                             <strong>{{ active_branch_name }}</strong>
                         </span>
                         <span class="branch-switcher-chevron">⌄</span>
                     </summary>
 
                     <div class="branch-switcher-menu">
-                        <div class="branch-switcher-menu-title">Choose company / branch</div>
+                        <div class="branch-switcher-menu-title">Choose Company</div>
 
                         {% for branch_key, branch in branch_options.items() %}
                         <form method="post" action="{{ url_for('switch_branch') }}">
