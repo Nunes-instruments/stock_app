@@ -293,7 +293,7 @@
 
 
     renderer.setClearColor(
-        0x071421,
+        0xedf6ff,
         1
     );
 
@@ -308,15 +308,15 @@
 
     scene.background =
         new THREE.Color(
-            0x071421
+            0xedf6ff
         );
 
 
     scene.fog =
         new THREE.Fog(
-            0x071421,
-            30,
-            85
+            0xedf6ff,
+            34,
+            92
         );
 
 
@@ -4204,6 +4204,113 @@
     canvas.addEventListener(
         "pointercancel",
         stopOpenRackRightDrag
+    );
+
+
+    /* ========================================================
+       V6.3 OPEN RACK COMMON CONTROLS
+       Left click = select/open
+       Right hold + drag = rotate
+       Wheel = zoom
+       Double click empty area = reset
+    ======================================================== */
+
+    canvas.addEventListener(
+        "wheel",
+        function (event) {
+
+            if (animationBusy) {
+                return;
+            }
+
+            event.preventDefault();
+
+            if (
+                cameraTween &&
+                cameraTween.cancel
+            ) {
+                cameraTween.cancel();
+            }
+
+            const offset =
+                camera.position
+                    .clone()
+                    .sub(
+                        cameraTarget
+                    );
+
+            const currentDistance =
+                offset.length();
+
+            const factor =
+                event.deltaY > 0
+                    ? 1.10
+                    : 0.90;
+
+            const nextDistance =
+                clamp(
+                    currentDistance * factor,
+                    8.5,
+                    48
+                );
+
+            if (currentDistance > 0.001) {
+                offset.setLength(
+                    nextDistance
+                );
+
+                camera.position
+                    .copy(
+                        cameraTarget
+                    )
+                    .add(
+                        offset
+                    );
+            }
+        },
+        {
+            passive:
+                false
+        }
+    );
+
+
+    canvas.addEventListener(
+        "dblclick",
+        function (event) {
+
+            if (animationBusy) {
+                return;
+            }
+
+            if (
+                getCabinetUnderPointer(
+                    event
+                )
+            ) {
+                return;
+            }
+
+            const cabinet =
+                cabinets[
+                    viewingIndex
+                ] ||
+                null;
+
+            if (!cabinet) {
+                return;
+            }
+
+            moveCamera(
+                getBrowseCameraPosition(
+                    cabinet
+                ),
+                getBrowseTarget(
+                    cabinet
+                ),
+                450
+            );
+        }
     );
 
 

@@ -2400,6 +2400,130 @@ Storage View
     }
 }
 
+
+/* ============================================================
+   V6.3 UNIFIED 3D ENVIRONMENT
+============================================================ */
+:root{
+  --storage-3d-bg:#edf6ff;
+  --storage-3d-border:#c9deef;
+  --storage-3d-blue:#2f7de8;
+}
+.main{
+  background:linear-gradient(180deg,#f6fbff 0%,#edf6ff 100%)!important;
+}
+.storage-warehouse-card,
+.storage-shelf-stage{
+  border:1px solid var(--storage-3d-border)!important;
+  border-radius:20px!important;
+  background:var(--storage-3d-bg)!important;
+  box-shadow:0 18px 42px rgba(43,93,137,.12)!important;
+}
+#threeStorageContainer,
+#shelfRackCanvasWrap{
+  background:var(--storage-3d-bg)!important;
+}
+#shelfRackFastViewport{
+  background:radial-gradient(circle at 50% 16%,#fff 0%,#f6fbff 24%,#edf6ff 64%,#e4f0fa 100%)!important;
+}
+#shelfRackFastViewport::before{
+  background:
+    linear-gradient(rgba(95,145,187,.10) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(95,145,187,.10) 1px,transparent 1px),
+    linear-gradient(180deg,rgba(222,239,252,.08),rgba(196,221,241,.34))!important;
+  background-size:42px 42px,42px 42px,auto!important;
+}
+.storage-main-toolbar,
+.storage-rack-modebar{
+  border:1px solid #d1e3f2!important;
+  border-radius:16px!important;
+  background:rgba(255,255,255,.96)!important;
+  box-shadow:0 10px 28px rgba(41,86,126,.09)!important;
+  backdrop-filter:blur(14px)!important;
+}
+.storage-machine-state{color:#264e6d!important}
+.storage-home-button,
+.storage-rack-home{
+  min-height:42px!important;
+  border:1px solid #cbdfee!important;
+  border-radius:11px!important;
+  background:#f8fcff!important;
+  color:#245b89!important;
+  font-size:11px!important;
+}
+.storage-nav-button,
+.machine-action-button,
+.storage-rack-mode-button,
+.storage-rack-action{
+  border:1px solid #c7ddef!important;
+  border-radius:11px!important;
+  background:#f7fbff!important;
+  color:#285b84!important;
+  box-shadow:0 4px 12px rgba(36,85,128,.045)!important;
+}
+.storage-nav-button:hover,
+.machine-action-button:hover:not(:disabled),
+.storage-rack-mode-button:hover,
+.storage-rack-action:hover:not(:disabled){
+  border-color:#9bc5ea!important;
+  background:#eaf5ff!important;
+  color:#1d66ac!important;
+}
+.storage-all-button,
+.machine-action-button.primary,
+.storage-rack-mode-button.active,
+.storage-rack-mode-button.storage-rack-show-3d.active,
+.storage-rack-mode-button.storage-rack-show-open.active{
+  border:1px solid #2f7de8!important;
+  background:linear-gradient(135deg,#438fe9,#2874d5)!important;
+  color:#fff!important;
+  box-shadow:0 8px 20px rgba(47,125,232,.20)!important;
+}
+.storage-select-help,
+.shelf-rack-scene-footer{
+  min-height:40px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0 16px!important;
+  border:1px solid rgba(174,207,235,.96)!important;
+  border-radius:999px!important;
+  background:rgba(255,255,255,.94)!important;
+  color:#24597f!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  box-shadow:0 8px 22px rgba(36,83,124,.10)!important;
+  backdrop-filter:blur(10px)!important;
+}
+.shelf-rack-scene-title,
+.shelf-rack-details{
+  border-color:#c9deef!important;
+  background:rgba(255,255,255,.95)!important;
+  box-shadow:0 12px 30px rgba(34,78,116,.10)!important;
+}
+.shelf-rack-scene-title strong,
+.shelf-rack-details h3{color:#17466c!important}
+.storage-warehouse-arrow{
+  border:1px solid #b9d7ef!important;
+  background:rgba(255,255,255,.92)!important;
+  color:#2567a5!important;
+  box-shadow:0 10px 25px rgba(37,84,126,.12)!important;
+}
+.storage-warehouse-arrow:hover{
+  border-color:#76abe0!important;
+  background:#e8f4ff!important;
+  color:#185d9f!important;
+}
+.storage-view-products-button{
+  border-color:#79ace1!important;
+  background:linear-gradient(135deg,#438fe9,#2874d5)!important;
+  color:#fff!important;
+}
+#shelfRackStage,
+#storageAnimationStage{
+  transition:opacity .16s ease,transform .16s ease,box-shadow .16s ease!important;
+}
+
 </style>
 
 
@@ -2514,7 +2638,7 @@ Storage View
 
             <div class="shelf-rack-scene-title">
                 <strong id="shelfRackSceneTitle">3D Shelf Rack · 3 Horizontal Racks</strong>
-                <span id="shelfRackSceneDescription">Products are arranged across wide horizontal racks. Left-drag to tilt, right-click + drag to move the scene, scroll to zoom, and click a product for its verified image preview.</span>
+                <span id="shelfRackSceneDescription">Products stay in the horizontal Shelf Rack design. Left-click to select/open · Right-click + hold + drag to rotate · Mouse wheel to zoom · Double-click empty area to reset.</span>
             </div>
 
             <aside class="shelf-rack-details" id="shelfRackDetails" aria-live="polite">
@@ -2743,7 +2867,7 @@ Storage View
                 id="storageSelectHelp"
                 class="storage-select-help"
             >
-                Open Rack: left-click a cabinet · right-click + hold + drag to rotate the old 3D view · use ‹ › to browse
+                Left-click to select/open · Right-click + hold + drag to rotate · Mouse wheel to zoom · Double-click empty area to reset
             </div>
 
 

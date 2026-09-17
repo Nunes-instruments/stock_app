@@ -11,9 +11,10 @@
    - Existing products render immediately from embedded JSON
    - New products appear automatically after Add Stock / Excel import
    - Click product -> details + strict verified real-product image preview
-   - Left-drag empty area = tilt / rotate
-   - Right-click + drag = pan scene in any direction
+   - Left click product = select / inspect
+   - Right-click + hold + drag = rotate / tilt
    - Wheel = zoom
+   - Double-click empty area = reset
    - + / - stock buttons keep the existing /stock-movement endpoint
    - Attach Excel keeps the existing /import-excel endpoint
    - Existing Open Rack remains unchanged
@@ -586,8 +587,8 @@
 
     /* ========================================================
        LIGHTWEIGHT 3D INTERACTION
-       Left drag = tilt/rotate
-       Right drag = pan X/Y
+       Left click = select product
+       Right-click + hold + drag = rotate / tilt
        Wheel = zoom
        Double click empty area = reset camera
     ======================================================== */
@@ -624,12 +625,12 @@
         if (productCard && !rightButton) return;
 
         dragging = true;
-        dragMode = rightButton ? "pan" : "rotate";
+        dragMode = "rotate";
         startX = lastX = event.clientX;
         startY = lastY = event.clientY;
 
-        viewport.classList.toggle("panning", dragMode === "pan");
-        viewport.classList.toggle("dragging", dragMode === "rotate");
+        viewport.classList.remove("panning");
+        viewport.classList.add("dragging");
 
         if (viewport.setPointerCapture) viewport.setPointerCapture(event.pointerId);
         event.preventDefault();
@@ -641,13 +642,23 @@
         const dx = event.clientX - lastX;
         const dy = event.clientY - lastY;
 
-        if (dragMode === "pan") {
-            panX += dx;
-            panY += dy;
-        } else {
-            yaw = Math.max(-13, Math.min(13, yaw + dx * 0.035));
-            pitch = Math.max(-4, Math.min(10, pitch - dy * 0.025));
-        }
+        yaw =
+            Math.max(
+                -18,
+                Math.min(
+                    18,
+                    yaw + dx * 0.035
+                )
+            );
+
+        pitch =
+            Math.max(
+                -5,
+                Math.min(
+                    12,
+                    pitch - dy * 0.025
+                )
+            );
 
         lastX = event.clientX;
         lastY = event.clientY;
