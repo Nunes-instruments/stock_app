@@ -261,6 +261,23 @@
         <nav class="nav">
 
 
+            <!-- ALL COMPANIES -->
+
+            <a
+                href="{{ url_for('all_company_dashboard') }}"
+                class="nav-button {% if request.endpoint == 'all_company_dashboard' %}active{% endif %}"
+            >
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M3 21V9l6-4 6 4v12"/><path d="M15 21V6l6 3v12"/><path d="M7 13h4M7 17h4M18 13h1M18 17h1"/></svg>
+                </span>
+                <span class="nav-button-content">
+                    <strong>All Companies</strong>
+                    <small>Company / rack / shelf totals</small>
+                </span>
+                <span class="nav-button-arrow">›</span>
+            </a>
+
+
             <!-- HOME -->
 
             <a

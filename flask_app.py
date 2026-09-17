@@ -1,6 +1,8 @@
 from pathlib import Path
 from datetime import datetime
+from io import BytesIO
 import json
+import pandas as pd
 
 from flask import (
     Flask,
@@ -51,6 +53,13 @@ from runtime_paths import (
 )
 from version_info import APP_VERSION, BUILD_DATE
 
+from company_dashboard import (
+    ensure_storage_layout_tables,
+    get_company_overview,
+    import_racks_excel,
+    import_shelves_excel,
+)
+
 from product_image_service import (
     get_cached_product_image_url,
     get_cached_product_image_info,
@@ -91,6 +100,7 @@ BASE_DIR = (
 # =============================================================
 
 init_all_branch_databases()
+ensure_storage_layout_tables()
 
 
 @app.context_processor
@@ -659,6 +669,100 @@ def api_product_preview_image():
     )
 
     return jsonify(result)
+
+
+
+# =============================================================
+# ALL COMPANY DASHBOARD / RACK + SHELF LAYOUT
+# =============================================================
+
+@app.route("/company-dashboard")
+def all_company_dashboard():
+    overview = get_company_overview()
+    import_result = session.pop("layout_import_result", None)
+    return render_template(
+        "company_dashboard.html",
+        overview=overview,
+        import_result=import_result,
+    )
+
+
+@app.route("/storage-layout/import/<kind>", methods=["POST"])
+def storage_layout_import(kind):
+    branch_key = normalize_text(request.form.get("branch", "")).lower()
+    if branch_key not in BRANCHES:
+        branch_key = DEFAULT_BRANCH_KEY
+
+    uploaded = request.files.get("file")
+    if not uploaded or not normalize_text(uploaded.filename):
+        session["layout_import_result"] = {
+            "error": "Please select an Excel file."
+        }
+        return redirect(url_for("all_company_dashboard"))
+
+    try:
+        if kind == "racks":
+            result = import_racks_excel(uploaded, branch_key)
+        elif kind == "shelves":
+            result = import_shelves_excel(uploaded, branch_key)
+        else:
+            raise ValueError("Unknown storage-layout import type.")
+
+        session["layout_import_result"] = result
+    except Exception as error:
+        session["layout_import_result"] = {"error": str(error)}
+
+    return redirect(url_for("all_company_dashboard"))
+
+
+@app.route("/storage-layout/template/<kind>")
+def storage_layout_template(kind):
+    output = BytesIO()
+
+    if kind == "racks":
+        frame = pd.DataFrame(
+            [
+                {
+                    "Rack Code": "R1",
+                    "Rack Name": "Main Instrument Rack",
+                    "Notes": "Example row - replace with your rack details",
+                }
+            ]
+        )
+        file_name = "NUNES_Rack_Import_Template.xlsx"
+
+    elif kind == "shelves":
+        frame = pd.DataFrame(
+            [
+                {
+                    "Rack Code": "R1",
+                    "Shelf Code": "S1",
+                    "Shelf Name": "Top Shelf",
+                    "Position": 1,
+                    "Product ID": "",
+                    "Mapped Quantity": 0,
+                    "Notes": "Product ID is optional",
+                }
+            ]
+        )
+        file_name = "NUNES_Shelf_Import_Template.xlsx"
+
+    else:
+        return json_error("Unknown template type.", 404)
+
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        frame.to_excel(writer, index=False, sheet_name="Import Template")
+
+    output.seek(0)
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=file_name,
+        mimetype=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+    )
 
 
 # =============================================================

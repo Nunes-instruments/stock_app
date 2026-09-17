@@ -1,0 +1,532 @@
+{% extends "base.html" %}
+
+{% block title %}All Company Dashboard{% endblock %}
+
+{% block content %}
+<style>
+.company-dashboard {
+    --ink: #0f2d47;
+    --muted: #71879a;
+    --line: #dbe6ef;
+    --blue: #226ce0;
+    --teal: #0f9d91;
+    --green: #1b9a58;
+    --amber: #d98a1b;
+    display: grid;
+    gap: 18px;
+}
+.company-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 28px;
+    border-radius: 22px;
+    color: #fff;
+    background:
+        radial-gradient(circle at 88% 18%, rgba(89, 219, 231, .34), transparent 26%),
+        linear-gradient(125deg, #102f4d 0%, #174f79 52%, #0d7282 100%);
+    box-shadow: 0 18px 46px rgba(15, 45, 71, .18);
+}
+.company-hero::after {
+    content: "";
+    position: absolute;
+    width: 240px;
+    height: 240px;
+    right: -80px;
+    bottom: -120px;
+    border: 32px solid rgba(255,255,255,.08);
+    border-radius: 50%;
+    animation: dashboardFloat 7s ease-in-out infinite;
+}
+.company-hero-kicker {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    opacity: .78;
+}
+.company-hero h1 {
+    margin: 7px 0 7px;
+    font-size: clamp(25px, 3vw, 39px);
+    line-height: 1.04;
+}
+.company-hero p {
+    margin: 0;
+    max-width: 760px;
+    color: rgba(255,255,255,.78);
+    font-size: 11px;
+    line-height: 1.65;
+}
+.grand-grid, .company-grid {
+    display: grid;
+    gap: 14px;
+}
+.grand-grid { grid-template-columns: repeat(6, minmax(0,1fr)); }
+.company-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.kpi, .company-card, .import-card, .comparison-card {
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,.98);
+    border-radius: 18px;
+    box-shadow: 0 8px 28px rgba(18, 55, 86, .065);
+}
+.kpi {
+    padding: 17px 16px;
+    animation: cardRise .45s ease both;
+}
+.kpi small {
+    display: block;
+    color: var(--muted);
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+}
+.kpi strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--ink);
+    font-size: 25px;
+    font-weight: 950;
+}
+.kpi span {
+    display: block;
+    margin-top: 4px;
+    color: #91a1af;
+    font-size: 8px;
+}
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 12px;
+}
+.section-title h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 950;
+}
+.section-title p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 9px;
+}
+.test-badge {
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #fff5d9;
+    color: #9a6710;
+    font-size: 8px;
+    font-weight: 950;
+}
+.company-card {
+    position: relative;
+    overflow: hidden;
+    padding: 19px;
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+.company-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(18, 55, 86, .11);
+}
+.company-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg, #266fdf, #16a1a5);
+}
+.company-name {
+    min-height: 40px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 950;
+}
+.company-stock {
+    margin-top: 9px;
+    color: var(--ink);
+    font-size: 28px;
+    font-weight: 950;
+}
+.company-stock-label {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 8px;
+}
+.company-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 8px;
+    margin-top: 16px;
+}
+.company-mini {
+    padding: 10px 8px;
+    border-radius: 12px;
+    background: #f5f9fc;
+}
+.company-mini small {
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+.company-mini strong {
+    display: block;
+    margin-top: 5px;
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 950;
+}
+.coverage-line {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+    color: var(--muted);
+    font-size: 8px;
+    font-weight: 800;
+}
+.progress {
+    height: 7px;
+    margin-top: 7px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #edf2f6;
+}
+.progress > span {
+    display: block;
+    height: 100%;
+    width: var(--value);
+    border-radius: inherit;
+    background: linear-gradient(90deg, #286edf, #11a28e);
+    transform-origin: left;
+    animation: barGrow .7s ease both;
+}
+.branch-bar {
+    display: grid;
+    grid-template-columns: minmax(150px, 1.2fr) 4fr 80px;
+    gap: 12px;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid #edf2f6;
+}
+.branch-bar:last-child { border-bottom: 0; }
+.branch-bar-name {
+    color: var(--ink);
+    font-size: 9px;
+    font-weight: 900;
+}
+.branch-bar-track {
+    height: 13px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #edf3f7;
+}
+.branch-bar-fill {
+    height: 100%;
+    width: var(--stock-bar);
+    background: linear-gradient(90deg, #2d70dd, #13a39d);
+    border-radius: inherit;
+    animation: barGrow .8s ease both;
+}
+.branch-bar-value {
+    text-align: right;
+    color: var(--ink);
+    font-size: 10px;
+    font-weight: 950;
+}
+.comparison-card { padding: 18px 20px; }
+.import-grid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 14px;
+}
+.import-card { padding: 20px; }
+.import-card h3 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 950;
+}
+.import-card p {
+    margin: 5px 0 15px;
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1.55;
+}
+.import-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+.import-form select,
+.import-form input[type=file] {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 11px;
+    border: 1px solid #d3e0eb;
+    border-radius: 10px;
+    background: #fff;
+    color: #24445f;
+    font-size: 9px;
+}
+.import-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.import-button, .template-button {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 8px;
+    font-weight: 950;
+    text-decoration: none;
+    cursor: pointer;
+}
+.import-button {
+    border: 0;
+    color: #fff;
+    background: linear-gradient(135deg,#226ce0,#118f9b);
+}
+.template-button {
+    border: 1px solid #cbdbe7;
+    color: #315a7b;
+    background: #fff;
+}
+.import-result {
+    padding: 14px 16px;
+    border: 1px solid #bce2cf;
+    border-radius: 14px;
+    background: #eefaf3;
+    color: #276343;
+    font-size: 9px;
+}
+.import-result.error {
+    border-color: #f0c8c8;
+    background: #fff4f4;
+    color: #9a4141;
+}
+.rack-preview {
+    margin-top: 14px;
+    display: grid;
+    gap: 6px;
+}
+.rack-row {
+    display: grid;
+    grid-template-columns: 1.4fr .7fr .7fr;
+    gap: 8px;
+    padding: 8px 9px;
+    border-radius: 9px;
+    background: #f7fafc;
+    color: #486176;
+    font-size: 8px;
+}
+.rack-row strong { color: var(--ink); }
+.legacy-note {
+    margin-top: 12px;
+    padding: 10px 11px;
+    border-radius: 10px;
+    background: #fff8e9;
+    color: #8b641e;
+    font-size: 8px;
+    line-height: 1.45;
+}
+@keyframes cardRise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes barGrow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+@keyframes dashboardFloat {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(5deg); }
+}
+@media (max-width: 1200px) {
+    .grand-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+    .company-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+    .grand-grid, .import-grid { grid-template-columns: 1fr 1fr; }
+    .branch-bar { grid-template-columns: 1fr; gap: 6px; }
+    .branch-bar-value { text-align: left; }
+}
+@media (max-width: 520px) {
+    .grand-grid, .import-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="company-dashboard">
+    <section class="company-hero">
+        <div class="company-hero-kicker">Nunes Inventory Command Center</div>
+        <h1>All Company Stock Dashboard</h1>
+        <p>
+            One professional view for every company, rack and shelf.
+            Existing stock/history stays untouched; rack and shelf mapping is stored separately.
+        </p>
+    </section>
+
+    {% if import_result %}
+        <div class="import-result {% if import_result.get('error') %}error{% endif %}">
+            {% if import_result.get('error') %}
+                <strong>Import stopped:</strong> {{ import_result.error }}
+            {% else %}
+                <strong>{{ import_result.kind }} import completed — {{ import_result.branch }}</strong><br>
+                Created: {{ import_result.created|default(0) }},
+                Updated: {{ import_result.updated|default(0) }},
+                Mapped products: {{ import_result.mapped_products|default(0) }},
+                Skipped: {{ import_result.skipped|default(0) }}
+                {% if import_result.errors %}
+                    <br><br>
+                    {% for item in import_result.errors %}• {{ item }}<br>{% endfor %}
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <section>
+        <div class="section-title">
+            <div>
+                <h2>Grand Total</h2>
+                <p>Combined inventory across all configured companies.</p>
+            </div>
+            <span class="test-badge">TEST BRANCH · PORT 5001</span>
+        </div>
+    </section>
+
+    <section class="grand-grid">
+        <article class="kpi"><small>Products</small><strong data-count="{{ overview.grand.total_products }}">{{ overview.grand.total_products }}</strong><span>All companies</span></article>
+        <article class="kpi"><small>Total Stock</small><strong data-count="{{ overview.grand.total_stock|int }}">{{ overview.grand.total_stock|int }}</strong><span>Available quantity</span></article>
+        <article class="kpi"><small>Racks</small><strong data-count="{{ overview.grand.racks }}">{{ overview.grand.racks }}</strong><span>Configured racks</span></article>
+        <article class="kpi"><small>Shelves</small><strong data-count="{{ overview.grand.shelves }}">{{ overview.grand.shelves }}</strong><span>Configured shelves</span></article>
+        <article class="kpi"><small>Mapped Products</small><strong data-count="{{ overview.grand.mapped_products }}">{{ overview.grand.mapped_products }}</strong><span>{{ overview.grand.coverage }}% storage coverage</span></article>
+        <article class="kpi"><small>Unassigned</small><strong data-count="{{ overview.grand.unassigned_products }}">{{ overview.grand.unassigned_products }}</strong><span>Need rack / shelf mapping</span></article>
+    </section>
+
+    <section>
+        <div class="section-title">
+            <div>
+                <h2>Company Overview</h2>
+                <p>Products, stock, rack and shelf totals per company.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="company-grid">
+        {% for branch in overview.branches %}
+        <article class="company-card">
+            <div class="company-name">{{ branch.name }}</div>
+            <div class="company-stock">{{ branch.total_stock|int }}</div>
+            <div class="company-stock-label">Total stock quantity</div>
+
+            <div class="company-mini-grid">
+                <div class="company-mini"><small>Products</small><strong>{{ branch.total_products }}</strong></div>
+                <div class="company-mini"><small>Racks</small><strong>{{ branch.racks }}</strong></div>
+                <div class="company-mini"><small>Shelves</small><strong>{{ branch.shelves }}</strong></div>
+            </div>
+
+            <div class="coverage-line">
+                <span>Rack/Shelf mapping</span>
+                <strong>{{ branch.coverage }}%</strong>
+            </div>
+            <div class="progress" style="--value: {{ branch.coverage }}%">
+                <span></span>
+            </div>
+
+            {% if branch.legacy_locations %}
+            <div class="legacy-note">
+                {{ branch.legacy_locations }} product(s) still have older Location values.
+                They are preserved. Import rack/shelf mapping when ready.
+            </div>
+            {% endif %}
+
+            {% if branch.rack_preview %}
+            <div class="rack-preview">
+                {% for rack in branch.rack_preview %}
+                <div class="rack-row">
+                    <strong>{{ rack.rack_code }}{% if rack.rack_name %} · {{ rack.rack_name }}{% endif %}</strong>
+                    <span>{{ rack.shelf_count }} shelves</span>
+                    <span>{{ rack.product_count }} products</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </section>
+
+    <section class="comparison-card">
+        <div class="section-title">
+            <div>
+                <h2>Stock Comparison</h2>
+                <p>Fast visual comparison without loading a heavy chart library.</p>
+            </div>
+        </div>
+        <div style="margin-top:12px">
+            {% for branch in overview.branches %}
+            <div class="branch-bar">
+                <div class="branch-bar-name">{{ branch.name }}</div>
+                <div class="branch-bar-track"><div class="branch-bar-fill" style="--stock-bar: {{ branch.stock_bar }}%"></div></div>
+                <div class="branch-bar-value">{{ branch.total_stock|int }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section>
+        <div class="section-title">
+            <div>
+                <h2>Rack & Shelf Excel Import</h2>
+                <p>Use these only in the TEST dashboard first. Existing stock quantities are never changed by these imports.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="import-grid">
+        <article class="import-card">
+            <h3>Rack Excel</h3>
+            <p>
+                Required: Rack Code. Optional: Rack Name, Notes.
+                Existing rack codes are updated instead of duplicated.
+            </p>
+            <form class="import-form" action="{{ url_for('storage_layout_import', kind='racks') }}" method="post" enctype="multipart/form-data">
+                <select name="branch" required>
+                    {% for key, branch in branch_options.items() %}
+                    <option value="{{ key }}">{{ branch.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="file" name="file" accept=".xlsx,.xls" required>
+                <div class="import-actions">
+                    <button class="import-button" type="submit">Import Rack Excel</button>
+                    <a class="template-button" href="{{ url_for('storage_layout_template', kind='racks') }}">Download Rack Template</a>
+                </div>
+            </form>
+        </article>
+
+        <article class="import-card">
+            <h3>Shelf + Product Mapping Excel</h3>
+            <p>
+                Required: Rack Code, Shelf Code. Optional: Product ID and Mapped Quantity.
+                Product mapping never changes current stock.
+            </p>
+            <form class="import-form" action="{{ url_for('storage_layout_import', kind='shelves') }}" method="post" enctype="multipart/form-data">
+                <select name="branch" required>
+                    {% for key, branch in branch_options.items() %}
+                    <option value="{{ key }}">{{ branch.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="file" name="file" accept=".xlsx,.xls" required>
+                <div class="import-actions">
+                    <button class="import-button" type="submit">Import Shelf Excel</button>
+                    <a class="template-button" href="{{ url_for('storage_layout_template', kind='shelves') }}">Download Shelf Template</a>
+                </div>
+            </form>
+        </article>
+    </section>
+</div>
+
+<script src="{{ url_for('static', filename='company_dashboard.js', v=app_version) }}"></script>
+{% endblock %}
