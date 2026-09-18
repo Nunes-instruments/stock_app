@@ -181,8 +181,12 @@
         window.sessionStorage.removeItem("nunes_storage_mode");
     } catch (ignore) {}
 
-    if (requestedMode === "open" && isMainBranch) {
-        showOpenRack({ scroll: false });
+    if (isMainBranch) {
+        if (requestedMode === "shelf" || requestedMode === "3d") {
+            showShelfRack({ scroll: false });
+        } else {
+            showOpenRack({ scroll: false });
+        }
     } else {
         showShelfRack({ scroll: false });
     }

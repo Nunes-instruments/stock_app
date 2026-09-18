@@ -2581,26 +2581,18 @@ Storage View
             <a href="{{ url_for('dashboard') }}" class="storage-rack-home">← Home</a>
 
             <div class="storage-rack-mode-buttons">
-                <button id="shelfRackModeButton" type="button" class="storage-rack-mode-button storage-rack-show-3d active" aria-controls="shelfRackStage">
-                    Show 3D Shelf Rack
-                </button>
-
                 {% if active_branch_key == 'main' %}
-                <button id="openRackModeButton" type="button" class="storage-rack-mode-button storage-rack-show-open" aria-controls="storageAnimationStage">
-                    Show Open Rack
+                <button id="openRackModeButton" type="button" class="storage-rack-mode-button storage-rack-show-open active" aria-controls="storageAnimationStage">
+                    Rack
                 </button>
                 {% endif %}
 
-                <span class="storage-rack-mode-hint">Use these buttons to switch the storage design.</span>
+                <button id="shelfRackModeButton" type="button" class="storage-rack-mode-button storage-rack-show-3d {% if active_branch_key != 'main' %}active{% endif %}" aria-controls="shelfRackStage">
+                    Rack 3D
+                </button>
             </div>
 
             <span class="storage-rack-branch">{{ active_branch_name }}</span>
-            {% if active_branch_key == 'main' %}
-            <div class="storage-source-totals" aria-label="Storage data source totals">
-                <span class="storage-source-pill">3D Shelf <strong>{{ storage_dual_summary.shelf_products|int }}</strong></span>
-                <span class="storage-source-pill">Open Rack <strong>{{ storage_dual_summary.open_rack_products|int }}</strong></span>
-            </div>
-            {% endif %}
         </div>
 
         <div class="storage-rack-mode-actions" aria-label="Shelf rack stock actions">
@@ -2620,7 +2612,7 @@ Storage View
             <button id="shelfRackQuickRemove" type="button" class="storage-rack-action" title="Remove one unit from the selected product" aria-label="Remove one unit" disabled>−</button>
 
             <label for="shelfRackFileInput" class="storage-rack-action storage-rack-file-action" title="Load a separate 3D Shelf Rack Excel file">
-                Attach 3D Shelf Excel
+                Attach Rack 3D Excel
             </label>
             <input id="shelfRackFileInput" type="file" accept=".xlsx" aria-label="Attach 3D Shelf Rack Excel file">
         </div>
@@ -2637,8 +2629,8 @@ Storage View
             </div>
 
             <div class="shelf-rack-scene-title">
-                <strong id="shelfRackSceneTitle">3D Shelf Rack · 3 Horizontal Racks</strong>
-                <span id="shelfRackSceneDescription">Products stay in the horizontal Shelf Rack design. Left-click to select/open · Right-click + hold + drag to rotate · Mouse wheel to zoom · Double-click empty area to reset.</span>
+                <strong id="shelfRackSceneTitle">Rack 3D · 3 Horizontal Racks</strong>
+                <span id="shelfRackSceneDescription">Products stay in the Rack 3D design. Left-click to select/open · Right-click + hold + drag to rotate · Mouse wheel to zoom · Double-click empty area to reset.</span>
             </div>
 
             <aside class="shelf-rack-details" id="shelfRackDetails" aria-live="polite">
@@ -2812,9 +2804,9 @@ Storage View
                 data-open-rack-upload-label
                 title="Load the Open Rack master Excel"
             >
-                Attach Open Rack Master
+                Attach Rack Excel
             </label>
-            <input id="openRackFileInput" type="file" accept=".xlsx,.xls" aria-label="Attach Open Rack Master Excel">
+            <input id="openRackFileInput" type="file" accept=".xlsx,.xls" aria-label="Attach Rack Excel Excel">
 
         </div>
 
