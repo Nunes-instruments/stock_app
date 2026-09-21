@@ -1,6 +1,6 @@
 """Force-reset the live NUNES Stock inventory to zero, with recovery backup.
 
-v2.4.1 behavior:
+v2.4.2 behavior:
 - Back up the entire live mutable data folder first.
 - Remove live SQLite database files completely (including WAL/SHM companions).
 - Remove runtime storage/import/export/cache sources that can make old stock reappear.
@@ -37,7 +37,7 @@ def _backup_data() -> Path:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_root = DATA_DIR.parent / "clean_reset_backups"
     backup_root.mkdir(parents=True, exist_ok=True)
-    target = backup_root / f"before_v2_4_1_clean_{stamp}"
+    target = backup_root / f"before_v2_4_2_clean_{stamp}"
     target.mkdir(parents=True, exist_ok=False)
 
     if DATA_DIR.exists():
@@ -138,7 +138,7 @@ def main() -> int:
     removed_databases = _remove_live_databases()
     cleared_sources = _clear_runtime_sources()
 
-    # Recreate brand-new empty databases from the current v2.4.1 schema.
+    # Recreate brand-new empty databases from the current v2.4.2 schema.
     init_all_branch_databases()
     verification = _verify_zero()
 

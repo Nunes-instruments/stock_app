@@ -16,7 +16,7 @@ if not exist "%PY%" (
   exit /b 1
 )
 
-rem IMPORTANT v2.4.1 FIX:
+rem IMPORTANT v2.4.2 FIX:
 rem Never accept "something is on port 5000" as proof that this version is running.
 for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":5000 .*LISTENING"') do (
   powershell -NoProfile -ExecutionPolicy Bypass -Command ^
