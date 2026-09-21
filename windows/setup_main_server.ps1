@@ -114,11 +114,11 @@ $update.IconLocation = "$iconDest,0"
 $update.Description = 'Backup data, pull latest code from GitHub, and restart NUNES Stock'
 $update.Save()
 
-# Auto-start server on logon and check GitHub every 15 minutes.
+# Auto-start server on logon and check GitHub every 5 minutes.
 $startBat = Join-Path $AppDir 'START_MAIN_SERVER.bat'
 $updateBat = Join-Path $AppDir 'AUTO_UPDATE_MAIN_SERVER.bat'
 schtasks /Create /F /SC ONLOGON /TN 'NUNES Stock Server' /TR "`"$startBat`" --hidden" /RL HIGHEST | Out-Null
-schtasks /Create /F /SC MINUTE /MO 15 /TN 'NUNES Stock Auto Update' /TR "`"$updateBat`"" /RL HIGHEST | Out-Null
+schtasks /Create /F /SC MINUTE /MO 5 /TN 'NUNES Stock Auto Update' /TR "`"$updateBat`"" /RL HIGHEST | Out-Null
 
 & $startBat
 

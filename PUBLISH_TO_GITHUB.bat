@@ -12,7 +12,7 @@ where git >nul 2>&1
 if errorlevel 1 (
   echo ERROR: Git for Windows is not installed.
   echo Install Git, then run this file again.
-  pause
+  if /I not "%~1"=="--no-pause" pause
   exit /b 1
 )
 
@@ -42,13 +42,13 @@ echo [1/5] Checking business-data protection...
 git check-ignore stock.db >nul 2>&1
 if errorlevel 1 (
   echo ERROR: stock.db is not ignored. Publish stopped for safety.
-  pause
+  if /I not "%~1"=="--no-pause" pause
   exit /b 1
 )
 git check-ignore stock_gandhipuram.db >nul 2>&1
 if errorlevel 1 (
   echo ERROR: branch database is not ignored. Publish stopped for safety.
-  pause
+  if /I not "%~1"=="--no-pause" pause
   exit /b 1
 )
 
@@ -65,7 +65,9 @@ if errorlevel 1 goto :FAIL
 echo [4/5] Creating commit if needed...
 git diff --cached --quiet
 if errorlevel 1 (
-  git commit -m "NUNES Stock v2.0.1 - central server and safe GitHub auto update"
+  set "APPVER=unknown"
+if exist "VERSION" set /p "APPVER="<"VERSION"
+git commit -m "NUNES Stock v%APPVER% - production release"
   if errorlevel 1 goto :FAIL
 ) else (
   echo No new code changes to commit.
@@ -84,7 +86,7 @@ echo Repository: %REPO%
 echo Git identity: repository-only Nunes Instruments Stock Server
 echo Databases, uploads, backups and runtime data were NOT uploaded.
 echo.
-pause
+if /I not "%~1"=="--no-pause" pause
 exit /b 0
 
 :FAIL
@@ -96,5 +98,5 @@ echo No stock database was deleted.
 echo If the message is about GitHub authentication, sign in when prompted
  echo and run this file again.
 echo.
-pause
+if /I not "%~1"=="--no-pause" pause
 exit /b 1

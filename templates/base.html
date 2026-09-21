@@ -33,6 +33,17 @@
 
 
     <!-- =====================================================
+         MODERN 2026 UI LAYER
+         Rack/Shelf and 3D Storage remain on the protected design.
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='modern_2026.css', v=app_version) }}"
+    >
+
+
+    <!-- =====================================================
          GLOBAL APP SCROLL FIX
 
          IMPORTANT:
@@ -217,7 +228,10 @@
 </head>
 
 
-<body>
+<body
+    class="{% if request.endpoint not in ['rack_shelf_page', 'storage_view'] %}modern-2026{% else %}protected-storage-ui{% endif %}"
+    data-page="{{ request.endpoint or '' }}"
+>
 
 
 <div class="app-shell">
