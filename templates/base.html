@@ -581,6 +581,12 @@
 
             <div class="topbar-actions">
 
+                {% if request.endpoint not in ['rack_shelf_page', 'storage_view'] %}
+                <div class="release-chip" title="Running release">
+                    v{{ app_version }} LIVE
+                </div>
+                {% endif %}
+
                 <details class="branch-switcher">
 
                     <summary class="branch-switcher-button">

@@ -89,6 +89,7 @@ def _empty_payload(source_file=""):
 
 
 
+
 def _summarize(products):
     groups = set()
     product_keys = set()
@@ -128,6 +129,81 @@ def _read_payload(path, fallback=None):
     data["products"] = products
     data["summary"] = _summarize(products)
     return data
+
+
+
+def _allocation_payload(storage_type):
+    """Build Storage View data from live Rack/Shelf movement allocations."""
+    label = "3D Shelf Rack" if storage_type == "shelf" else "Open Rack"
+    payload = _empty_payload("Live stock movements")
+    if get_active_branch_key() != DEFAULT_BRANCH_KEY:
+        return payload
+
+    conn = get_connection(DEFAULT_BRANCH_KEY)
+    cursor = conn.cursor()
+    try:
+        table = cursor.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='storage_allocations'"
+        ).fetchone()
+        if not table:
+            return payload
+
+        cursor.execute(
+            """
+            SELECT
+                a.product_id,
+                a.location_code,
+                a.quantity,
+                p.product_name,
+                p.category,
+                p.brand,
+                p.model,
+                p.unit
+            FROM storage_allocations a
+            JOIN products p ON p.product_id = a.product_id
+            WHERE a.storage_type = ? AND a.quantity > 0
+            ORDER BY p.product_name, a.location_code, a.id
+            """,
+            (storage_type,),
+        )
+        rows = [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+    grouped = {}
+    for row in rows:
+        key = _clean(row.get("product_id")).upper()
+        if key not in grouped:
+            grouped[key] = {
+                "product_id": row.get("product_id") or "",
+                "product_name": row.get("product_name") or "",
+                "brand": row.get("brand") or "",
+                "model": row.get("model") or "",
+                "category": row.get("category") or label,
+                "location": "",
+                "current_quantity": 0.0,
+                "unit": row.get("unit") or "Nos",
+                "source": "Live Stock Movement",
+                "image_url": "",
+                "storage_source": label,
+                "_locations": [],
+            }
+        item = grouped[key]
+        item["current_quantity"] += float(row.get("quantity") or 0)
+        location = _clean(row.get("location_code"))
+        if location and location not in item["_locations"]:
+            item["_locations"].append(location)
+
+    products = []
+    for item in grouped.values():
+        locations = item.pop("_locations", [])
+        item["location"] = " | ".join(locations) if locations else label
+        products.append(item)
+
+    products.sort(key=lambda p: _clean(p.get("product_name")).lower())
+    payload["products"] = products
+    payload["summary"] = _summarize(products)
+    return payload
 
 
 

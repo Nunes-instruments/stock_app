@@ -634,3 +634,89 @@ body.modern-2026 .confirm-panel,body.modern-2026 .success-panel { border-radius:
   body.modern-2026 .storage-target-selector,body.modern-2026 .storage-availability-strip{grid-template-columns:1fr}
   body.modern-2026 .stock-section{padding:20px 16px}
 }
+
+/* ============================================================
+   v2.4.1 — FORCE REFRESH / VISUAL CONFIRMATION
+   Operational pages only. The protected Rack/Shelf + 3D pages
+   do not use body.modern-2026 and therefore remain unchanged.
+============================================================ */
+body.modern-2026 {
+  --n-bg: #f5f8fc;
+  --n-panel-blue: #f4f8ff;
+  background:
+    radial-gradient(circle at 84% -12%, rgba(31,111,235,.075), transparent 28rem),
+    var(--n-bg);
+}
+body.modern-2026 .sidebar {
+  background: #ffffff;
+  border-right: 1px solid #dbe5f0;
+  box-shadow: 12px 0 34px rgba(15,39,66,.035);
+}
+body.modern-2026 .brand {
+  border-bottom-color: #e7edf5;
+}
+body.modern-2026 .brand-icon {
+  box-shadow: 0 10px 24px rgba(18,103,229,.20);
+}
+body.modern-2026 .nav-button.active {
+  background: linear-gradient(135deg, #eaf2ff 0%, #f6f9ff 100%);
+  border-color: #cfe0fb;
+  box-shadow: inset 3px 0 0 var(--n-accent);
+}
+body.modern-2026 .topbar {
+  background: rgba(255,255,255,.93);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid #dde6f0;
+}
+body.modern-2026 .release-chip {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 13px;
+  border: 1px solid #bcd3f5;
+  border-radius: 999px;
+  background: #eef5ff;
+  color: #0d5ac7;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .055em;
+  white-space: nowrap;
+}
+body.modern-2026 .dashboard-heading,
+body.modern-2026 .stock-page-heading,
+body.modern-2026 .page-heading {
+  position: relative;
+}
+body.modern-2026 .dashboard-summary-card {
+  border: 1px solid #dfe7f0;
+  background: linear-gradient(160deg, #fff 0%, #fbfdff 100%);
+  box-shadow: 0 12px 30px rgba(21,49,80,.055);
+}
+body.modern-2026 .dashboard-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px rgba(21,49,80,.085);
+}
+body.modern-2026 .dashboard-action {
+  background: #fff;
+  border-color: #dce6f1;
+  box-shadow: 0 8px 20px rgba(22,51,84,.035);
+}
+body.modern-2026 .dashboard-action:hover {
+  transform: translateY(-2px);
+  border-color: #bdd1e9;
+  box-shadow: 0 14px 30px rgba(22,51,84,.075);
+}
+body.modern-2026 .stock-form-card-new,
+body.modern-2026 .recent-stock-card,
+body.modern-2026 .simple-panel,
+body.modern-2026 .excel-upload-card {
+  box-shadow: 0 14px 34px rgba(20,47,78,.055);
+}
+body.modern-2026 .storage-target-choice.active {
+  background: linear-gradient(145deg, #eaf3ff, #f8fbff);
+  box-shadow: 0 0 0 3px rgba(18,103,229,.09), 0 10px 22px rgba(18,103,229,.08);
+}
+@media(max-width:780px){
+  body.modern-2026 .release-chip{display:none}
+}

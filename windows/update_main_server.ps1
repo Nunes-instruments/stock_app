@@ -15,6 +15,21 @@ function Say([string]$Text) {
     if ($Interactive) { Write-Host $Text }
 }
 
+function Get-ExpectedVersion {
+    $versionFile = Join-Path $AppDir 'VERSION'
+    if (-not (Test-Path $versionFile)) { return '' }
+    return (Get-Content $versionFile -Raw).Trim()
+}
+
+function Get-NunesHealth {
+    try {
+        return Invoke-RestMethod -UseBasicParsing -TimeoutSec 3 'http://127.0.0.1:5000/api/system/health'
+    }
+    catch {
+        return $null
+    }
+}
+
 function Ensure-FiveMinuteUpdateTask {
     try {
         $taskCommand = ('"{0}"' -f $UpdateBat)
@@ -28,12 +43,36 @@ function Ensure-FiveMinuteUpdateTask {
 
 function Stop-NunesServer {
     if (Test-Path $PidFile) {
-        $serverPid = [int](Get-Content $PidFile -ErrorAction SilentlyContinue)
-        $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$serverPid" -ErrorAction SilentlyContinue
-        if ($proc -and $proc.CommandLine -match 'server_process.py') {
-            Stop-Process -Id $serverPid -Force -ErrorAction SilentlyContinue
+        try {
+            $serverPid = [int](Get-Content $PidFile -ErrorAction Stop)
+            $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$serverPid" -ErrorAction SilentlyContinue
+            if ($proc -and $proc.CommandLine -match 'server_process.py') {
+                Stop-Process -Id $serverPid -Force -ErrorAction SilentlyContinue
+            }
         }
+        catch {}
         Remove-Item $PidFile -Force -ErrorAction SilentlyContinue
+    }
+
+    # v2.4.1 fallback: if a stale/older NUNES Stock listener still owns port 5000,
+    # confirm it through the NUNES health endpoint before stopping it.
+    $listeners = @(Get-NetTCPConnection -State Listen -LocalPort 5000 -ErrorAction SilentlyContinue)
+    if ($listeners.Count -gt 0) {
+        $health = Get-NunesHealth
+        if (-not $health -or [string]$health.status -ne 'online') {
+            throw 'Port 5000 is occupied by a non-NUNES service. Automatic update will not kill it.'
+        }
+        foreach ($processId in @($listeners | Select-Object -ExpandProperty OwningProcess -Unique)) {
+            Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    for ($i = 0; $i -lt 15; $i++) {
+        if (@(Get-NetTCPConnection -State Listen -LocalPort 5000 -ErrorAction SilentlyContinue).Count -eq 0) { return }
+        Start-Sleep -Milliseconds 300
+    }
+    if (@(Get-NetTCPConnection -State Listen -LocalPort 5000 -ErrorAction SilentlyContinue).Count -ne 0) {
+        throw 'NUNES Stock server did not release port 5000.'
     }
 }
 
@@ -45,25 +84,24 @@ function Start-NunesServer {
 }
 
 function Test-NunesHealth {
-    for ($attempt = 1; $attempt -le 12; $attempt++) {
-        try {
-            $response = Invoke-WebRequest -UseBasicParsing -TimeoutSec 4 'http://127.0.0.1:5000/api/system/health'
-            if ($response.StatusCode -eq 200) { return $true }
+    $expected = Get-ExpectedVersion
+    for ($attempt = 1; $attempt -le 15; $attempt++) {
+        $response = Get-NunesHealth
+        if ($response -and [string]$response.status -eq 'online' -and [string]$response.version -eq $expected) {
+            return $true
         }
-        catch {
-            Start-Sleep -Seconds 2
-        }
+        Start-Sleep -Seconds 1
     }
     return $false
 }
 
 if (-not (Test-Path (Join-Path $AppDir '.git'))) {
-    Say '[INFO] This folder is not connected to GitHub. Run SETUP_MAIN_SERVER.bat.'
+    Say '[INFO] This folder is not connected to GitHub. Run the v2.4.1 full setup.'
     exit 0
 }
 
 if (-not (Test-Path $RuntimePython)) {
-    Say '[INFO] Runtime missing. Run SETUP_MAIN_SERVER.bat.'
+    Say '[INFO] Runtime missing. Run the v2.4.1 full setup.'
     exit 0
 }
 
@@ -101,7 +139,7 @@ try {
         throw 'Database backup failed. Update stopped before changing code.'
     }
 
-    Say '[2/6] Stopping only the NUNES Stock server process...'
+    Say '[2/6] Stopping the actual NUNES Stock listener...'
     Stop-NunesServer
 
     Say '[3/6] Applying the fetched GitHub release...'
@@ -112,33 +150,27 @@ try {
 
     Say '[4/6] Updating dependencies and checking source...'
     & $RuntimePython -m pip install --disable-pip-version-check -q -r requirements_portable.txt
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Python dependency update failed.'
-    }
+    if ($LASTEXITCODE -ne 0) { throw 'Python dependency update failed.' }
 
-    & $RuntimePython -m compileall -q -x '(^|[\\/])(\.git|__pycache__)([\\/]|$)' .
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Python source preflight failed.'
-    }
+    & $RuntimePython -m compileall -q -x '(^|[\/])(\.git|__pycache__)([\/]|$)' .
+    if ($LASTEXITCODE -ne 0) { throw 'Python source preflight failed.' }
 
     $ProtectedCheck = Join-Path $AppDir 'scripts\verify_protected_ui.py'
     if (Test-Path $ProtectedCheck) {
         & $RuntimePython $ProtectedCheck
-        if ($LASTEXITCODE -ne 0) {
-            throw 'Protected Rack/Shelf UI verification failed.'
-        }
+        if ($LASTEXITCODE -ne 0) { throw 'Protected Rack/Shelf UI verification failed.' }
     }
 
     Say '[5/6] Starting updated server...'
     Start-NunesServer
 
-    Say '[6/6] Verifying server health...'
+    Say '[6/6] Verifying the exact running version...'
     if (-not (Test-NunesHealth)) {
-        throw 'Updated server did not pass the health check.'
+        throw ('Updated server did not report expected VERSION ' + (Get-ExpectedVersion) + '.')
     }
 
     Ensure-FiveMinuteUpdateTask
-    Say '[OK] Server updated safely. Staff and owner browsers receive the new version on refresh.'
+    Say ('[OK] Server updated safely to v' + (Get-ExpectedVersion) + '.')
 }
 catch {
     $message = $_.Exception.Message
@@ -155,7 +187,7 @@ catch {
                 Say '[ROLLBACK OK] Previous server version is running again.'
             }
             else {
-                Say '[ROLLBACK WARNING] Previous code was restored but health check is still failing. Check server.log.'
+                Say '[ROLLBACK WARNING] Previous code was restored but health check still failed.'
             }
         }
         catch {
