@@ -89,9 +89,11 @@ def get_connection(branch_key=None):
     selected company/branch. Existing callers do not need to change.
     """
     database_path = Path(get_database_path(branch_key))
-    conn = sqlite3.connect(database_path)
+    conn = sqlite3.connect(database_path, timeout=10.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
+    conn.execute("PRAGMA busy_timeout = 8000;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
     return conn
 
 
@@ -217,6 +219,13 @@ def init_database(branch_key=None):
         """
         CREATE INDEX IF NOT EXISTS idx_storage_allocations_type
         ON storage_allocations(storage_type);
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_storage_allocations_type_product_location
+        ON storage_allocations(storage_type, product_id, location_code);
         """
     )
 

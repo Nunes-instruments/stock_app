@@ -615,6 +615,12 @@
             });
         }
 
+        const v250StorageFromQuery =
+            new URLSearchParams(window.location.search).get("storage");
+        if (v250StorageFromQuery === "rack" || v250StorageFromQuery === "shelf") {
+            setStorageType(v250StorageFromQuery);
+        }
+
         /* ====================================================
            MOVEMENT DETAILS
         ==================================================== */

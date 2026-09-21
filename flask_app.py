@@ -127,6 +127,16 @@ def inject_system_metadata():
     }
 
 
+@app.after_request
+def add_dynamic_response_headers(response):
+    response.headers["X-Nunes-Stock-Version"] = APP_VERSION
+    if response.mimetype == "text/html":
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 @app.route("/api/system/health")
 def system_health():
     return jsonify(
@@ -1407,6 +1417,54 @@ def current_stock():
         "current_stock.html",
         products=products,
     )
+
+# =============================================================
+# OPEN RACK
+# =============================================================
+
+@app.route("/open-rack")
+def open_rack_page():
+    if get_active_branch_key() == DEFAULT_BRANCH_KEY:
+        payload = get_open_rack_payload()
+    else:
+        payload = {"source_file": "", "products": [], "summary": {"products": 0, "quantity": 0, "groups": 0}}
+
+    products = list(payload.get("products", []))
+    locations = set()
+    for product in products:
+        for raw_location in normalize_text(product.get("location")).split("|"):
+            location = raw_location.strip()
+            if location:
+                locations.add(location)
+
+    return render_template(
+        "open_rack.html",
+        products=products,
+        summary=payload.get("summary", {}),
+        source_file=payload.get("source_file", ""),
+        location_count=len(locations),
+    )
+
+
+@app.route("/open-rack/upload", methods=["POST"])
+def open_rack_upload():
+    if get_active_branch_key() != DEFAULT_BRANCH_KEY:
+        flash("Open Rack is available only for Head Office.", "error")
+        return redirect(url_for("open_rack_page"))
+
+    uploaded = request.files.get("file")
+    if not uploaded or not normalize_text(uploaded.filename):
+        flash("Please select an Open Rack Excel file.", "error")
+        return redirect(url_for("open_rack_page"))
+
+    try:
+        result = import_storage_excel(uploaded, "open")
+        count = int(result.get("summary", {}).get("products", 0) or 0)
+        flash(f"Open Rack Excel loaded: {count} products.", "success")
+    except Exception as error:
+        flash(str(error), "error")
+    return redirect(url_for("open_rack_page"))
+
 
 # =============================================================
 # 3D STORAGE VIEW
