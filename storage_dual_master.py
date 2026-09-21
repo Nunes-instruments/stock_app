@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from runtime_paths import DATA_DIR
+from database import get_connection, DEFAULT_BRANCH_KEY, get_active_branch_key
 
 APP_DIR = Path(__file__).resolve().parent
 BUNDLED_OPEN_RACK_MASTER = APP_DIR / "dashboard_data" / "open_rack_master.json"
@@ -87,21 +88,26 @@ def _empty_payload(source_file=""):
     }
 
 
+
 def _summarize(products):
     groups = set()
+    product_keys = set()
     quantity = 0.0
     for product in products:
-        groups.add(_clean(product.get("category")) or "Unassigned")
+        location = _clean(product.get("location")) or _clean(product.get("category")) or "Unassigned"
+        groups.add(location)
+        key = _clean(product.get("product_id")).upper() or _norm(product.get("product_name"))
+        if key:
+            product_keys.add(key)
         try:
             quantity += float(product.get("current_quantity") or 0)
         except (TypeError, ValueError):
             pass
     return {
-        "products": len(products),
+        "products": len(product_keys),
         "quantity": quantity,
         "groups": len(groups) if products else 0,
     }
-
 
 def _read_payload(path, fallback=None):
     if not path.exists():
@@ -124,25 +130,101 @@ def _read_payload(path, fallback=None):
     return data
 
 
+
+def _allocation_payload(storage_type):
+    """Build Storage View data from live Rack/Shelf movement allocations."""
+    label = "3D Shelf Rack" if storage_type == "shelf" else "Open Rack"
+    payload = _empty_payload("Live stock movements")
+    if get_active_branch_key() != DEFAULT_BRANCH_KEY:
+        return payload
+
+    conn = get_connection(DEFAULT_BRANCH_KEY)
+    cursor = conn.cursor()
+    try:
+        table = cursor.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='storage_allocations'"
+        ).fetchone()
+        if not table:
+            return payload
+
+        cursor.execute(
+            """
+            SELECT
+                a.product_id,
+                a.location_code,
+                a.quantity,
+                p.product_name,
+                p.category,
+                p.brand,
+                p.model,
+                p.unit
+            FROM storage_allocations a
+            JOIN products p ON p.product_id = a.product_id
+            WHERE a.storage_type = ? AND a.quantity > 0
+            ORDER BY p.product_name, a.location_code, a.id
+            """,
+            (storage_type,),
+        )
+        rows = [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+    grouped = {}
+    for row in rows:
+        key = _clean(row.get("product_id")).upper()
+        if key not in grouped:
+            grouped[key] = {
+                "product_id": row.get("product_id") or "",
+                "product_name": row.get("product_name") or "",
+                "brand": row.get("brand") or "",
+                "model": row.get("model") or "",
+                "category": row.get("category") or label,
+                "location": "",
+                "current_quantity": 0.0,
+                "unit": row.get("unit") or "Nos",
+                "source": "Live Stock Movement",
+                "image_url": "",
+                "storage_source": label,
+                "_locations": [],
+            }
+        item = grouped[key]
+        item["current_quantity"] += float(row.get("quantity") or 0)
+        location = _clean(row.get("location_code"))
+        if location and location not in item["_locations"]:
+            item["_locations"].append(location)
+
+    products = []
+    for item in grouped.values():
+        locations = item.pop("_locations", [])
+        item["location"] = " | ".join(locations) if locations else label
+        products.append(item)
+
+    products.sort(key=lambda p: _clean(p.get("product_name")).lower())
+    payload["products"] = products
+    payload["summary"] = _summarize(products)
+    return payload
+
+
 def get_shelf_rack_payload():
-    # Empty by default: no demo products.
+    live = _allocation_payload("shelf")
+    if live.get("products"):
+        return live
+    # Runtime Excel remains available only as an empty-system fallback.
+    # Old bundled/demo data is intentionally not used in v2.4.
     return _read_payload(_shelf_file(), _empty_payload())
 
 
 def get_open_rack_payload():
-    runtime = _open_file()
-    if runtime.exists():
-        return _read_payload(runtime, _empty_payload())
-
-    if BUNDLED_OPEN_RACK_MASTER.exists():
-        return _read_payload(BUNDLED_OPEN_RACK_MASTER, _empty_payload())
-
-    return _empty_payload()
+    live = _allocation_payload("rack")
+    if live.get("products"):
+        return live
+    # No bundled Open Rack fallback: old data must not reappear after reset.
+    return _read_payload(_open_file(), _empty_payload())
 
 
 def get_combined_storage_products():
-    # Head Office visible inventory = 3D Shelf Rack + Open Rack.
-    combined = []
+    """Return one row per product with Rack + Shelf quantities combined."""
+    combined = {}
 
     for source_name, payload in (
         ("3D Shelf Rack", get_shelf_rack_payload()),
@@ -151,23 +233,51 @@ def get_combined_storage_products():
         for item in payload.get("products", []):
             if not isinstance(item, dict):
                 continue
-            product = dict(item)
-            product["storage_source"] = source_name
-            combined.append(product)
+            product_id = _clean(item.get("product_id")).upper()
+            key = product_id or _norm(item.get("product_name"))
+            if not key:
+                continue
 
-    return combined
+            quantity = 0.0
+            try:
+                quantity = float(item.get("current_quantity") or 0)
+            except (TypeError, ValueError):
+                pass
+
+            if key not in combined:
+                product = dict(item)
+                product["current_quantity"] = 0.0
+                product["_sources"] = []
+                product["_locations"] = []
+                combined[key] = product
+
+            product = combined[key]
+            product["current_quantity"] += quantity
+            if source_name not in product["_sources"]:
+                product["_sources"].append(source_name)
+            location = _clean(item.get("location"))
+            if location and location not in product["_locations"]:
+                product["_locations"].append(location)
+
+    products = []
+    for product in combined.values():
+        product["storage_source"] = " + ".join(product.pop("_sources", []))
+        locations = product.pop("_locations", [])
+        product["location"] = " | ".join(locations) if locations else "Unassigned"
+        products.append(product)
+
+    products.sort(key=lambda p: _clean(p.get("product_name")).lower())
+    return products
 
 
 def get_combined_storage_summary():
     products = get_combined_storage_products()
     quantity = 0.0
-
     for product in products:
         try:
             quantity += float(product.get("current_quantity") or 0)
         except (TypeError, ValueError):
             pass
-
     return {
         "total_products": len(products),
         "total_stock_quantity": quantity,
@@ -177,7 +287,6 @@ def get_combined_storage_summary():
 def get_storage_dual_summary():
     shelf = get_shelf_rack_payload()
     open_rack = get_open_rack_payload()
-
     return {
         "shelf_products": int(shelf["summary"].get("products", 0) or 0),
         "shelf_quantity": float(shelf["summary"].get("quantity", 0) or 0),
@@ -188,7 +297,6 @@ def get_storage_dual_summary():
         "open_rack_groups": int(open_rack["summary"].get("groups", 0) or 0),
         "open_rack_source_file": _clean(open_rack.get("source_file")),
     }
-
 
 def _base_product(index, item, quantity, unit, category, location, brand="", model="", prefix="ITEM"):
     return {

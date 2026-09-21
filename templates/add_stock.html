@@ -1471,19 +1471,82 @@ Stock Movement
                     </div>
 
 
+                    <!-- PHYSICAL STORAGE TARGET -->
+
+                    <div class="stock-field full storage-target-field">
+
+                        <label>
+                            Store In / Remove From
+                        </label>
+
+                        <input
+                            type="hidden"
+                            id="storageType"
+                            name="storage_type"
+                            value=""
+                        >
+
+                        <div class="storage-target-selector">
+
+                            <button
+                                type="button"
+                                id="storageTargetRack"
+                                class="storage-target-choice"
+                                data-storage-target="rack"
+                            >
+                                <span class="storage-target-icon">RACK</span>
+                                <span>
+                                    <strong>Rack</strong>
+                                    <small>Use Open Rack stock for this movement</small>
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                id="storageTargetShelf"
+                                class="storage-target-choice"
+                                data-storage-target="shelf"
+                            >
+                                <span class="storage-target-icon">SHELF</span>
+                                <span>
+                                    <strong>Shelf</strong>
+                                    <small>Use Shelf Rack stock for this movement</small>
+                                </span>
+                            </button>
+
+                        </div>
+
+                        <div class="storage-availability-strip">
+                            <div class="storage-availability-item">
+                                <small>Rack Available</small>
+                                <strong id="rackAvailableStock">0</strong>
+                            </div>
+                            <div class="storage-availability-item">
+                                <small>Shelf Available</small>
+                                <strong id="shelfAvailableStock">0</strong>
+                            </div>
+                        </div>
+
+                        <div id="storageSelectionNote" class="storage-selection-note">
+                            <strong>Choose Rack or Shelf.</strong> Quantity will be added to or removed only from the selected storage side.
+                        </div>
+
+                    </div>
+
+
                     <!-- LOCATION -->
 
                     <div class="stock-field">
 
                         <label for="location">
-                            Storage Location
+                            Rack / Shelf Position
                         </label>
 
                         <input
                             id="location"
                             name="location"
                             type="text"
-                            placeholder="Example: Category Storage"
+                            placeholder="Optional: Rack A, A1, Shelf B2..."
                         >
 
                     </div>
@@ -1570,7 +1633,7 @@ Stock Movement
                     <div class="product-status-cell quantity">
 
                         <small>
-                            CURRENT STOCK
+                            TOTAL PRODUCT STOCK
                         </small>
 
                         <strong id="productStatusStock">

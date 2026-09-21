@@ -505,3 +505,132 @@ body.modern-2026 textarea:focus-visible {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ============================================================
+   v2.4.0 — 2026 PROFESSIONAL REFINEMENT
+   Operational pages only. Protected Rack/Shelf + Storage View
+   never receive body.modern-2026 and therefore remain unchanged.
+============================================================ */
+body.modern-2026 {
+  --n-bg: #f2f5f9;
+  --n-surface: #ffffff;
+  --n-surface-2: #f7f9fc;
+  --n-surface-3: #edf3fb;
+  --n-ink: #091525;
+  --n-text: #24364a;
+  --n-muted: #657a90;
+  --n-line: #d9e2ec;
+  --n-line-strong: #c4d1df;
+  --n-accent: #1267e5;
+  --n-accent-strong: #0a51bb;
+  --n-accent-soft: #e9f2ff;
+  font-size: 16px;
+}
+body.modern-2026 .sidebar { padding: 20px 14px 15px; }
+body.modern-2026 .nav-button { min-height: 64px; border-radius: 15px; }
+body.modern-2026 .nav-button-content strong { font-size: 13.5px; }
+body.modern-2026 .nav-button-content small { font-size: 10px; line-height: 1.35; }
+body.modern-2026 .topbar { min-height: 84px; padding: 15px 30px; }
+body.modern-2026 .topbar-title strong { font-size: 18px; }
+body.modern-2026 .topbar-title small { font-size: 11px; }
+body.modern-2026 .page-content { padding-top: 30px; }
+body.modern-2026 .dashboard-heading h1,
+body.modern-2026 .stock-page-heading h1,
+body.modern-2026 .page-heading h1,
+body.modern-2026 .exec-head h1 { font-size: clamp(32px, 2.6vw, 44px); }
+body.modern-2026 .dashboard-summary-grid {
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 15px;
+}
+body.modern-2026 .dashboard-summary-card {
+  min-height: 148px;
+  padding: 22px;
+  border-radius: 22px;
+}
+body.modern-2026 .dashboard-summary-content small { font-size: 10.5px; }
+body.modern-2026 .dashboard-summary-content strong { font-size: clamp(31px, 2.6vw, 43px); }
+body.modern-2026 .dashboard-summary-content span { margin-top: 7px; font-size: 11px; line-height: 1.45; }
+body.modern-2026 .dashboard-summary-card.storage-rack::after { background: linear-gradient(90deg,#7c4dff,#b69cff); }
+body.modern-2026 .dashboard-summary-card.storage-shelf::after { background: linear-gradient(90deg,#00a36c,#79d7b5); }
+body.modern-2026 .dashboard-summary-card.outward-card::after { background: linear-gradient(90deg,#d44852,#ff969d); }
+body.modern-2026 .dashboard-actions { grid-template-columns: repeat(4,minmax(0,1fr)); }
+body.modern-2026 .dashboard-action { min-height: 94px; padding: 18px; border-radius: 18px; }
+body.modern-2026 .recent-stock-card { border-radius: 22px; }
+body.modern-2026 .recent-stock-header { padding: 22px 24px; }
+body.modern-2026 .recent-stock-header h2 { font-size: 20px; color: var(--n-ink); }
+body.modern-2026 .stock-form-card-new { border-radius: 24px; }
+body.modern-2026 .stock-section { padding: 28px; }
+body.modern-2026 .stock-section-heading { margin-bottom: 22px; }
+body.modern-2026 .stock-section-number { width: 44px; height: 44px; flex-basis: 44px; font-size: 15px; }
+body.modern-2026 .stock-section-heading h2 { font-size: 21px; }
+body.modern-2026 .stock-section-heading p { font-size: 10.5px; }
+body.modern-2026 .stock-field label { font-size: 10.5px; }
+body.modern-2026 .stock-field input,
+body.modern-2026 .stock-field select,
+body.modern-2026 .stock-field textarea { min-height: 51px; font-size: 13px; border-radius: 12px; }
+body.modern-2026 .field-help { font-size: 9.5px; line-height: 1.45; }
+body.modern-2026 .movement-choice { min-height: 92px; border-radius: 17px; }
+body.modern-2026 .movement-choice strong { font-size: 13px; }
+body.modern-2026 .movement-choice small { font-size: 9.5px; line-height: 1.45; }
+
+body.modern-2026 .storage-target-selector {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+body.modern-2026 .storage-target-choice {
+  min-height: 86px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--n-line-strong);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--n-text);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+}
+body.modern-2026 .storage-target-choice:hover { border-color: #8caee0; background: #f8fbff; }
+body.modern-2026 .storage-target-choice.active {
+  border-color: var(--n-accent);
+  background: var(--n-accent-soft);
+  box-shadow: 0 0 0 3px rgba(18,103,229,.08);
+}
+body.modern-2026 .storage-target-icon {
+  width: 46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border-radius:13px;
+  background:#eef3f9;color:#415b76;font-size:12px;font-weight:900;
+}
+body.modern-2026 .storage-target-choice.active .storage-target-icon { background:#fff;color:var(--n-accent); }
+body.modern-2026 .storage-target-choice strong { display:block;font-size:13px;color:var(--n-ink); }
+body.modern-2026 .storage-target-choice small { display:block;margin-top:4px;font-size:9.5px;color:var(--n-muted);line-height:1.35; }
+body.modern-2026 .storage-availability-strip {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px;
+}
+body.modern-2026 .storage-availability-item {
+  min-height:58px;padding:10px 13px;border:1px solid var(--n-line);border-radius:13px;background:var(--n-surface-2);
+}
+body.modern-2026 .storage-availability-item small { display:block;color:var(--n-muted);font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em; }
+body.modern-2026 .storage-availability-item strong { display:block;margin-top:5px;color:var(--n-ink);font-size:18px;font-weight:850; }
+body.modern-2026 .storage-selection-note {
+  margin-top:10px;padding:10px 12px;border-radius:11px;background:#f3f7fc;color:#536a82;font-size:10px;line-height:1.5;
+}
+body.modern-2026 .storage-selection-note strong { color:var(--n-ink); }
+
+body.modern-2026 .product-status-card.active { border:1px solid var(--n-line); border-radius:16px; background:#f9fbfd; }
+body.modern-2026 .quantity-area { gap:14px; }
+body.modern-2026 .quantity-summary,body.modern-2026 .quantity-control { border-radius:17px; }
+body.modern-2026 .quantity-input-row input { font-size:21px; font-weight:800; }
+body.modern-2026 .confirm-panel,body.modern-2026 .success-panel { border-radius:22px; }
+
+@media(max-width:1200px){
+  body.modern-2026 .dashboard-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  body.modern-2026 .dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:780px){
+  body.modern-2026 .dashboard-summary-grid,body.modern-2026 .dashboard-actions{grid-template-columns:1fr}
+  body.modern-2026 .storage-target-selector,body.modern-2026 .storage-availability-strip{grid-template-columns:1fr}
+  body.modern-2026 .stock-section{padding:20px 16px}
+}

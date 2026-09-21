@@ -187,6 +187,41 @@ def init_database(branch_key=None):
 
     cursor.execute(
         """
+        CREATE TABLE IF NOT EXISTS storage_allocations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id TEXT NOT NULL,
+            storage_type TEXT NOT NULL
+                CHECK (storage_type IN ('rack', 'shelf')),
+            location_code TEXT NOT NULL DEFAULT '',
+            quantity REAL NOT NULL DEFAULT 0
+                CHECK (quantity >= 0),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(product_id, storage_type, location_code),
+            FOREIGN KEY (product_id)
+                REFERENCES products(product_id)
+                ON UPDATE CASCADE
+                ON DELETE CASCADE
+        );
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_storage_allocations_product
+        ON storage_allocations(product_id);
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_storage_allocations_type
+        ON storage_allocations(storage_type);
+        """
+    )
+
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS import_errors (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
 

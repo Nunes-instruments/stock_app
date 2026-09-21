@@ -201,6 +201,252 @@ def clean_quantity(value):
     return number
 
 
+
+# =============================================================
+# RACK / SHELF OPERATIONAL ALLOCATIONS
+#
+# One product can be split across Rack and Shelf locations.
+# The product master keeps the grand quantity; this table keeps
+# the physical quantity in each storage side/location.
+# =============================================================
+
+def normalize_storage_type(value):
+    value = normalize_text(value).lower().replace("_", " ").strip()
+    if not value:
+        return ""
+    if value in {"rack", "open", "open rack", "open-rack"}:
+        return "rack"
+    if value in {"shelf", "shelf rack", "3d shelf", "3d shelf rack", "shelf-rack"}:
+        return "shelf"
+    raise ValueError("Storage must be either Rack or Shelf.")
+
+
+def _ensure_storage_allocation_table(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS storage_allocations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id TEXT NOT NULL,
+            storage_type TEXT NOT NULL
+                CHECK (storage_type IN ('rack', 'shelf')),
+            location_code TEXT NOT NULL DEFAULT '',
+            quantity REAL NOT NULL DEFAULT 0
+                CHECK (quantity >= 0),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(product_id, storage_type, location_code),
+            FOREIGN KEY (product_id)
+                REFERENCES products(product_id)
+                ON UPDATE CASCADE
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+
+def _default_storage_location(storage_type):
+    return "Open Rack" if storage_type == "rack" else "Shelf Rack"
+
+
+def _upsert_storage_allocation(cursor, product_id, storage_type, location_code, amount, now):
+    cursor.execute(
+        """
+        SELECT id, quantity
+        FROM storage_allocations
+        WHERE product_id = ? AND storage_type = ? AND location_code = ?
+        """,
+        (product_id, storage_type, location_code),
+    )
+    row = cursor.fetchone()
+    if row:
+        new_value = float(row["quantity"] or 0) + float(amount or 0)
+        cursor.execute(
+            "UPDATE storage_allocations SET quantity = ?, updated_at = ? WHERE id = ?",
+            (new_value, now, row["id"]),
+        )
+        return new_value
+
+    cursor.execute(
+        """
+        INSERT INTO storage_allocations
+        (product_id, storage_type, location_code, quantity, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (product_id, storage_type, location_code, float(amount or 0), now, now),
+    )
+    return float(amount or 0)
+
+
+def get_product_storage_allocations(product_id):
+    product_id = normalize_product_id(product_id)
+    if not product_id:
+        return {
+            "storage_allocations": [],
+            "rack_quantity": 0,
+            "shelf_quantity": 0,
+            "allocated_quantity": 0,
+        }
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        _ensure_storage_allocation_table(cursor)
+        cursor.execute(
+            """
+            SELECT storage_type, location_code, quantity
+            FROM storage_allocations
+            WHERE product_id = ? AND quantity > 0
+            ORDER BY storage_type, location_code, id
+            """,
+            (product_id,),
+        )
+        rows = [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+    rack = sum(float(row.get("quantity") or 0) for row in rows if row.get("storage_type") == "rack")
+    shelf = sum(float(row.get("quantity") or 0) for row in rows if row.get("storage_type") == "shelf")
+    for row in rows:
+        row["quantity"] = clean_quantity(row.get("quantity"))
+
+    return {
+        "storage_allocations": rows,
+        "rack_quantity": clean_quantity(rack),
+        "shelf_quantity": clean_quantity(shelf),
+        "allocated_quantity": clean_quantity(rack + shelf),
+    }
+
+
+def apply_storage_allocation(
+    cursor,
+    product_id,
+    movement_type,
+    quantity,
+    storage_type,
+    storage_location,
+    now,
+    expected_previous_quantity=0,
+):
+    _ensure_storage_allocation_table(cursor)
+    storage_type = normalize_storage_type(storage_type)
+    requested_location = normalize_text(storage_location)
+    quantity = float(quantity or 0)
+    expected_previous_quantity = float(expected_previous_quantity or 0)
+
+    cursor.execute(
+        """
+        SELECT id, storage_type, location_code, quantity
+        FROM storage_allocations
+        WHERE product_id = ? AND quantity > 0
+        ORDER BY id
+        """,
+        (product_id,),
+    )
+    existing_rows = [dict(row) for row in cursor.fetchall()]
+    active_types = sorted({row["storage_type"] for row in existing_rows})
+
+    if not storage_type:
+        if len(active_types) == 1:
+            storage_type = active_types[0]
+        elif not active_types:
+            # Backward compatibility for older callers. The new UI always asks.
+            storage_type = "shelf"
+        else:
+            raise ValueError("Choose Rack or Shelf for this movement.")
+
+    default_location = _default_storage_location(storage_type)
+    bootstrap_location = requested_location or default_location
+
+    allocated_before = sum(float(row.get("quantity") or 0) for row in existing_rows)
+    gap = expected_previous_quantity - allocated_before
+    if gap > 0.000001:
+        _upsert_storage_allocation(
+            cursor, product_id, storage_type, bootstrap_location, gap, now
+        )
+    elif gap < -0.000001:
+        raise ValueError(
+            "Storage allocation is above the product total. Run the clean reset or correct the storage allocation before moving stock."
+        )
+
+    affected_locations = []
+
+    if movement_type == "inward":
+        target_location = requested_location or default_location
+        location_after = _upsert_storage_allocation(
+            cursor, product_id, storage_type, target_location, quantity, now
+        )
+        affected_locations.append(target_location)
+    else:
+        if requested_location:
+            cursor.execute(
+                """
+                SELECT id, location_code, quantity
+                FROM storage_allocations
+                WHERE product_id = ? AND storage_type = ?
+                  AND UPPER(TRIM(location_code)) = UPPER(TRIM(?))
+                  AND quantity > 0
+                ORDER BY id
+                """,
+                (product_id, storage_type, requested_location),
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT id, location_code, quantity
+                FROM storage_allocations
+                WHERE product_id = ? AND storage_type = ? AND quantity > 0
+                ORDER BY id
+                """,
+                (product_id, storage_type),
+            )
+
+        rows = [dict(row) for row in cursor.fetchall()]
+        available = sum(float(row.get("quantity") or 0) for row in rows)
+        if quantity > available + 0.000001:
+            label = "Rack" if storage_type == "rack" else "Shelf"
+            raise ValueError(
+                f"Outward quantity cannot exceed {label} stock. Available in {label}: {clean_quantity(available)}."
+            )
+
+        remaining = quantity
+        for row in rows:
+            if remaining <= 0.000001:
+                break
+            current = float(row.get("quantity") or 0)
+            take = min(current, remaining)
+            new_value = current - take
+            affected_locations.append(row.get("location_code") or default_location)
+            if new_value <= 0.000001:
+                cursor.execute("DELETE FROM storage_allocations WHERE id = ?", (row["id"],))
+            else:
+                cursor.execute(
+                    "UPDATE storage_allocations SET quantity = ?, updated_at = ? WHERE id = ?",
+                    (new_value, now, row["id"]),
+                )
+            remaining -= take
+        location_after = 0
+
+    cursor.execute(
+        "SELECT COALESCE(SUM(quantity), 0) AS total FROM storage_allocations WHERE product_id = ? AND quantity > 0",
+        (product_id,),
+    )
+    total_after = float(cursor.fetchone()["total"] or 0)
+    cursor.execute(
+        "SELECT COALESCE(SUM(quantity), 0) AS total FROM storage_allocations WHERE product_id = ? AND storage_type = ? AND quantity > 0",
+        (product_id, storage_type),
+    )
+    type_after = float(cursor.fetchone()["total"] or 0)
+
+    return {
+        "storage_type": storage_type,
+        "storage_label": "Rack" if storage_type == "rack" else "Shelf",
+        "storage_location": requested_location or (affected_locations[0] if len(set(affected_locations)) == 1 and affected_locations else default_location),
+        "affected_locations": sorted(set(affected_locations)),
+        "storage_type_quantity_after": clean_quantity(type_after),
+        "storage_total_quantity_after": clean_quantity(total_after),
+        "location_quantity_after": clean_quantity(location_after),
+    }
+
 # =============================================================
 # STORAGE CATEGORY MASTER
 # =============================================================
@@ -1321,6 +1567,8 @@ def process_stock_movement(
     model="",
     unit="Nos",
     location="",
+    storage_type="",
+    storage_location="",
     reason="",
     reason_label="",
     reference="",
@@ -1374,6 +1622,14 @@ def process_stock_movement(
 
     location = normalize_text(
         location
+    )
+
+    storage_type = normalize_storage_type(
+        storage_type
+    )
+
+    storage_location = normalize_text(
+        storage_location
     )
 
     reason = normalize_text(
@@ -1682,6 +1938,29 @@ def process_stock_movement(
             )
 
         # =====================================================
+        # PHYSICAL RACK / SHELF QUANTITY
+        # =====================================================
+
+        allocation_result = apply_storage_allocation(
+            cursor=cursor,
+            product_id=product_id,
+            movement_type=movement_type,
+            quantity=quantity,
+            storage_type=storage_type,
+            storage_location=storage_location or location,
+            now=now,
+            expected_previous_quantity=previous_quantity,
+        )
+
+        allocated_total = float(
+            allocation_result.get("storage_total_quantity_after") or 0
+        )
+        if abs(allocated_total - float(new_quantity or 0)) > 0.000001:
+            raise ValueError(
+                "Rack/Shelf quantity and product total did not match. Movement was cancelled."
+            )
+
+        # =====================================================
         # HISTORY DESCRIPTION
         # =====================================================
 
@@ -1693,6 +1972,15 @@ def process_stock_movement(
                 else "OUTWARD"
             )
         ]
+
+        history_parts.append(
+            f"Storage: {allocation_result.get('storage_label')}"
+            + (
+                f" / {allocation_result.get('storage_location')}"
+                if allocation_result.get("storage_location")
+                else ""
+            )
+        )
 
         if reason_label:
 
@@ -1831,6 +2119,24 @@ def process_stock_movement(
                     new_quantity
                 ),
 
+            "storage_type":
+                allocation_result.get("storage_type"),
+
+            "storage_label":
+                allocation_result.get("storage_label"),
+
+            "storage_location":
+                allocation_result.get("storage_location"),
+
+            "affected_locations":
+                allocation_result.get("affected_locations", []),
+
+            "storage_type_quantity_after":
+                allocation_result.get("storage_type_quantity_after", 0),
+
+            "storage_total_quantity_after":
+                allocation_result.get("storage_total_quantity_after", 0),
+
             "unit":
                 unit,
 
@@ -1874,6 +2180,8 @@ def stock_movement(
     model="",
     unit="Nos",
     location="",
+    storage_type="",
+    storage_location="",
     reason="",
     reason_label="",
     reference="",
@@ -1892,6 +2200,8 @@ def stock_movement(
         model=model,
         unit=unit,
         location=location,
+        storage_type=storage_type,
+        storage_location=storage_location,
         reason=reason,
         reason_label=reason_label,
         reference=reference,

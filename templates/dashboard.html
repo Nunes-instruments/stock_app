@@ -557,7 +557,7 @@ Dashboard
             </h1>
 
             <p>
-                Head Office inventory from Open Rack and 3D Shelf Rack, with clear daily stock activity.
+                Live inventory control. Every movement updates the selected Rack or Shelf quantity and the totals below.
             </p>
 
         </div>
@@ -566,119 +566,76 @@ Dashboard
 
 
     <!-- =====================================================
-         SUMMARY
+         SUMMARY — LIVE RACK + SHELF SOURCE OF TRUTH
     ====================================================== -->
 
     <section class="dashboard-summary-grid">
 
-
-        <!-- TOTAL PRODUCTS -->
-
         <article class="dashboard-summary-card">
-
             <div class="dashboard-summary-icon">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
             </div>
-
             <div class="dashboard-summary-content">
-
-                <small>
-                    Total Products
-                </small>
-
-                <strong>
-                    {{ summary.total_products | default(0) | int }}
-                </strong>
-
-                <span>
-                    3D Shelf {{ storage_dual_summary.shelf_products|default(0)|int }} + Open Rack {{ storage_dual_summary.open_rack_products|default(0)|int }}
-                </span>
-
+                <small>Total Products</small>
+                <strong>{{ summary.total_products | default(0) | int }}</strong>
+                <span>Unique products currently stored in Rack or Shelf</span>
             </div>
-
         </article>
 
-
-        <!-- TOTAL STOCK -->
-
         <article class="dashboard-summary-card">
-
             <div class="dashboard-summary-icon green">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
             </div>
-
             <div class="dashboard-summary-content">
-
-                <small>
-                    Total Stock
-                </small>
-
-                <strong>
-                    {{ summary.total_stock_quantity | default(0) | int }}
-                </strong>
-
-                <span>
-                    3D Shelf {{ storage_dual_summary.shelf_quantity|default(0)|int }} + Open Rack {{ storage_dual_summary.open_rack_quantity|default(0)|int }}
-                </span>
-
+                <small>Total Quantity</small>
+                <strong>{{ summary.total_stock_quantity | default(0) | int }}</strong>
+                <span>Rack + Shelf physical quantity combined</span>
             </div>
-
         </article>
 
+        <article class="dashboard-summary-card storage-rack">
+            <div class="dashboard-summary-icon orange">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 10h16M4 15h16"/></svg>
+            </div>
+            <div class="dashboard-summary-content">
+                <small>Rack Stock</small>
+                <strong>{{ storage_dual_summary.open_rack_quantity|default(0)|int }}</strong>
+                <span>{{ storage_dual_summary.open_rack_products|default(0)|int }} products in Rack</span>
+            </div>
+        </article>
 
-        <!-- INWARD TODAY -->
+        <article class="dashboard-summary-card storage-shelf">
+            <div class="dashboard-summary-icon green">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 10h16M4 15h16"/></svg>
+            </div>
+            <div class="dashboard-summary-content">
+                <small>Shelf Stock</small>
+                <strong>{{ storage_dual_summary.shelf_quantity|default(0)|int }}</strong>
+                <span>{{ storage_dual_summary.shelf_products|default(0)|int }} products in Shelf</span>
+            </div>
+        </article>
 
         <article class="dashboard-summary-card">
-
             <div class="dashboard-summary-icon green">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
             </div>
-
             <div class="dashboard-summary-content">
-
-                <small>
-                    Inward Today
-                </small>
-
-                <strong>
-                    {{ summary.stock_added_today | default(0) | int }}
-                </strong>
-
-                <span>
-                    Stock received today
-                </span>
-
+                <small>Inward Today</small>
+                <strong>{{ summary.stock_added_today | default(0) | int }}</strong>
+                <span>Quantity received today</span>
             </div>
-
         </article>
 
-
-        <!-- IMPORTS -->
-
-        <article class="dashboard-summary-card">
-
-            <div class="dashboard-summary-icon orange">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+        <article class="dashboard-summary-card outward-card">
+            <div class="dashboard-summary-icon red">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>
             </div>
-
             <div class="dashboard-summary-content">
-
-                <small>
-                    Excel Imports
-                </small>
-
-                <strong>
-                    {{ total_imports | default(0) | int }}
-                </strong>
-
-                <span>
-                    Import operations completed
-                </span>
-
+                <small>Outward Today</small>
+                <strong>{{ summary.stock_outward_today | default(0) | int }}</strong>
+                <span>Quantity removed today</span>
             </div>
-
         </article>
-
 
     </section>
 

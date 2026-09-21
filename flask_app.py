@@ -35,6 +35,7 @@ from stock_service import (
     add_stock,
     process_stock_movement,
     is_product_in_storage_master,
+    get_product_storage_allocations,
 )
 
 from excel_handler import (
@@ -838,19 +839,7 @@ def dashboard():
             combined_summary.get("total_stock_quantity", 0) or 0
         )
 
-        active_ids = {
-            normalize_text(item.get("product_id"))
-            for item in combined_products
-            if normalize_text(item.get("product_id"))
-        }
-
-        recent_entries = []
-        for entry in get_recent_stock_entries(limit=60):
-            entry_id = normalize_text(entry.get("product_id"))
-            if entry_id and entry_id in active_ids:
-                recent_entries.append(entry)
-            if len(recent_entries) >= 10:
-                break
+        recent_entries = get_recent_stock_entries(limit=10)
     else:
         summary["total_products"] = 0
         summary["total_stock_quantity"] = 0
@@ -1058,6 +1047,12 @@ def api_get_product(
             )
         )
 
+        product.update(
+            get_product_storage_allocations(
+                product_id
+            )
+        )
+
         return jsonify(
             {
                 "success":
@@ -1161,6 +1156,8 @@ def api_edit_product(product_id):
                 model=model,
                 unit=unit,
                 location=location,
+                storage_type="shelf",
+                storage_location=location,
                 reason="rack_direct_edit",
                 reason_label="Shelf Rack Direct Edit",
                 remarks="Quantity changed directly from Shelf Rack product details.",
@@ -1275,6 +1272,18 @@ def stock_movement_api():
                     data.get(
                         "location",
                         "",
+                    ),
+
+                storage_type=
+                    data.get(
+                        "storage_type",
+                        "",
+                    ),
+
+                storage_location=
+                    data.get(
+                        "storage_location",
+                        data.get("location", ""),
                     ),
 
                 reason=
