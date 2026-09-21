@@ -33,13 +33,20 @@ function Get-NunesHealth {
 function Ensure-FiveMinuteUpdateTask {
     try {
         $taskCommand = ('"{0}"' -f $UpdateBat)
-        & schtasks.exe /Create /F /SC MINUTE /MO 5 /TN $TaskName /TR $taskCommand /RL HIGHEST | Out-Null
-        Say '[OK] GitHub update check is set to every 5 minutes.'
+        & schtasks.exe /Create /F /SC MINUTE /MO 5 /TN $TaskName /TR $taskCommand /RL HIGHEST 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Say '[OK] GitHub update check is set to every 5 minutes.'
+            return $true
+        }
+        Say '[INFO] Task Scheduler permission unavailable; existing schedule is unchanged.'
+        return $false
     }
     catch {
-        Say '[INFO] Could not refresh the 5-minute task; existing schedule is unchanged.'
+        Say '[INFO] Task Scheduler permission unavailable; existing schedule is unchanged.'
+        return $false
     }
 }
+
 
 function Stop-NunesServer {
     if (Test-Path $PidFile) {
@@ -54,7 +61,7 @@ function Stop-NunesServer {
         Remove-Item $PidFile -Force -ErrorAction SilentlyContinue
     }
 
-    # v2.4.3 fallback: if a stale/older NUNES Stock listener still owns port 5000,
+    # v2.5.2 fallback: if a stale/older NUNES Stock listener still owns port 5000,
     # confirm it through the NUNES health endpoint before stopping it.
     $listeners = @(Get-NetTCPConnection -State Listen -LocalPort 5000 -ErrorAction SilentlyContinue)
     if ($listeners.Count -gt 0) {
@@ -96,12 +103,12 @@ function Test-NunesHealth {
 }
 
 if (-not (Test-Path (Join-Path $AppDir '.git'))) {
-    Say '[INFO] This folder is not connected to GitHub. Run the v2.4.3 full setup.'
+    Say '[INFO] This folder is not connected to GitHub. Run the v2.5.2 full setup.'
     exit 0
 }
 
 if (-not (Test-Path $RuntimePython)) {
-    Say '[INFO] Runtime missing. Run the v2.4.3 full setup.'
+    Say '[INFO] Runtime missing. Run the v2.5.2 full setup.'
     exit 0
 }
 

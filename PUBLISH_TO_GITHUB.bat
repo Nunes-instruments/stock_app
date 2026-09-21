@@ -63,9 +63,11 @@ git add --renormalize . >nul 2>&1
 if errorlevel 1 goto :FAIL
 
 echo [4/5] Creating commit if needed...
+set "APPVER=unknown"
+if exist "VERSION" set /p APPVER=<VERSION
 git diff --cached --quiet
 if errorlevel 1 (
-  git commit -m "NUNES Stock v2.5.0 - production release"
+  git commit -m "NUNES Stock v%APPVER% - production release"
   if errorlevel 1 goto :FAIL
 ) else (
   echo No new code changes to commit.
