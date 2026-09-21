@@ -54,7 +54,7 @@ function Stop-NunesServer {
         Remove-Item $PidFile -Force -ErrorAction SilentlyContinue
     }
 
-    # v2.4.2 fallback: if a stale/older NUNES Stock listener still owns port 5000,
+    # v2.4.3 fallback: if a stale/older NUNES Stock listener still owns port 5000,
     # confirm it through the NUNES health endpoint before stopping it.
     $listeners = @(Get-NetTCPConnection -State Listen -LocalPort 5000 -ErrorAction SilentlyContinue)
     if ($listeners.Count -gt 0) {
@@ -96,12 +96,12 @@ function Test-NunesHealth {
 }
 
 if (-not (Test-Path (Join-Path $AppDir '.git'))) {
-    Say '[INFO] This folder is not connected to GitHub. Run the v2.4.2 full setup.'
+    Say '[INFO] This folder is not connected to GitHub. Run the v2.4.3 full setup.'
     exit 0
 }
 
 if (-not (Test-Path $RuntimePython)) {
-    Say '[INFO] Runtime missing. Run the v2.4.2 full setup.'
+    Say '[INFO] Runtime missing. Run the v2.4.3 full setup.'
     exit 0
 }
 

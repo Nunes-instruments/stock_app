@@ -1,6 +1,6 @@
 """Force-reset the live NUNES Stock inventory to zero, with recovery backup.
 
-v2.4.2 behavior:
+v2.4.3 behavior:
 - Back up the entire live mutable data folder first.
 - Remove live SQLite database files completely (including WAL/SHM companions).
 - Remove runtime storage/import/export/cache sources that can make old stock reappear.
@@ -14,8 +14,16 @@ from __future__ import annotations
 
 import shutil
 import sqlite3
+import sys
 from datetime import datetime
 from pathlib import Path
+
+# When executed directly as scripts\reset_clean_inventory.py, Python adds only
+# the scripts folder to sys.path. Add the application root explicitly so imports
+# such as `database` and `runtime_paths` always work on Windows.
+APP_DIR = Path(__file__).resolve().parents[1]
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
 
 from database import BRANCHES, get_database_path, init_all_branch_databases
 from runtime_paths import DATA_DIR, DB_DIR, ensure_runtime_dirs
@@ -37,7 +45,7 @@ def _backup_data() -> Path:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_root = DATA_DIR.parent / "clean_reset_backups"
     backup_root.mkdir(parents=True, exist_ok=True)
-    target = backup_root / f"before_v2_4_2_clean_{stamp}"
+    target = backup_root / f"before_v2_4_3_clean_{stamp}"
     target.mkdir(parents=True, exist_ok=False)
 
     if DATA_DIR.exists():
@@ -138,7 +146,7 @@ def main() -> int:
     removed_databases = _remove_live_databases()
     cleared_sources = _clear_runtime_sources()
 
-    # Recreate brand-new empty databases from the current v2.4.2 schema.
+    # Recreate brand-new empty databases from the current v2.4.3 schema.
     init_all_branch_databases()
     verification = _verify_zero()
 
