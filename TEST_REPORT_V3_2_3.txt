@@ -1,0 +1,29 @@
+NUNES STOCK v3.2.3 - BUILD TEST REPORT
+=======================================
+
+Scope
+-----
+Hotfix for v3.2.2 Step 7 false failure and future Git updater robustness.
+
+Verified in build environment
+-----------------------------
+- Python application source compilation: PASS
+- Full Flask/HTTP preflight in this build container: NOT RUN (Flask is not installed here).
+  The target Windows installer runs scripts\preflight.py before Git setup.
+  The user's v3.2.2 Windows run already passed that Step 6 preflight on the
+  same application code; v3.2.3 changes installer/Git/updater scripts only.
+- Protected Rack/Shelf/3D SHA-256 manifest: PASS
+- No SQLite databases bundled in release: PASS
+- No runtime WAL/SHM/log data bundled: PASS
+- VERSION and version_info: 3.2.3
+- Installer is persistent/visible and uses port 5055.
+- Git setup now judges native commands by process exit code.
+- Successful Git branch messages written to STDERR no longer trigger rollback.
+- Automatic Git updater uses the same exit-code-based Git wrapper.
+
+Windows-only verification
+-------------------------
+Task Scheduler, UAC elevation, Windows Firewall, and the final Waitress listener
+must be verified by the 10-stage installer on the target Windows PC. The
+installer remains open and reports the exact failing stage if a Windows-only
+operation fails.

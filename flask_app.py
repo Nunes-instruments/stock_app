@@ -1,8 +1,7 @@
 from pathlib import Path
-from datetime import datetime
 from io import BytesIO
+from datetime import datetime
 import json
-import pandas as pd
 
 from flask import (
     Flask,
@@ -21,6 +20,8 @@ from database import (
     init_database,
     init_all_branch_databases,
     get_connection,
+    get_inventory_revision,
+    bump_inventory_revision,
     BRANCHES,
     DEFAULT_BRANCH_KEY,
     get_active_branch_key,
@@ -30,12 +31,20 @@ from database import (
 from stock_service import (
     get_dashboard_summary,
     get_all_products,
+    get_inventory_products,
     get_recent_stock_entries,
+    get_stock_history,
     get_product,
     add_stock,
     process_stock_movement,
+    archive_product,
+    restore_product,
     is_product_in_storage_master,
-    get_product_storage_allocations,
+    clean_quantity,
+    get_shelf_rack_state,
+    assign_product_to_shelf,
+    unassign_product_from_shelf,
+    set_shelf_rack_count,
 )
 
 from excel_handler import (
@@ -45,6 +54,7 @@ from excel_handler import (
     update_master_stock_excel,
     MASTER_STOCK_FILE,
     get_master_stock_file,
+    get_excel_template_bytes,
 )
 
 from runtime_paths import (
@@ -53,28 +63,6 @@ from runtime_paths import (
     get_flask_secret_key,
 )
 from version_info import APP_VERSION, BUILD_DATE
-
-from storage_dual_master import (
-    get_shelf_rack_payload,
-    get_open_rack_payload,
-    get_storage_dual_summary,
-    get_combined_storage_products,
-    get_combined_storage_summary,
-    import_storage_excel,
-)
-
-from rack_shelf_document import (
-    get_rack_shelf_inventory,
-    import_rack_shelf_document,
-    apply_document_counts_to_overview,
-)
-
-from company_dashboard import (
-    ensure_storage_layout_tables,
-    get_company_overview,
-    import_racks_excel,
-    import_shelves_excel,
-)
 
 from product_image_service import (
     get_cached_product_image_url,
@@ -96,9 +84,13 @@ app.secret_key = get_flask_secret_key()
 # DEVELOPMENT / CACHE SETTINGS
 # =============================================================
 
-app.config["TEMPLATES_AUTO_RELOAD"] = False
+app.config[
+    "TEMPLATES_AUTO_RELOAD"
+] = True
 
-app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 86400
+app.config[
+    "SEND_FILE_MAX_AGE_DEFAULT"
+] = 0
 
 
 # =============================================================
@@ -116,36 +108,43 @@ BASE_DIR = (
 # =============================================================
 
 init_all_branch_databases()
-ensure_storage_layout_tables()
 
 
 @app.context_processor
 def inject_system_metadata():
+    branch_key = get_active_branch_key()
     return {
         "app_version": APP_VERSION,
         "build_date": BUILD_DATE,
+        "inventory_revision": get_inventory_revision(branch_key),
     }
-
-
-@app.after_request
-def add_dynamic_response_headers(response):
-    response.headers["X-Nunes-Stock-Version"] = APP_VERSION
-    if response.mimetype == "text/html":
-        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
-    return response
 
 
 @app.route("/api/system/health")
 def system_health():
+    branch_key = get_active_branch_key()
     return jsonify(
         {
             "success": True,
             "status": "online",
             "version": APP_VERSION,
             "build_date": BUILD_DATE,
-            "active_branch": get_active_branch_key(),
+            "active_branch": branch_key,
+            "inventory_revision": get_inventory_revision(branch_key),
+        }
+    )
+
+
+@app.route("/api/system/state")
+def system_state():
+    """Lightweight endpoint used by all browsers for live stock refresh."""
+    branch_key = get_active_branch_key()
+    return jsonify(
+        {
+            "success": True,
+            "version": APP_VERSION,
+            "branch": branch_key,
+            "inventory_revision": get_inventory_revision(branch_key),
         }
     )
 
@@ -697,137 +696,6 @@ def api_product_preview_image():
     return jsonify(result)
 
 
-
-# =============================================================
-# ALL COMPANY DASHBOARD / RACK + SHELF LAYOUT
-# =============================================================
-
-@app.route("/company-dashboard")
-def all_company_dashboard():
-    overview = apply_document_counts_to_overview(get_company_overview())
-    storage_dual_summary = get_storage_dual_summary()
-    return render_template(
-        "company_dashboard.html",
-        overview=overview,
-        storage_dual_summary=storage_dual_summary,
-    )
-
-
-@app.route("/rack-shelf")
-def rack_shelf_page():
-    selected_branch = DEFAULT_BRANCH_KEY
-    rack_inventory = get_rack_shelf_inventory(DEFAULT_BRANCH_KEY)
-    upload_result = session.pop("rack_shelf_upload_result", None)
-
-    return render_template(
-        "rack_shelf.html",
-        rack_inventory=rack_inventory,
-        upload_result=upload_result,
-        selected_branch=selected_branch,
-    )
-
-
-@app.route("/rack-shelf/upload", methods=["POST"])
-def rack_shelf_upload():
-    selected_branch = DEFAULT_BRANCH_KEY
-
-    uploaded = request.files.get("file")
-    if not uploaded or not normalize_text(uploaded.filename):
-        session["rack_shelf_upload_result"] = {
-            "error": "Please select an Excel file."
-        }
-        return redirect(url_for("rack_shelf_page"))
-
-    try:
-        result = import_rack_shelf_document(uploaded, selected_branch)
-        session["rack_shelf_upload_result"] = {
-            "source_file": result.get("source_file", ""),
-            "summary": result.get("summary", {}),
-        }
-    except Exception as error:
-        session["rack_shelf_upload_result"] = {"error": str(error)}
-
-    return redirect(url_for("rack_shelf_page"))
-
-
-@app.route("/storage-layout/import/<kind>", methods=["POST"])
-def storage_layout_import(kind):
-    branch_key = normalize_text(request.form.get("branch", "")).lower()
-    if branch_key not in BRANCHES:
-        branch_key = DEFAULT_BRANCH_KEY
-
-    uploaded = request.files.get("file")
-    if not uploaded or not normalize_text(uploaded.filename):
-        session["layout_import_result"] = {
-            "error": "Please select an Excel file."
-        }
-        return redirect(url_for("all_company_dashboard"))
-
-    try:
-        if kind == "racks":
-            result = import_racks_excel(uploaded, branch_key)
-        elif kind == "shelves":
-            result = import_shelves_excel(uploaded, branch_key)
-        else:
-            raise ValueError("Unknown storage-layout import type.")
-
-        session["layout_import_result"] = result
-    except Exception as error:
-        session["layout_import_result"] = {"error": str(error)}
-
-    return redirect(url_for("all_company_dashboard"))
-
-
-@app.route("/storage-layout/template/<kind>")
-def storage_layout_template(kind):
-    output = BytesIO()
-
-    if kind == "racks":
-        frame = pd.DataFrame(
-            [
-                {
-                    "Rack Code": "R1",
-                    "Rack Name": "Main Instrument Rack",
-                    "Notes": "Example row - replace with your rack details",
-                }
-            ]
-        )
-        file_name = "NUNES_Rack_Import_Template.xlsx"
-
-    elif kind == "shelves":
-        frame = pd.DataFrame(
-            [
-                {
-                    "Rack Code": "R1",
-                    "Shelf Code": "S1",
-                    "Shelf Name": "Top Shelf",
-                    "Position": 1,
-                    "Product ID": "",
-                    "Mapped Quantity": 0,
-                    "Notes": "Product ID is optional",
-                }
-            ]
-        )
-        file_name = "NUNES_Shelf_Import_Template.xlsx"
-
-    else:
-        return json_error("Unknown template type.", 404)
-
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        frame.to_excel(writer, index=False, sheet_name="Import Template")
-
-    output.seek(0)
-    return send_file(
-        output,
-        as_attachment=True,
-        download_name=file_name,
-        mimetype=(
-            "application/vnd.openxmlformats-officedocument."
-            "spreadsheetml.sheet"
-        ),
-    )
-
-
 # =============================================================
 # DASHBOARD
 # =============================================================
@@ -835,44 +703,88 @@ def storage_layout_template(kind):
 @app.route("/")
 def dashboard():
 
-    summary = get_dashboard_summary()
-    storage_dual_summary = get_storage_dual_summary()
+    summary = (
+        get_dashboard_summary()
+    )
 
-    if get_active_branch_key() == DEFAULT_BRANCH_KEY:
-        combined_summary = get_combined_storage_summary()
-        combined_products = get_combined_storage_products()
-
-        summary["total_products"] = int(
-            combined_summary.get("total_products", 0) or 0
+    recent_entries = (
+        get_recent_stock_entries(
+            limit=10
         )
-        summary["total_stock_quantity"] = float(
-            combined_summary.get("total_stock_quantity", 0) or 0
-        )
-
-        recent_entries = get_recent_stock_entries(limit=10)
-    else:
-        summary["total_products"] = 0
-        summary["total_stock_quantity"] = 0
-        summary["stock_added_today"] = 0
-        recent_entries = []
+    )
 
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
-        cursor.execute("SELECT COUNT(*) AS total FROM import_history")
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total
+            FROM import_history
+            """
+        )
+
         row = cursor.fetchone()
-        total_imports = row["total"] if row else 0
+
+        total_imports = (
+            row["total"]
+            if row
+            else 0
+        )
+
     finally:
+
         conn.close()
+
+    branch_overview = []
+    for branch_key, branch in BRANCHES.items():
+        branch_conn = get_connection(branch_key)
+        try:
+            product_row = branch_conn.execute(
+                """
+                SELECT COUNT(*) AS products,
+                       COALESCE(SUM(current_quantity), 0) AS quantity
+                FROM products
+                WHERE COALESCE(is_active, 1) = 1
+                """
+            ).fetchone()
+            today = datetime.now().strftime("%Y-%m-%d")
+            movement_row = branch_conn.execute(
+                """
+                SELECT
+                    COALESCE(SUM(CASE WHEN new_quantity > previous_quantity
+                        THEN quantity_added ELSE 0 END), 0) AS inward,
+                    COALESCE(SUM(CASE WHEN new_quantity < previous_quantity
+                        THEN quantity_added ELSE 0 END), 0) AS outward
+                FROM stock_entries
+                WHERE stock_date = ?
+                """,
+                (today,),
+            ).fetchone()
+            branch_overview.append(
+                {
+                    "key": branch_key,
+                    "name": branch["name"],
+                    "products": int(product_row["products"] or 0),
+                    "quantity": clean_quantity(product_row["quantity"]),
+                    "inward": clean_quantity(movement_row["inward"]),
+                    "outward": clean_quantity(movement_row["outward"]),
+                    "active": branch_key == get_active_branch_key(),
+                }
+            )
+        finally:
+            branch_conn.close()
 
     return render_template(
         "dashboard.html",
         summary=summary,
         recent_entries=recent_entries,
         total_imports=total_imports,
-        storage_dual_summary=storage_dual_summary,
+        branch_overview=branch_overview,
+        inventory_revision=get_inventory_revision(),
     )
+
 
 # =============================================================
 # ADD STOCK / STOCK MOVEMENT PAGE
@@ -1023,27 +935,8 @@ def api_get_product(
                 404,
             )
 
-        # -----------------------------------------------------
-        # Do not expose obsolete/sample DB products as active
-        # stock products.
-        # -----------------------------------------------------
-
-        if not is_product_in_storage_master(
-            product.get(
-                "product_name"
-            ),
-            product.get(
-                "category"
-            ),
-        ):
-
-            return json_error(
-                (
-                    "Product is not part of the "
-                    "active storage product master."
-                ),
-                404,
-            )
+        if not int(product.get("is_active", 1) or 0):
+            return json_error("Product is archived.", 404)
 
         product = dict(
             product
@@ -1054,12 +947,6 @@ def api_get_product(
         ] = clean_quantity(
             product.get(
                 "current_quantity"
-            )
-        )
-
-        product.update(
-            get_product_storage_allocations(
-                product_id
             )
         )
 
@@ -1111,11 +998,6 @@ def api_edit_product(product_id):
             return json_error("Category is required.", 400)
         if not product_name:
             return json_error("Product Name is required.", 400)
-        if not is_product_in_storage_master(product_name, category):
-            return json_error(
-                f"'{product_name}' is not configured under '{category}'. Use an existing configured category/product name.",
-                400,
-            )
 
         current_quantity = float(existing.get("current_quantity") or 0)
         target_quantity = data.get("current_quantity", current_quantity)
@@ -1147,6 +1029,8 @@ def api_edit_product(product_id):
             )
             if cursor.rowcount != 1:
                 raise ValueError("Product could not be updated.")
+            if abs(target_quantity - current_quantity) <= 0.0000001:
+                bump_inventory_revision(conn=conn)
             conn.commit()
         except Exception:
             conn.rollback()
@@ -1166,8 +1050,6 @@ def api_edit_product(product_id):
                 model=model,
                 unit=unit,
                 location=location,
-                storage_type="shelf",
-                storage_location=location,
                 reason="rack_direct_edit",
                 reason_label="Shelf Rack Direct Edit",
                 remarks="Quantity changed directly from Shelf Rack product details.",
@@ -1284,18 +1166,6 @@ def stock_movement_api():
                         "",
                     ),
 
-                storage_type=
-                    data.get(
-                        "storage_type",
-                        "",
-                    ),
-
-                storage_location=
-                    data.get(
-                        "storage_location",
-                        data.get("location", ""),
-                    ),
-
                 reason=
                     data.get(
                         "reason",
@@ -1389,6 +1259,49 @@ def stock_movement_api():
 
 
 # =============================================================
+# SAFE PRODUCT ARCHIVE / RESTORE
+# =============================================================
+
+@app.route("/api/product/<product_id>/archive", methods=["POST"])
+def api_archive_product(product_id):
+    try:
+        data = request.get_json(silent=True) or {}
+        result = archive_product(product_id, reason=data.get("reason", ""))
+        try:
+            update_master_stock_excel()
+        except Exception as excel_error:
+            print("MASTER EXCEL UPDATE WARNING AFTER ARCHIVE:", excel_error)
+        return jsonify(
+            {
+                "success": True,
+                "message": "Product removed from active stock. History was preserved.",
+                "result": result,
+            }
+        )
+    except Exception as error:
+        return json_error(error, 400)
+
+
+@app.route("/api/product/<product_id>/restore", methods=["POST"])
+def api_restore_product(product_id):
+    try:
+        result = restore_product(product_id)
+        try:
+            update_master_stock_excel()
+        except Exception as excel_error:
+            print("MASTER EXCEL UPDATE WARNING AFTER RESTORE:", excel_error)
+        return jsonify(
+            {
+                "success": True,
+                "message": "Product restored to active stock.",
+                "result": result,
+            }
+        )
+    except Exception as error:
+        return json_error(error, 400)
+
+
+# =============================================================
 # CURRENT STOCK
 # =============================================================
 
@@ -1397,10 +1310,33 @@ def stock_movement_api():
 )
 def current_stock():
 
-    if get_active_branch_key() == DEFAULT_BRANCH_KEY:
-        products = get_combined_storage_products()
+    show_archived = (
+        normalize_text(request.args.get("show", "")).lower()
+        == "archived"
+    )
+
+    active_branch_key = get_active_branch_key()
+    active_branch_name = get_branch_name(active_branch_key)
+    active_branch_short = active_branch_name.split(" – ", 1)[0]
+
+    if show_archived:
+        products = [
+            product
+            for product in get_inventory_products(include_archived=True)
+            if not int(product.get("is_active", 1) or 0)
+        ]
     else:
-        products = []
+        products = get_inventory_products()
+
+    # Stock status is derived only from real current quantity.  This app
+    # does not yet have a per-product reorder-level field, so the low-stock
+    # threshold is deliberately explicit instead of pretending there is one.
+    low_stock_threshold = 5.0
+
+    total_products = 0
+    in_stock_products = 0
+    low_stock_products = 0
+    out_of_stock_products = 0
 
     for product in products:
         product["image_info"] = get_cached_product_image_info(
@@ -1408,62 +1344,93 @@ def current_stock():
             product.get("brand"),
             product.get("model"),
         )
-        product["image_url"] = (
-            product.get("image_url")
-            or product["image_info"].get("image_url", "")
+        product["image_url"] = product["image_info"].get("image_url", "")
+        product["rack_mapped"] = is_product_in_storage_master(
+            product.get("product_name"),
+            product.get("category"),
         )
+        product["branch_key"] = active_branch_key
+        product["branch_name"] = active_branch_name
+        product["branch_short"] = active_branch_short
+
+        try:
+            quantity = float(product.get("current_quantity") or 0)
+        except (TypeError, ValueError):
+            quantity = 0.0
+
+        if quantity <= 0:
+            status_key = "out"
+            status_label = "Out of Stock"
+            out_of_stock_products += 1
+        elif quantity <= low_stock_threshold:
+            status_key = "low"
+            status_label = "Low Stock"
+            low_stock_products += 1
+        else:
+            status_key = "in"
+            status_label = "In Stock"
+            in_stock_products += 1
+
+        product["stock_status_key"] = status_key
+        product["stock_status_label"] = status_label
+
+        updated_raw = normalize_text(product.get("updated_at"))
+        product["updated_display"] = updated_raw or "—"
+        if updated_raw:
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+                try:
+                    updated_dt = datetime.strptime(updated_raw[:19], fmt)
+                    product["updated_display"] = updated_dt.strftime("%d %b %Y · %I:%M %p")
+                    break
+                except ValueError:
+                    continue
+
+        total_products += 1
+
+    dashboard_summary = get_dashboard_summary()
+
+    branch_overview = []
+    for branch_key, branch in BRANCHES.items():
+        branch_conn = get_connection(branch_key)
+        try:
+            row = branch_conn.execute(
+                """
+                SELECT COUNT(*) AS products,
+                       COALESCE(SUM(current_quantity), 0) AS quantity
+                FROM products
+                WHERE COALESCE(is_active, 1) = 1
+                """
+            ).fetchone()
+            branch_overview.append(
+                {
+                    "key": branch_key,
+                    "name": branch["name"],
+                    "short_name": branch["name"].split(" – ", 1)[0],
+                    "products": int(row["products"] or 0),
+                    "quantity": clean_quantity(row["quantity"]),
+                    "active": branch_key == active_branch_key,
+                }
+            )
+        finally:
+            branch_conn.close()
 
     return render_template(
         "current_stock.html",
         products=products,
+        show_archived=show_archived,
+        active_branch_short=active_branch_short,
+        branch_overview=branch_overview,
+        low_stock_threshold=clean_quantity(low_stock_threshold),
+        stock_metrics={
+            "total_products": total_products,
+            "in_stock_products": in_stock_products,
+            "low_stock_products": low_stock_products,
+            "out_of_stock_products": out_of_stock_products,
+            "inward_today": dashboard_summary.get("stock_added_today", 0),
+            "outward_today": dashboard_summary.get("stock_outward_today", 0),
+            "available_quantity": dashboard_summary.get("total_stock_quantity", 0),
+        },
     )
-
-# =============================================================
-# OPEN RACK
-# =============================================================
-
-@app.route("/open-rack")
-def open_rack_page():
-    if get_active_branch_key() == DEFAULT_BRANCH_KEY:
-        payload = get_open_rack_payload()
-    else:
-        payload = {"source_file": "", "products": [], "summary": {"products": 0, "quantity": 0, "groups": 0}}
-
-    products = list(payload.get("products", []))
-    locations = set()
-    for product in products:
-        for raw_location in normalize_text(product.get("location")).split("|"):
-            location = raw_location.strip()
-            if location:
-                locations.add(location)
-
-    return render_template(
-        "open_rack.html",
-        products=products,
-        summary=payload.get("summary", {}),
-        source_file=payload.get("source_file", ""),
-        location_count=len(locations),
-    )
-
-
-@app.route("/open-rack/upload", methods=["POST"])
-def open_rack_upload():
-    if get_active_branch_key() != DEFAULT_BRANCH_KEY:
-        flash("Open Rack is available only for Head Office.", "error")
-        return redirect(url_for("open_rack_page"))
-
-    uploaded = request.files.get("file")
-    if not uploaded or not normalize_text(uploaded.filename):
-        flash("Please select an Open Rack Excel file.", "error")
-        return redirect(url_for("open_rack_page"))
-
-    try:
-        result = import_storage_excel(uploaded, "open")
-        count = int(result.get("summary", {}).get("products", 0) or 0)
-        flash(f"Open Rack Excel loaded: {count} products.", "success")
-    except Exception as error:
-        flash(str(error), "error")
-    return redirect(url_for("open_rack_page"))
 
 
 # =============================================================
@@ -1479,71 +1446,80 @@ def open_rack_upload():
 )
 def storage_view():
 
-    if get_active_branch_key() == DEFAULT_BRANCH_KEY:
-        shelf_payload = get_shelf_rack_payload()
-        open_payload = get_open_rack_payload()
-        storage_dual_summary = get_storage_dual_summary()
-    else:
-        shelf_payload = {"source_file": "", "products": [], "summary": {"products": 0, "quantity": 0, "groups": 0}}
-        open_payload = {"source_file": "", "products": [], "summary": {"products": 0, "quantity": 0, "groups": 0}}
-        storage_dual_summary = {
-            "shelf_products": 0,
-            "shelf_quantity": 0,
-            "shelf_groups": 0,
-            "shelf_source_file": "",
-            "open_rack_products": 0,
-            "open_rack_quantity": 0,
-            "open_rack_groups": 0,
-            "open_rack_source_file": "",
-        }
+    # Keep the existing Open Rack/category experience on its original
+    # filtered product set, but give the Shelf Rack access to every active
+    # product in the selected branch. This fixes the old problem where a
+    # newly-added inventory product could not be attached to a shelf.
+    products = get_all_products()
+    shelf_inventory = get_inventory_products()
+
+    for product in shelf_inventory:
+        product["image_info"] = get_cached_product_image_info(
+            product.get("product_name"),
+            product.get("brand"),
+            product.get("model"),
+        )
+        product["image_url"] = product["image_info"].get("image_url", "")
 
     return render_template(
         "storage_view.html",
-        products=[],
-        shelf_products=shelf_payload.get("products", []),
-        open_rack_products=open_payload.get("products", []),
-        storage_dual_summary=storage_dual_summary,
+        products=products,
+        shelf_inventory=shelf_inventory,
+        shelf_rack_state=get_shelf_rack_state(),
     )
 
 
-@app.route("/storage-view/upload/shelf-rack", methods=["POST"])
-def storage_view_upload_shelf_rack():
-    if get_active_branch_key() != DEFAULT_BRANCH_KEY:
-        return json_error("3D Shelf Rack Excel is Head Office only.", 400)
+# =============================================================
+# SHARED SHELF / RACK POSITION API
+#
+# These endpoints change only physical shelf placement. They never alter
+# stock quantity. All data is branch-scoped through get_connection().
+# =============================================================
 
-    uploaded = request.files.get("file")
-    if not uploaded or not normalize_text(uploaded.filename):
-        return json_error("Please select a 3D Shelf Rack Excel file.", 400)
+@app.route("/api/shelf-rack/state", methods=["GET"])
+def api_shelf_rack_state():
+    return jsonify({"success": True, "state": get_shelf_rack_state()})
 
+
+@app.route("/api/shelf-rack/assign", methods=["POST"])
+def api_shelf_rack_assign():
     try:
-        payload = import_storage_excel(uploaded, "shelf")
-        return jsonify({
-            "success": True,
-            "message": "3D Shelf Rack Excel loaded.",
-            "summary": payload.get("summary", {}),
-        })
-    except Exception as error:
+        data = request.get_json(silent=True) or {}
+        result = assign_product_to_shelf(
+            data.get("product_id", ""),
+            data.get("rack_number"),
+            data.get("shelf_number"),
+        )
+        return jsonify({"success": True, "assignment": result})
+    except ValueError as error:
         return json_error(error, 400)
+    except Exception as error:
+        return json_error(error, 500)
 
 
-@app.route("/storage-view/upload/open-rack", methods=["POST"])
-def storage_view_upload_open_rack():
-    if get_active_branch_key() != DEFAULT_BRANCH_KEY:
-        return json_error("Open Rack Master Excel is Head Office only.", 400)
-
-    uploaded = request.files.get("file")
-    if not uploaded or not normalize_text(uploaded.filename):
-        return json_error("Please select an Open Rack Master Excel file.", 400)
-
+@app.route("/api/shelf-rack/unassign", methods=["POST"])
+def api_shelf_rack_unassign():
     try:
-        payload = import_storage_excel(uploaded, "open")
-        return jsonify({
-            "success": True,
-            "message": "Open Rack Master Excel loaded.",
-            "summary": payload.get("summary", {}),
-        })
-    except Exception as error:
+        data = request.get_json(silent=True) or {}
+        result = unassign_product_from_shelf(data.get("product_id", ""))
+        return jsonify({"success": True, "result": result})
+    except ValueError as error:
         return json_error(error, 400)
+    except Exception as error:
+        return json_error(error, 500)
+
+
+@app.route("/api/shelf-rack/layout", methods=["POST"])
+def api_shelf_rack_layout():
+    try:
+        data = request.get_json(silent=True) or {}
+        result = set_shelf_rack_count(data.get("rack_count"))
+        return jsonify({"success": True, "layout": result})
+    except ValueError as error:
+        return json_error(error, 400)
+    except Exception as error:
+        return json_error(error, 500)
+
 
 # =============================================================
 # STORAGE CATEGORIES API
@@ -2036,6 +2012,23 @@ def storage_category_delete(
 
 
 # =============================================================
+# EXCEL IMPORT TEMPLATE
+# =============================================================
+
+@app.route("/download-import-template")
+def download_import_template():
+    return send_file(
+        BytesIO(get_excel_template_bytes()),
+        as_attachment=True,
+        download_name="NUNES_Stock_Import_Template.xlsx",
+        mimetype=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+    )
+
+
+# =============================================================
 # EXCEL IMPORT
 # =============================================================
 
@@ -2172,12 +2165,81 @@ def import_excel():
     "/import-history"
 )
 def import_history():
+    """Branch-aware stock movement ledger plus Excel import history.
+
+    The navigation label has always said Stock History, so this page now
+    surfaces the real stock_entries ledger first instead of showing only
+    Excel uploads.  Excel import history remains available as a second tab.
+    """
+
+    active_branch_key = get_active_branch_key()
+    active_branch_name = get_branch_name(active_branch_key)
+    active_branch_short = active_branch_name.split(" – ", 1)[0]
+
+    movements = get_stock_history(limit=5000)
+
+    total_inward_qty = 0.0
+    total_outward_qty = 0.0
+    products_touched = set()
+
+    for row in movements:
+        movement_type = normalize_text(row.get("movement_type")).lower()
+        quantity = float(row.get("quantity_added") or 0)
+
+        if movement_type == "outward":
+            total_outward_qty += quantity
+            row["movement_label"] = "Outward"
+            row["movement_sign"] = "-"
+        else:
+            total_inward_qty += quantity
+            row["movement_label"] = "Inward"
+            row["movement_sign"] = "+"
+            row["movement_type"] = "inward"
+
+        product_id = normalize_text(row.get("product_id"))
+        if product_id:
+            products_touched.add(product_id)
+
+        source = normalize_text(row.get("source"))
+        if row.get("import_id"):
+            row["source_key"] = "excel"
+            row["source_label"] = "Excel Import"
+        else:
+            row["source_key"] = "manual"
+            row["source_label"] = source or "Stock Movement"
+
+        remarks = normalize_text(row.get("remarks"))
+        reference = ""
+        detail_parts = []
+        if remarks:
+            for raw_part in remarks.split("|"):
+                part = raw_part.strip()
+                if not part or part.upper() in {"INWARD", "OUTWARD"}:
+                    continue
+                if part.lower().startswith("reference:"):
+                    reference = part.split(":", 1)[1].strip()
+                    continue
+                detail_parts.append(part)
+
+        row["reference"] = reference or normalize_text(row.get("entry_number"))
+        row["details_display"] = " · ".join(detail_parts) or "—"
+
+        timestamp = normalize_text(row.get("created_at"))
+        date_key = normalize_text(row.get("stock_date"))
+        row["date_key"] = (timestamp[:10] if len(timestamp) >= 10 else date_key[:10])
+        row["date_display"] = timestamp or date_key or "—"
+        if timestamp:
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+                try:
+                    parsed = datetime.strptime(timestamp[:19], fmt)
+                    row["date_display"] = parsed.strftime("%d %b %Y · %I:%M %p")
+                    break
+                except ValueError:
+                    continue
 
     conn = get_connection()
     cursor = conn.cursor()
-
     try:
-
         cursor.execute(
             """
             SELECT *
@@ -2185,20 +2247,22 @@ def import_history():
             ORDER BY id DESC
             """
         )
-
-        imports = [
-            dict(row)
-            for row
-            in cursor.fetchall()
-        ]
-
+        imports = [dict(row) for row in cursor.fetchall()]
     finally:
-
         conn.close()
 
     return render_template(
         "import_history.html",
+        movements=movements,
         imports=imports,
+        active_branch_short=active_branch_short,
+        history_metrics={
+            "total_movements": len(movements),
+            "inward_quantity": clean_quantity(total_inward_qty),
+            "outward_quantity": clean_quantity(total_outward_qty),
+            "products_touched": len(products_touched),
+            "excel_imports": len(imports),
+        },
     )
 
 
@@ -2260,6 +2324,6 @@ if __name__ == "__main__":
 
     app.run(
         host="0.0.0.0",
-        port=5000,
+        port=5055,
         debug=False,
     )

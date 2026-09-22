@@ -1,7 +1,13 @@
 param([ValidateSet('Staff','Owner')][string]$Role='Staff')
 $ErrorActionPreference = 'Stop'
 
-Write-Host "=== NUNES STOCK - $Role PC SETUP ===" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host " NUNES STOCK v3.2.11 - $Role DESKTOP SETUP" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "This PC will NOT install the stock application or database."
+Write-Host "It opens the central main server directly on port 5055."
+Write-Host "Future server releases are therefore available automatically."
+Write-Host "============================================================" -ForegroundColor Cyan
 
 $sourceRoot = Split-Path -Parent $PSScriptRoot
 $iconSource = Join-Path $sourceRoot 'static\NUNES_Stock.ico'
@@ -13,20 +19,23 @@ if(-not $server){ throw 'Server address cannot be blank.' }
 
 if($server -match '^https?://'){
     $url = $server.TrimEnd('/')
+    # When a bare http(s) URL has no explicit port, keep what the user supplied.
 } else {
-    $url = "http://${server}:5000"
+    $url = "http://${server}:5055"
 }
 
+$health = $null
 try {
-    Invoke-WebRequest -Uri "$url/api/system/health" -UseBasicParsing -TimeoutSec 5 | Out-Null
-    Write-Host '[OK] Main server is reachable.' -ForegroundColor Green
+    $health = Invoke-RestMethod -Uri "$url/api/system/health" -UseBasicParsing -TimeoutSec 5
+    if([string]$health.status -ne 'online'){ throw 'Health endpoint did not report online.' }
+    Write-Host ("[OK] Main server reachable. Version: {0}" -f $health.version) -ForegroundColor Green
 } catch {
-    Write-Host '[WARNING] Server is not reachable right now. Shortcut will still be created.' -ForegroundColor Yellow
+    Write-Host '[WARNING] Main server is not reachable right now.' -ForegroundColor Yellow
+    Write-Host 'The desktop shortcut will still be created; it will work when the server/network is available.' -ForegroundColor Yellow
 }
 
 $configDir = Join-Path $env:LOCALAPPDATA 'NunesStockClient'
 New-Item -ItemType Directory -Force -Path $configDir | Out-Null
-
 $iconDest = Join-Path $configDir 'NUNES_Stock.ico'
 Copy-Item -Path $iconSource -Destination $iconDest -Force
 
@@ -34,33 +43,62 @@ Copy-Item -Path $iconSource -Destination $iconDest -Force
     role = $Role
     server_url = $url
     configured_at = (Get-Date).ToString('s')
+    architecture = 'central-browser-client'
+    local_application = $false
 } | ConvertTo-Json | Set-Content (Join-Path $configDir 'client.json') -Encoding UTF8
 
-$desktop = [Environment]::GetFolderPath('Desktop')
+# Prefer browser app-mode so NUNES Stock feels like a desktop application.
+$browser = $null
+$browserArguments = $null
+$edgeCandidates = @(
+    "$env:ProgramFiles(x86)\Microsoft\Edge\Application\msedge.exe",
+    "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
+)
+$chromeCandidates = @(
+    "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+    "$env:ProgramFiles(x86)\Google\Chrome\Application\chrome.exe",
+    "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+)
+foreach($candidate in @($edgeCandidates + $chromeCandidates)){
+    if($candidate -and (Test-Path $candidate)){
+        $browser = $candidate
+        $browserArguments = "--app=`"$url`" --start-maximized"
+        break
+    }
+}
+if(-not $browser){
+    $browser = "$env:SystemRoot\explorer.exe"
+    $browserArguments = "`"$url`""
+}
 
-# Remove only old NUNES Stock shortcut files; never touch business data.
+$desktop = [Environment]::GetFolderPath('Desktop')
+$shortcutName = if($Role -eq 'Owner'){ 'NUNES Stock - Owner.lnk' } else { 'NUNES Stock - Staff.lnk' }
+$shortcutPath = Join-Path $desktop $shortcutName
+
+# Remove older NUNES Stock client shortcuts only. Never touch business data.
 @(
+    'NUNES Stock V3.lnk',
     'NUNES Stock - Staff.url',
     'NUNES Stock - Owner.url',
-    'NUNES Stock - Staff.lnk',
-    'NUNES Stock - Owner.lnk',
-    'NUNES Stock.lnk'
+    $shortcutName
 ) | ForEach-Object {
     $old = Join-Path $desktop $_
-    if(Test-Path $old){ Remove-Item $old -Force }
+    if(Test-Path $old){ Remove-Item $old -Force -ErrorAction SilentlyContinue }
 }
 
 $ws = New-Object -ComObject WScript.Shell
-$shortcutPath = Join-Path $desktop 'NUNES Stock.lnk'
 $shortcut = $ws.CreateShortcut($shortcutPath)
-$shortcut.TargetPath = "$env:SystemRoot\explorer.exe"
-$shortcut.Arguments = "`"$url`""
+$shortcut.TargetPath = $browser
+$shortcut.Arguments = $browserArguments
 $shortcut.WorkingDirectory = $configDir
 $shortcut.IconLocation = "$iconDest,0"
-$shortcut.Description = "Open NUNES Stock ($Role) from the main server"
+$shortcut.Description = "NUNES Stock $Role - live central server"
 $shortcut.Save()
 
-Write-Host '[OK] Branded desktop app icon created: NUNES Stock' -ForegroundColor Green
-Write-Host "Role: $Role"
-Write-Host "Server URL: $url"
-Start-Process $url
+Write-Host "[OK] Desktop shortcut created: $shortcutName" -ForegroundColor Green
+Write-Host "Server URL : $url"
+Write-Host "Role       : $Role"
+Write-Host "Updates    : Automatic from the main server; no local app update required." -ForegroundColor Green
+Write-Host "Live sync  : Browser checks the server every 5 seconds." -ForegroundColor Green
+
+Start-Process -FilePath $browser -ArgumentList $browserArguments

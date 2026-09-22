@@ -1,9 +1,7 @@
 @echo off
-setlocal
+setlocal EnableExtensions
 cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0windows\setup_main_server.ps1"
-if errorlevel 1 (
-  echo.
-  echo Setup did not complete. Read the message above.
-  pause
-)
+title NUNES Stock v3.2.8 - Main Server Setup
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0windows\run_update_visible.ps1"
+set "RC=%ERRORLEVEL%"
+exit /b %RC%

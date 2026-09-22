@@ -1,0 +1,29 @@
+NUNES STOCK v3.2.0 - VERIFICATION REPORT
+Date: 2026-09-22
+
+PASS - Python source compileall
+PASS - Jinja template parse
+PASS - Protected Rack / Shelf / 3D SHA-256 manifest unchanged
+PASS - Dashboard wired to Concept 3 Soft Gradient Modern stylesheet
+PASS - Dashboard live clock/greeting script present
+PASS - 5055 server launcher remains hidden for background mode
+PASS - Scheduled watchdog now uses wscript.exe wrapper (no console window)
+PASS - Scheduled GitHub updater now uses wscript.exe wrapper (no console window)
+PASS - 1-minute watchdog task configured
+PASS - 5-minute GitHub auto-update task configured
+PASS - Old port-5000 recurring watchdog/update task cleanup included
+PASS - Installed app Git repository initialization + origin URL included
+PASS - GitHub update pipeline keeps preflight, backup, health-check and rollback logic
+PASS - VERSION = 3.2.0
+
+PROTECTED FILES NOT MODIFIED
+- static/stock_3d.js
+- static/shelf_rack_3d.js
+- static/storage_view.js
+- templates/storage_view.html
+
+ENVIRONMENT LIMITATION
+The current execution environment does not have Flask/Waitress available and cannot download packages due network/DNS restrictions, so the Windows HTTP startup and Task Scheduler behavior cannot be physically executed here. The Windows installer runs dependency installation and production preflight on the target PC before declaring the server online.
+
+GITHUB CONNECTOR
+The repository was read successfully through the connected GitHub account, but write operations return GitHub API 403 "Resource not accessible by integration". Therefore this package includes PUBLISH_TO_GITHUB.bat to perform a normal authenticated Git push from the user's Windows PC. No force push is used.

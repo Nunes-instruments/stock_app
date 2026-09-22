@@ -18,18 +18,19 @@
 
 
     <!-- =====================================================
-         CSS
-         Protected Rack/Shelf + 3D pages keep their approved style.
-         All other pages use the simple professional v2.5 UI.
+         MAIN APPLICATION CSS
     ====================================================== -->
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=app_version) }}">
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css', v=app_version) }}"
+    >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='pro_theme.css', v=app_version) }}"
+    >
 
-    {% if request.endpoint in ['rack_shelf_page', 'storage_view'] %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='premium_ui_v62.css', v=app_version) }}">
-    {% else %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='pro_ui_v250.css', v=app_version) }}">
-    {% endif %}
+    {% block head_extra %}{% endblock %}
 
 
     <!-- =====================================================
@@ -218,8 +219,9 @@
 
 
 <body
-    class="{% if request.endpoint in ['rack_shelf_page', 'storage_view'] %}protected-storage-ui{% else %}pro-2026{% endif %}"
-    data-page="{{ request.endpoint or '' }}"
+    data-app-version="{{ app_version }}"
+    data-inventory-revision="{{ inventory_revision }}"
+    data-endpoint="{{ request.endpoint or '' }}"
 >
 
 
@@ -267,18 +269,200 @@
         ================================================== -->
 
         <nav class="nav">
-            <div class="nav-section-label">Inventory</div>
-            <a href="{{ url_for('dashboard') }}" class="nav-button {% if request.endpoint == 'dashboard' %}active{% endif %}"><span class="nav-button-icon"><svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z"/></svg></span><span class="nav-button-content"><strong>Dashboard</strong><small>Inventory overview</small></span><span class="nav-button-arrow">›</span></a>
-            <a href="{{ url_for('add_stock_page') }}" class="nav-button {% if request.endpoint == 'add_stock_page' %}active{% endif %}"><span class="nav-button-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span class="nav-button-content"><strong>Stock Movement</strong><small>Inward and outward</small></span><span class="nav-button-arrow">›</span></a>
-            <a href="{{ url_for('current_stock') }}" class="nav-button {% if request.endpoint == 'current_stock' %}active{% endif %}"><span class="nav-button-icon"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3"/></svg></span><span class="nav-button-content"><strong>Current Stock</strong><small>Products and quantity</small></span><span class="nav-button-arrow">›</span></a>
-            <div class="nav-section-label">Storage</div>
-            <a href="{{ url_for('open_rack_page') }}" class="nav-button {% if request.endpoint == 'open_rack_page' %}active{% endif %}"><span class="nav-button-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 10h16M4 15h16"/></svg></span><span class="nav-button-content"><strong>Open Rack</strong><small>Open Rack inventory</small></span><span class="nav-button-arrow">›</span></a>
-            <a href="{{ url_for('rack_shelf_page') }}" class="nav-button {% if request.endpoint == 'rack_shelf_page' %}active{% endif %}"><span class="nav-button-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M5 9h14M5 14h14"/></svg></span><span class="nav-button-content"><strong>Rack &amp; Shelf</strong><small>Approved rack layout</small></span><span class="nav-button-arrow">›</span></a>
-            <a href="{{ url_for('storage_view') }}" class="nav-button {% if request.endpoint == 'storage_view' %}active{% endif %}"><span class="nav-button-icon"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12 4 7.5M12 12l8-4.5M12 12v9"/></svg></span><span class="nav-button-content"><strong>3D Storage</strong><small>Interactive storage view</small></span><span class="nav-button-arrow">›</span></a>
-            <div class="nav-section-label">Tools</div>
-            <a href="{{ url_for('import_excel') }}" class="nav-button {% if request.endpoint == 'import_excel' %}active{% endif %}"><span class="nav-button-icon"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M12 10v7M9 14l3 3 3-3"/></svg></span><span class="nav-button-content"><strong>Excel Import</strong><small>Bulk stock entry</small></span><span class="nav-button-arrow">›</span></a>
-            <a href="{{ url_for('import_history') }}" class="nav-button {% if request.endpoint == 'import_history' %}active{% endif %}"><span class="nav-button-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="nav-button-content"><strong>History</strong><small>Movement records</small></span><span class="nav-button-arrow">›</span></a>
-            <a href="{{ url_for('all_company_dashboard') }}" class="nav-button {% if request.endpoint == 'all_company_dashboard' %}active{% endif %}"><span class="nav-button-icon"><svg viewBox="0 0 24 24"><path d="M3 21V9l6-4 6 4v12"/><path d="M15 21V6l6 3v12"/></svg></span><span class="nav-button-content"><strong>All Companies</strong><small>Branch overview</small></span><span class="nav-button-arrow">›</span></a>
+
+
+            <!-- HOME -->
+
+            <a
+                href="{{ url_for('dashboard') }}"
+                class="nav-button {% if request.endpoint == 'dashboard' %}active{% endif %}"
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Home
+                    </strong>
+
+                    <small>
+                        Stock overview
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- ADD STOCK -->
+
+            <a
+                href="{{ url_for('add_stock_page') }}"
+                class="nav-button {% if request.endpoint == 'add_stock_page' %}active{% endif %}"
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Add Stock
+                    </strong>
+
+                    <small>
+                        Add new items
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- CURRENT STOCK -->
+
+            <a
+                href="{{ url_for('current_stock') }}"
+                class="nav-button {% if request.endpoint == 'current_stock' %}active{% endif %}"
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Current Stock
+                    </strong>
+
+                    <small>
+                        Check quantity
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- STORAGE VIEW -->
+
+            <a
+                href="{{ url_for('storage_view') }}"
+                class="nav-button storage-nav-button {% if request.endpoint == 'storage_view' %}active{% endif %}"
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M3 21V9l6 3V9l6 3V6h6v15z"/><path d="M7 16h2M12 16h2M17 16h2"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Storage View
+                    </strong>
+
+                    <small>
+                        Interactive 3D storage
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- ADD FROM EXCEL -->
+
+            <a
+                href="{{ url_for('import_excel') }}"
+                class="nav-button {% if request.endpoint == 'import_excel' %}active{% endif %}"
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Add From Excel
+                    </strong>
+
+                    <small>
+                        Add many items
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- STOCK HISTORY -->
+
+            <a
+                href="{{ url_for('import_history') }}"
+                class="nav-button {% if request.endpoint == 'import_history' %}active{% endif %}"
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Stock History
+                    </strong>
+
+                    <small>
+                        Previous entries
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
         </nav>
 
 
@@ -360,23 +544,17 @@
             <div class="topbar-title">
 
                 <strong>
-                    Stock Management
+                    Instrument Stock Management
                 </strong>
 
                 <small>
-                    {{ active_branch_name }}
+                    {{ active_branch_name }} · Inventory, movement and storage control
                 </small>
 
             </div>
 
 
             <div class="topbar-actions">
-
-                {% if request.endpoint not in ['rack_shelf_page', 'storage_view'] %}
-                <div class="release-chip" title="Running release">
-                    v{{ app_version }} LIVE
-                </div>
-                {% endif %}
 
                 <details class="branch-switcher">
 
@@ -472,7 +650,6 @@
      THREE.JS
 ===================================================== -->
 
-{% if request.endpoint == 'storage_view' %}
 <script
     src="{{ url_for('static', filename='three.min.js', v=app_version) }}">
 </script>
@@ -485,7 +662,6 @@
 <script
     src="{{ url_for('static', filename='stock_3d.js', v=app_version) }}">
 </script>
-{% endif %}
 
 
 <!-- =====================================================
@@ -503,6 +679,15 @@
 
 <script
     src="{{ url_for('static', filename='app.js', v=app_version) }}">
+</script>
+
+
+<!-- =====================================================
+     LIVE CENTRAL-SERVER SYNC
+===================================================== -->
+
+<script
+    src="{{ url_for('static', filename='live_sync.js', v=app_version) }}">
 </script>
 
 

@@ -13,7 +13,7 @@ from database import (
     get_active_branch_key,
     get_branch_slug,
 )
-from stock_service import add_stock, get_all_products
+from stock_service import add_stock, get_inventory_products
 from runtime_paths import UPLOAD_DIR, PROCESSED_DIR, EXPORT_DIR
 
 
@@ -749,7 +749,7 @@ def update_master_stock_excel():
     - latest current stock report
     """
 
-    products = get_all_products()
+    products = get_inventory_products()
 
     workbook = Workbook()
 

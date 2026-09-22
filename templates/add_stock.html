@@ -1199,6 +1199,7 @@ Stock Movement
 
 </style>
 
+<link rel="stylesheet" href="{{ url_for('static', filename='stock_movement_v326.css', v=app_version) }}">
 
 <div class="stock-movement-page">
 
@@ -1219,6 +1220,14 @@ Stock Movement
                 Receive stock into inventory or dispatch stock out of inventory.
             </p>
 
+        </div>
+
+        <div class="v326-hero-tip" aria-hidden="true">
+            <span class="v326-hero-icon">◇</span>
+            <span>
+                <strong>Manage stock with confidence</strong>
+                <small>Accurate entry. Clear review. Safer inventory.</small>
+            </span>
         </div>
 
     </section>
@@ -1471,82 +1480,19 @@ Stock Movement
                     </div>
 
 
-                    <!-- PHYSICAL STORAGE TARGET -->
-
-                    <div class="stock-field full storage-target-field">
-
-                        <label>
-                            Store In / Remove From
-                        </label>
-
-                        <input
-                            type="hidden"
-                            id="storageType"
-                            name="storage_type"
-                            value=""
-                        >
-
-                        <div class="storage-target-selector">
-
-                            <button
-                                type="button"
-                                id="storageTargetRack"
-                                class="storage-target-choice"
-                                data-storage-target="rack"
-                            >
-                                <span class="storage-target-icon">RACK</span>
-                                <span>
-                                    <strong>Rack</strong>
-                                    <small>Use Open Rack stock for this movement</small>
-                                </span>
-                            </button>
-
-                            <button
-                                type="button"
-                                id="storageTargetShelf"
-                                class="storage-target-choice"
-                                data-storage-target="shelf"
-                            >
-                                <span class="storage-target-icon">SHELF</span>
-                                <span>
-                                    <strong>Shelf</strong>
-                                    <small>Use Shelf Rack stock for this movement</small>
-                                </span>
-                            </button>
-
-                        </div>
-
-                        <div class="storage-availability-strip">
-                            <div class="storage-availability-item">
-                                <small>Rack Available</small>
-                                <strong id="rackAvailableStock">0</strong>
-                            </div>
-                            <div class="storage-availability-item">
-                                <small>Shelf Available</small>
-                                <strong id="shelfAvailableStock">0</strong>
-                            </div>
-                        </div>
-
-                        <div id="storageSelectionNote" class="storage-selection-note">
-                            <strong>Choose Rack or Shelf.</strong> Quantity will be added to or removed only from the selected storage side.
-                        </div>
-
-                    </div>
-
-
                     <!-- LOCATION -->
 
                     <div class="stock-field">
 
                         <label for="location">
-                            Rack / Shelf Position
+                            Storage Location
                         </label>
 
                         <input
                             id="location"
                             name="location"
                             type="text"
-                            placeholder="Optional: Rack A, A1, Shelf B2..."
+                            placeholder="Example: Category Storage"
                         >
 
                     </div>
@@ -1633,7 +1579,7 @@ Stock Movement
                     <div class="product-status-cell quantity">
 
                         <small>
-                            TOTAL PRODUCT STOCK
+                            CURRENT STOCK
                         </small>
 
                         <strong id="productStatusStock">
@@ -1696,7 +1642,7 @@ Stock Movement
                     <div class="quantity-summary">
 
                         <small>
-                            TOTAL PRODUCT STOCK
+                            CURRENT STOCK
                         </small>
 
                         <strong id="currentStockValue">
@@ -2072,6 +2018,42 @@ Stock Movement
 
                     </div>
 
+                </div>
+
+
+                <!-- =================================================
+                     LIVE MOVEMENT SUMMARY - UI ONLY
+                     Existing stock logic remains unchanged.
+                ================================================== -->
+
+                <div class="v326-review-summary" aria-live="polite">
+                    <div class="v326-summary-title">
+                        <span class="v326-summary-badge">✓</span>
+                        <span>
+                            <strong>Movement Summary</strong>
+                            <small>Review the details before confirming this stock movement.</small>
+                        </span>
+                    </div>
+
+                    <div class="v326-summary-item">
+                        <small>Product</small>
+                        <strong id="v326SummaryProduct">Not selected</strong>
+                    </div>
+
+                    <div class="v326-summary-item">
+                        <small>Movement</small>
+                        <strong id="v326SummaryMovement" class="good">Inward Stock</strong>
+                    </div>
+
+                    <div class="v326-summary-item">
+                        <small>Quantity</small>
+                        <strong><span id="v326SummaryQuantity">1</span> <span id="v326SummaryUnit">Nos</span></strong>
+                    </div>
+
+                    <div class="v326-summary-item">
+                        <small>New Stock Level</small>
+                        <strong class="good"><span id="v326SummaryAfter">1</span> <span id="v326SummaryAfterUnit">Nos</span></strong>
+                    </div>
                 </div>
 
 
@@ -2722,5 +2704,6 @@ Stock Movement
 
 </script>
 
+<script src="{{ url_for('static', filename='stock_movement_v326.js', v=app_version) }}"></script>
 
 {% endblock %}

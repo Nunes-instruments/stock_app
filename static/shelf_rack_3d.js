@@ -1,25 +1,16 @@
 /* ============================================================
    NUNES STOCK MANAGEMENT
-   FAST HORIZONTAL 3D SHELF VIEW
+   SHARED SHELF RACK CONTROLLER
    shelf_rack_3d.js
-   VERSION 5.5
+   VERSION 6.0 / v3.2.11
 
-   STORAGE-ONLY UPDATE
-   ------------------------------------------------------------
-   - Default: 3 wide horizontal racks
-   - + Rack adds another rack instantly (client-side layout only)
-   - Existing products render immediately from embedded JSON
-   - New products appear automatically after Add Stock / Excel import
-   - Click product -> details + strict verified real-product image preview
-   - Left click product = select / inspect
-   - Right-click + hold + drag = rotate / tilt
-   - Wheel = zoom
-   - Double-click empty area = reset
-   - + / - stock buttons keep the existing /stock-movement endpoint
-   - Attach Excel keeps the existing /import-excel endpoint
-   - Existing Open Rack remains unchanged
+   IMPORTANT
+   - Rack count and product shelf positions are stored on MAIN SERVER.
+   - Every owner/staff browser sees the same layout for the active branch.
+   - Attach / move / remove changes physical placement only.
+   - Stock quantity remains in the normal products / stock movement tables.
+   - Existing Open Rack mode is left unchanged.
 ============================================================ */
-
 (function () {
     "use strict";
 
@@ -28,7 +19,6 @@
     const wrap = document.getElementById("shelfRackCanvasWrap");
     const viewport = document.getElementById("shelfRackFastViewport");
     const world = document.getElementById("shelfRackFastWorld");
-
     if (!app || !stage || !wrap || !viewport || !world) return;
 
     const activeBranch = String(app.dataset.activeBranch || "main").trim().toLowerCase();
@@ -41,6 +31,7 @@
 
     const addButton = document.getElementById("shelfRackQuickAdd");
     const removeButton = document.getElementById("shelfRackQuickRemove");
+    const attachTopButton = document.getElementById("shelfRackAttachProduct");
     const addRackButton = document.getElementById("shelfRackAddRack");
     const removeRackButton = document.getElementById("shelfRackRemoveRack");
     const fileInput = document.getElementById("shelfRackFileInput");
@@ -68,75 +59,120 @@
     const previewStatus = document.getElementById("shelfRackProductPreviewStatus");
     const previewSource = document.getElementById("shelfRackProductPreviewSource");
     const retryImageButton = document.getElementById("shelfRackRetryImage");
+
+    const locationListCard = document.getElementById("shelfLocationListCard");
+    const locationListTitle = document.getElementById("shelfLocationListTitle");
+    const locationListCopy = document.getElementById("shelfLocationListCopy");
+    const locationSearch = document.getElementById("shelfLocationSearch");
+    const locationAttachButton = document.getElementById("shelfLocationAttachButton");
+    const locationProductList = document.getElementById("shelfLocationProductList");
+
+    const attachModal = document.getElementById("shelfAttachModal");
+    const attachClose = document.getElementById("shelfAttachClose");
+    const attachTarget = document.getElementById("shelfAttachTarget");
+    const attachSearch = document.getElementById("shelfAttachSearch");
+    const attachProductList = document.getElementById("shelfAttachProductList");
+    const attachRackSelect = document.getElementById("shelfAttachRack");
+    const attachShelfSelect = document.getElementById("shelfAttachShelf");
+
     let previewRequestToken = 0;
+    let selectedProduct = null;
+    let selectedCard = null;
+    let selectedRack = 1;
+    let selectedShelf = 1;
+    let attachPinnedProductId = "";
+    const imageLookupCache = new Map();
 
     function safe(value, fallback) {
         const text = String(value === null || value === undefined ? "" : value).trim();
         return text || (fallback || "");
     }
-
     function numberValue(value) {
         const n = Number(value);
         return Number.isFinite(n) ? n : 0;
     }
-
     function formatQuantity(value, unit) {
         const n = numberValue(value);
-        const text = Number.isInteger(n)
-            ? String(n)
-            : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        const text = Number.isInteger(n) ? String(n) : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
         return text + " " + safe(unit, "Nos");
     }
-
     function escapeHtml(value) {
         return String(value === null || value === undefined ? "" : value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/\"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
-
     function setBusy(on, text) {
         if (busyText && text) busyText.textContent = text;
         if (!busy) return;
         busy.classList.toggle("active", !!on);
         busy.setAttribute("aria-hidden", on ? "false" : "true");
     }
-
-    function readProducts() {
-        const data = document.getElementById("shelfRackProductsData");
-        if (!data) return [];
-        try {
-            const parsed = JSON.parse(data.textContent || "[]");
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (error) {
-            console.error("ShelfRack3D: product JSON error", error);
-            return [];
-        }
+    function readJson(id, fallback) {
+        const node = document.getElementById(id);
+        if (!node) return fallback;
+        try { return JSON.parse(node.textContent || ""); } catch (error) { return fallback; }
+    }
+    function normalize(value) { return safe(value).toLowerCase(); }
+    function initials(product) {
+        const parts = safe(product && product.product_name, "Product").split(/\s+/).filter(Boolean);
+        return ((parts[0] ? parts[0][0] : "P") + (parts[1] ? parts[1][0] : "")).toUpperCase();
+    }
+    function productHaystack(product) {
+        return [product.product_name, product.product_id, product.brand, product.model, product.category]
+            .map(normalize).join(" ");
     }
 
-    const products = readProducts();
-    products.sort(function (a, b) {
-        const ak = safe(a.category) + "|" + safe(a.product_name) + "|" + safe(a.product_id);
-        const bk = safe(b.category) + "|" + safe(b.product_name) + "|" + safe(b.product_id);
-        return ak.localeCompare(bk);
+    const inventory = readJson("shelfInventoryData", []);
+    inventory.sort(function (a, b) {
+        return (safe(a.product_name) + "|" + safe(a.product_id)).localeCompare(safe(b.product_name) + "|" + safe(b.product_id));
     });
+    const productMap = new Map(inventory.map(function (p) { return [safe(p.product_id).toUpperCase(), p]; }));
 
-    let selectedProduct = null;
-    let selectedCard = null;
+    let state = readJson("shelfRackStateData", { rack_count: 3, shelves_per_rack: 5, positions: [] });
+    state.rack_count = Math.max(1, Number(state.rack_count || 3));
+    state.shelves_per_rack = Math.max(1, Number(state.shelves_per_rack || 5));
+    state.positions = Array.isArray(state.positions) ? state.positions : [];
+
+    function assignmentMap() {
+        const map = new Map();
+        state.positions.forEach(function (position) {
+            map.set(safe(position.product_id).toUpperCase(), position);
+        });
+        return map;
+    }
+
+    async function requestJson(url, options) {
+        const response = await fetch(url, Object.assign({
+            headers: { "Accept": "application/json" },
+            cache: "no-store"
+        }, options || {}));
+        let payload = {};
+        try { payload = await response.json(); } catch (ignore) {}
+        if (!response.ok || payload.success === false) {
+            throw new Error(payload.message || payload.error || "Request failed.");
+        }
+        return payload;
+    }
+
+    async function reloadState() {
+        const payload = await requestJson("/api/shelf-rack/state");
+        state = payload.state || state;
+        state.rack_count = Math.max(1, Number(state.rack_count || 3));
+        state.shelves_per_rack = Math.max(1, Number(state.shelves_per_rack || 5));
+        state.positions = Array.isArray(state.positions) ? state.positions : [];
+        if (selectedRack > state.rack_count) {
+            selectedRack = state.rack_count;
+            selectedShelf = 1;
+        }
+    }
 
     /* ========================================================
        MODE SWITCH
     ======================================================== */
-
     function focusStage(target) {
         if (!target || typeof target.scrollIntoView !== "function") return;
-        window.setTimeout(function () {
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 20);
+        window.setTimeout(function () { target.scrollIntoView({ behavior: "smooth", block: "start" }); }, 20);
     }
-
     function showShelfRack(options) {
         stage.classList.remove("hidden");
         stage.style.display = "block";
@@ -146,7 +182,6 @@
         if (openButton) openButton.classList.remove("active");
         if (!options || options.scroll !== false) focusStage(stage);
     }
-
     function showOpenRack(options) {
         if (!isMainBranch) return;
         stage.classList.add("hidden");
@@ -160,114 +195,61 @@
         }
         if (!options || options.scroll !== false) focusStage(openStage);
     }
-
-    if (shelfButton) {
-        shelfButton.addEventListener("click", function (event) {
-            event.preventDefault();
-            showShelfRack();
-        });
-    }
-
-    if (openButton) {
-        openButton.addEventListener("click", function (event) {
-            event.preventDefault();
-            showOpenRack();
-        });
-    }
-
-    let requestedMode = "";
-    try {
-        requestedMode = window.sessionStorage.getItem("nunes_storage_mode") || "";
-        window.sessionStorage.removeItem("nunes_storage_mode");
-    } catch (ignore) {}
-
-    if (requestedMode === "open" && isMainBranch) {
-        showOpenRack({ scroll: false });
-    } else {
-        showShelfRack({ scroll: false });
-    }
+    if (shelfButton) shelfButton.addEventListener("click", function (event) { event.preventDefault(); showShelfRack(); });
+    if (openButton) openButton.addEventListener("click", function (event) { event.preventDefault(); showOpenRack(); });
+    showShelfRack({ scroll: false });
 
     /* ========================================================
-       HORIZONTAL RACK LAYOUT
-       Default = 3 racks. User can add more with + Rack.
+       RACK RENDERING — SAME VISUAL LANGUAGE, SERVER POSITIONS
     ======================================================== */
-
-    const shelvesPerRack = 5;
-    const rackStorageKey = "nunes_horizontal_rack_count_v53_" + activeBranch;
-
-    let rackCount = 3;
-    try {
-        const storedRackCount = parseInt(window.localStorage.getItem(rackStorageKey) || "3", 10);
-        if (Number.isFinite(storedRackCount)) rackCount = Math.max(1, Math.min(12, storedRackCount));
-    } catch (ignore) {}
-
-    function initials(product) {
-        const name = safe(product.product_name, "Product");
-        const parts = name.split(/\s+/).filter(Boolean);
-        return ((parts[0] ? parts[0][0] : "P") + (parts[1] ? parts[1][0] : "")).toUpperCase();
+    function positionForProduct(productId) {
+        const id = safe(productId).toUpperCase();
+        return state.positions.find(function (p) { return safe(p.product_id).toUpperCase() === id; }) || null;
     }
-
-    function makeShelfBuckets() {
-        const totalShelves = rackCount * shelvesPerRack;
-        const buckets = Array.from({ length: totalShelves }, function () { return []; });
-
-        products.forEach(function (product, index) {
-            buckets[index % totalShelves].push({
-                product: product,
-                productIndex: index
-            });
-        });
-
-        return buckets;
+    function productsFor(rackNumber, shelfNumber) {
+        const ids = state.positions
+            .filter(function (p) {
+                return Number(p.rack_number) === Number(rackNumber) &&
+                    (shelfNumber === null || Number(p.shelf_number) === Number(shelfNumber));
+            })
+            .map(function (p) { return safe(p.product_id).toUpperCase(); });
+        return ids.map(function (id) { return productMap.get(id); }).filter(Boolean);
     }
-
-    function productCardHtml(entry, rackNumber, shelfNumber) {
-        const product = entry.product;
+    function productCardHtml(product, rackNumber, shelfNumber) {
         const stock = numberValue(product.current_quantity);
         const stockText = Number.isInteger(stock) ? String(stock) : String(Math.round(stock * 100) / 100);
-        const pos = "Rack " + rackNumber + " · Shelf " + shelfNumber;
-
         return [
             '<button type="button" class="fast-rack-product"',
-            ' data-product-index="', entry.productIndex, '"',
-            ' data-rack-position="', escapeHtml(pos), '"',
+            ' data-product-id="', escapeHtml(safe(product.product_id).toUpperCase()), '"',
+            ' data-rack-position="Rack ', rackNumber, ' · Shelf ', shelfNumber, '"',
             ' title="', escapeHtml(safe(product.product_name, "Product")), '">',
                 '<span class="fast-rack-package-mark">', escapeHtml(initials(product)), '</span>',
                 '<span class="fast-rack-package-name">', escapeHtml(safe(product.product_name, "Product")), '</span>',
-                '<span class="fast-rack-package-stock" data-stock-for="', entry.productIndex, '">',
-                    escapeHtml(stockText),
-                '</span>',
+                '<span class="fast-rack-package-stock">', escapeHtml(stockText), '</span>',
             '</button>'
         ].join("");
     }
-
-    function buildRackHtml(rackIndex, shelfBuckets) {
+    function buildRackHtml(rackIndex) {
         const rackNumber = rackIndex + 1;
         const shelves = [];
-
-        for (let shelfIndex = 0; shelfIndex < shelvesPerRack; shelfIndex += 1) {
+        for (let shelfIndex = 0; shelfIndex < state.shelves_per_rack; shelfIndex += 1) {
             const shelfNumber = shelfIndex + 1;
-            const bucketIndex = rackIndex * shelvesPerRack + shelfIndex;
-            const items = shelfBuckets[bucketIndex] || [];
-            const productsHtml = items.length
-                ? items.map(function (entry) {
-                    return productCardHtml(entry, rackNumber, shelfNumber);
-                }).join("")
-                : '<span class="fast-rack-empty-slot"></span>';
-
+            const items = productsFor(rackNumber, shelfNumber);
+            const selected = selectedRack === rackNumber && selectedShelf === shelfNumber;
             shelves.push(
-                '<div class="fast-rack-shelf" data-rack="' + rackNumber + '" data-shelf="' + shelfNumber + '">' +
-                    '<div class="fast-rack-shelf-products">' + productsHtml + '</div>' +
+                '<div class="fast-rack-shelf' + (selected ? ' selected-location' : '') + '" data-rack="' + rackNumber + '" data-shelf="' + shelfNumber + '">' +
+                    '<div class="fast-rack-shelf-products">' +
+                        (items.length ? items.map(function (p) { return productCardHtml(p, rackNumber, shelfNumber); }).join("") : '<span class="fast-rack-empty-slot"></span>') +
+                    '</div>' +
                     '<span class="fast-rack-shelf-edge"></span>' +
                 '</div>'
             );
         }
-
         return [
             '<section class="fast-rack-unit" aria-label="Rack ', rackNumber, '">',
-                '<div class="fast-rack-header">',
+                '<div class="fast-rack-header', (selectedRack === rackNumber && selectedShelf === null ? ' selected-location' : ''), '" data-rack-header="', rackNumber, '">',
                     '<strong>RACK ', rackNumber, '</strong>',
-                    '<span>', shelvesPerRack, ' shelves</span>',
+                    '<span>', state.shelves_per_rack, ' shelves · ', productsFor(rackNumber, null).length, ' products</span>',
                 '</div>',
                 '<div class="fast-rack-frame">',
                     '<span class="fast-rack-post fast-rack-post-left"></span>',
@@ -278,122 +260,300 @@
             '</section>'
         ].join("");
     }
-
-    function updateRackLabels() {
-        if (sceneTitle) sceneTitle.textContent = "3D Shelf Rack · " + rackCount + " Horizontal Racks";
-        if (sceneDescription) {
-            sceneDescription.textContent = "Products are arranged across wide horizontal racks. Left-drag to tilt, right-click + drag to move the scene, scroll to zoom, and click a product for its verified image preview.";
-        }
-        if (footer) footer.textContent = rackCount + " racks · " + products.length + " products · ready";
-        world.setAttribute("aria-label", rackCount + " horizontal storage racks");
-        if (removeRackButton) removeRackButton.disabled = rackCount <= 1;
-    }
-
     function renderRacks(options) {
-        const selectedId = selectedProduct ? safe(selectedProduct.product_id) : "";
-        const shelfBuckets = makeShelfBuckets();
-
-        world.innerHTML = Array.from({ length: rackCount }, function (_, rackIndex) {
-            return buildRackHtml(rackIndex, shelfBuckets);
+        const selectedId = selectedProduct ? safe(selectedProduct.product_id).toUpperCase() : "";
+        world.innerHTML = Array.from({ length: state.rack_count }, function (_, rackIndex) {
+            return buildRackHtml(rackIndex);
         }).join("");
-
         world.classList.add("ready");
-        updateRackLabels();
+        if (sceneTitle) sceneTitle.textContent = "3D Shelf Rack · " + state.rack_count + " Shared Racks";
+        if (sceneDescription) sceneDescription.textContent = "Click any shelf to see its product list below. Attach, move or remove shelf placement without changing stock quantity.";
+        if (footer) footer.textContent = state.rack_count + " racks · " + state.positions.length + " assigned products · " + inventory.length + " inventory products";
+        world.setAttribute("aria-label", state.rack_count + " shared horizontal storage racks");
+        if (removeRackButton) removeRackButton.disabled = state.rack_count <= 1;
+        renderLocationList();
 
-        let targetCard = null;
         if (options && options.keepSelection && selectedId) {
-            const candidates = world.querySelectorAll(".fast-rack-product");
-            for (let i = 0; i < candidates.length; i += 1) {
-                const idx = Number(candidates[i].dataset.productIndex);
-                if (Number.isInteger(idx) && products[idx] && safe(products[idx].product_id) === selectedId) {
-                    targetCard = candidates[i];
-                    break;
-                }
+            const card = world.querySelector('[data-product-id="' + CSS.escape(selectedId) + '"]');
+            if (card) {
+                selectedCard = card;
+                card.classList.add("selected");
             }
         }
-
-        if (!targetCard) targetCard = world.querySelector(".fast-rack-product");
-        if (targetCard) selectCard(targetCard, false);
-    }
-
-    if (addRackButton) {
-        addRackButton.addEventListener("click", function () {
-            if (rackCount >= 12) {
-                window.alert("Maximum 12 racks reached.");
-                return;
-            }
-            rackCount += 1;
-            try { window.localStorage.setItem(rackStorageKey, String(rackCount)); } catch (ignore) {}
-            renderRacks({ keepSelection: true });
-            if (footer) footer.textContent = "Rack " + rackCount + " added · " + products.length + " products arranged";
-        });
-    }
-
-    if (removeRackButton) {
-        removeRackButton.addEventListener("click", function () {
-            if (rackCount <= 1) return;
-            rackCount -= 1;
-            try { window.localStorage.setItem(rackStorageKey, String(rackCount)); } catch (ignore) {}
-            renderRacks({ keepSelection: true });
-            if (footer) footer.textContent = "Last rack removed · " + rackCount + " racks remain";
-        });
     }
 
     /* ========================================================
-       PRODUCT DETAILS + PRODUCT-SPECIFIC 3D PREVIEW
+       LOCATION SELECTION + LIST VIEW
     ======================================================== */
-
-    function identityText(info) {
-        return [safe(info && info.title), safe(info && info.product_url), safe(info && info.source_name)]
-            .join(" ")
-            .toLowerCase();
+    function currentScopeProducts() {
+        if (!selectedRack) return [];
+        return productsFor(selectedRack, selectedShelf === null ? null : selectedShelf);
     }
-
-    function productTokens(value) {
-        return safe(value)
-            .toLowerCase()
-            .match(/[a-z0-9]+/g) || [];
+    function currentTargetLabel() {
+        if (!selectedRack) return "Select a rack or shelf";
+        return selectedShelf === null ? "Rack " + selectedRack : "Rack " + selectedRack + " · Shelf " + selectedShelf;
     }
+    function setLocationSelection(rackNumber, shelfNumber) {
+        selectedRack = Number(rackNumber);
+        selectedShelf = shelfNumber === null ? null : Number(shelfNumber);
+        renderRacks({ keepSelection: true });
+        if (locationListCard) locationListCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function rowImageHtml(product) {
+        const info = product.image_info || {};
+        const verified = !!info.preview_verified && safe(info.image_url);
+        if (verified) {
+            return '<img class="shelf-location-product-image" data-shelf-image="' + escapeHtml(safe(product.product_id).toUpperCase()) + '" src="' + escapeHtml(info.image_url) + '" alt="' + escapeHtml(safe(product.product_name)) + '">';
+        }
+        return '<div class="shelf-location-product-placeholder" data-shelf-image-placeholder="' + escapeHtml(safe(product.product_id).toUpperCase()) + '">' + escapeHtml(initials(product)) + '</div>';
+    }
+    function renderLocationList() {
+        if (!locationProductList) return;
+        const title = currentTargetLabel();
+        if (locationListTitle) locationListTitle.textContent = title;
+        if (locationListCopy) {
+            locationListCopy.textContent = selectedShelf === null
+                ? "All products assigned anywhere in this rack. Click a shelf above to attach products to a specific shelf."
+                : "All products assigned to this shelf. Images are loaded from verified online sources when available.";
+        }
+        if (locationAttachButton) locationAttachButton.disabled = selectedShelf === null;
 
-    function embeddedImageIsStrict(product, info) {
-        if (!product || !info || !safe(info.image_url) || !safe(info.product_url)) return false;
-        const haystack = identityText(info);
-        const tokens = productTokens(product.product_name).filter(function (token) {
-            return token.length >= 3 && !["the", "and", "for", "with", "instrument", "product"].includes(token);
+        const query = normalize(locationSearch && locationSearch.value);
+        const products = currentScopeProducts().filter(function (product) {
+            return !query || productHaystack(product).indexOf(query) >= 0;
         });
-        if (tokens.length) {
-            const matched = tokens.filter(function (token) { return haystack.indexOf(token) >= 0; }).length;
-            if ((matched / tokens.length) < 0.80) return false;
+        if (!products.length) {
+            locationProductList.innerHTML = '<div class="shelf-location-empty">No products are assigned to ' + escapeHtml(title) + '.</div>';
+            return;
         }
-        const brand = safe(product.brand).toLowerCase();
-        const model = safe(product.model).toLowerCase();
-        if (brand && haystack.indexOf(brand) < 0) return false;
-        if (model && haystack.indexOf(model) < 0) return false;
-        const minimum = model ? 68 : 40;
-        return numberValue(info.match_score) >= minimum;
+        locationProductList.innerHTML = products.map(function (product) {
+            const pos = positionForProduct(product.product_id);
+            const positionLabel = pos ? "Rack " + pos.rack_number + " · Shelf " + pos.shelf_number : "Unassigned";
+            return [
+                '<article class="shelf-location-product-row" data-list-product-id="', escapeHtml(safe(product.product_id).toUpperCase()), '">',
+                    rowImageHtml(product),
+                    '<div><div class="shelf-location-product-name">', escapeHtml(safe(product.product_name, "Product")), '</div>',
+                    '<div class="shelf-location-product-sub">', escapeHtml(safe(product.product_id)), ' · ', escapeHtml(safe(product.category, "Uncategorised")), '</div></div>',
+                    '<div><div class="shelf-location-product-name">', escapeHtml(safe(product.brand, "—")), '</div>',
+                    '<div class="shelf-location-product-sub">', escapeHtml(safe(product.model, "No model")), '</div></div>',
+                    '<div class="shelf-location-qty">', escapeHtml(formatQuantity(product.current_quantity, product.unit)), '</div>',
+                    '<div class="shelf-location-position">', escapeHtml(positionLabel), '</div>',
+                    '<div class="shelf-location-row-actions">',
+                        '<button type="button" data-shelf-select-product="', escapeHtml(safe(product.product_id).toUpperCase()), '">View</button>',
+                        '<button type="button" data-shelf-move-product="', escapeHtml(safe(product.product_id).toUpperCase()), '">Move</button>',
+                        '<button type="button" class="danger" data-shelf-remove-product="', escapeHtml(safe(product.product_id).toUpperCase()), '">Remove</button>',
+                    '</div>',
+                '</article>'
+            ].join("");
+        }).join("");
+        hydrateListImages(products);
+    }
+    async function hydrateListImages(products) {
+        for (const product of products.slice(0, 12)) {
+            const id = safe(product.product_id).toUpperCase();
+            if (!id || (product.image_info && product.image_info.preview_verified && safe(product.image_info.image_url)) || imageLookupCache.has(id)) continue;
+            imageLookupCache.set(id, true);
+            try {
+                const params = new URLSearchParams({ product_name: safe(product.product_name) });
+                if (safe(product.brand)) params.set("brand", safe(product.brand));
+                if (safe(product.model)) params.set("model", safe(product.model));
+                const info = await requestJson("/api/product-preview-image?" + params.toString());
+                if (!info.preview_verified || !safe(info.image_url)) continue;
+                product.image_url = info.image_url;
+                product.image_info = info;
+                const row = locationProductList.querySelector('[data-list-product-id="' + CSS.escape(id) + '"]');
+                const placeholder = row && row.querySelector('[data-shelf-image-placeholder="' + CSS.escape(id) + '"]');
+                if (placeholder) {
+                    const img = document.createElement("img");
+                    img.className = "shelf-location-product-image";
+                    img.alt = safe(product.product_name);
+                    img.src = info.image_url;
+                    placeholder.replaceWith(img);
+                }
+            } catch (ignore) {
+                // Exact/verified image is optional. Never block shelf management.
+            }
+        }
     }
 
+    if (locationSearch) locationSearch.addEventListener("input", renderLocationList);
+
+    /* ========================================================
+       ATTACH / MOVE MODAL
+    ======================================================== */
+    function populateTargetSelectors() {
+        if (!attachRackSelect || !attachShelfSelect) return;
+        attachRackSelect.innerHTML = Array.from({ length: state.rack_count }, function (_, i) {
+            const n = i + 1;
+            return '<option value="' + n + '">Rack ' + n + '</option>';
+        }).join("");
+        attachShelfSelect.innerHTML = Array.from({ length: state.shelves_per_rack }, function (_, i) {
+            const n = i + 1;
+            return '<option value="' + n + '">Shelf ' + n + '</option>';
+        }).join("");
+        attachRackSelect.value = String(selectedRack || 1);
+        attachShelfSelect.value = String(selectedShelf || 1);
+    }
+    function renderAttachList() {
+        if (!attachProductList) return;
+        const query = normalize(attachSearch && attachSearch.value);
+        const assignments = assignmentMap();
+        let products = inventory.filter(function (product) {
+            const id = safe(product.product_id).toUpperCase();
+            if (attachPinnedProductId && id !== attachPinnedProductId) return false;
+            return !query || productHaystack(product).indexOf(query) >= 0;
+        });
+        products = products.slice(0, 150);
+        if (!products.length) {
+            attachProductList.innerHTML = '<div class="shelf-location-empty">No matching inventory products.</div>';
+            return;
+        }
+        attachProductList.innerHTML = products.map(function (product) {
+            const id = safe(product.product_id).toUpperCase();
+            const current = assignments.get(id);
+            const currentLabel = current ? "Rack " + current.rack_number + " · Shelf " + current.shelf_number : "Not assigned";
+            return [
+                '<div class="shelf-attach-product-item">',
+                    '<div><strong>', escapeHtml(safe(product.product_name, "Product")), '</strong><small>', escapeHtml(id), ' · ', escapeHtml(safe(product.category, "Uncategorised")), '</small></div>',
+                    '<div><strong>', escapeHtml(formatQuantity(product.current_quantity, product.unit)), '</strong><small>Current stock</small></div>',
+                    '<div><strong>', escapeHtml(currentLabel), '</strong><small>Current shelf</small></div>',
+                    '<button type="button" data-attach-product="', escapeHtml(id), '">', current ? 'Move Here' : 'Attach Here', '</button>',
+                '</div>'
+            ].join("");
+        }).join("");
+    }
+    function openAttachModal(productId) {
+        if (!attachModal) return;
+        attachPinnedProductId = safe(productId).toUpperCase();
+        if (!selectedRack) selectedRack = 1;
+        if (!selectedShelf) selectedShelf = 1;
+        populateTargetSelectors();
+        if (attachSearch) attachSearch.value = "";
+        if (attachTarget) attachTarget.textContent = attachPinnedProductId
+            ? "Move selected product to a new shelf."
+            : "Attach an inventory product without changing its stock quantity.";
+        renderAttachList();
+        attachModal.hidden = false;
+        document.documentElement.style.overflow = "hidden";
+    }
+    function closeAttachModal() {
+        if (!attachModal) return;
+        attachModal.hidden = true;
+        attachPinnedProductId = "";
+        document.documentElement.style.overflow = "";
+    }
+    if (attachTopButton) attachTopButton.addEventListener("click", function () { openAttachModal(""); });
+    if (locationAttachButton) locationAttachButton.addEventListener("click", function () { if (selectedShelf !== null) openAttachModal(""); });
+    if (attachClose) attachClose.addEventListener("click", closeAttachModal);
+    if (attachModal) attachModal.addEventListener("click", function (event) { if (event.target.matches("[data-shelf-modal-close]")) closeAttachModal(); });
+    if (attachSearch) attachSearch.addEventListener("input", renderAttachList);
+
+    async function attachProduct(productId) {
+        const rack = Number(attachRackSelect && attachRackSelect.value || selectedRack || 1);
+        const shelf = Number(attachShelfSelect && attachShelfSelect.value || selectedShelf || 1);
+        setBusy(true, "Saving shelf position…");
+        try {
+            await requestJson("/api/shelf-rack/assign", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({ product_id: productId, rack_number: rack, shelf_number: shelf })
+            });
+            selectedRack = rack;
+            selectedShelf = shelf;
+            await reloadState();
+            renderRacks({ keepSelection: true });
+            closeAttachModal();
+            if (footer) footer.textContent = "Shelf position saved · " + productId + " · Rack " + rack + " · Shelf " + shelf;
+        } catch (error) {
+            window.alert(error.message || "Unable to save shelf position.");
+        } finally { setBusy(false); }
+    }
+    if (attachProductList) attachProductList.addEventListener("click", function (event) {
+        const button = event.target.closest("[data-attach-product]");
+        if (button) attachProduct(button.dataset.attachProduct);
+    });
+
+    async function removeAssignment(productId) {
+        if (!window.confirm("Remove this product from the shelf? Stock quantity will NOT be deleted.")) return;
+        setBusy(true, "Removing shelf position…");
+        try {
+            await requestJson("/api/shelf-rack/unassign", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({ product_id: productId })
+            });
+            if (selectedProduct && safe(selectedProduct.product_id).toUpperCase() === safe(productId).toUpperCase()) {
+                selectedProduct = null;
+                selectedCard = null;
+                clearDetails();
+            }
+            await reloadState();
+            renderRacks();
+        } catch (error) { window.alert(error.message || "Unable to remove shelf position."); }
+        finally { setBusy(false); }
+    }
+
+    if (locationProductList) locationProductList.addEventListener("click", function (event) {
+        const view = event.target.closest("[data-shelf-select-product]");
+        const move = event.target.closest("[data-shelf-move-product]");
+        const remove = event.target.closest("[data-shelf-remove-product]");
+        if (view) {
+            const product = productMap.get(safe(view.dataset.shelfSelectProduct).toUpperCase());
+            if (product) updateDetails(product, currentTargetLabel());
+        } else if (move) {
+            openAttachModal(move.dataset.shelfMoveProduct);
+        } else if (remove) {
+            removeAssignment(remove.dataset.shelfRemoveProduct);
+        }
+    });
+
+    /* ========================================================
+       CENTRAL RACK COUNT
+    ======================================================== */
+    async function changeRackCount(nextCount) {
+        setBusy(true, "Updating rack layout…");
+        try {
+            await requestJson("/api/shelf-rack/layout", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({ rack_count: nextCount })
+            });
+            await reloadState();
+            renderRacks({ keepSelection: true });
+        } catch (error) { window.alert(error.message || "Unable to update rack layout."); }
+        finally { setBusy(false); }
+    }
+    if (addRackButton) addRackButton.addEventListener("click", function () { if (state.rack_count < 12) changeRackCount(state.rack_count + 1); });
+    if (removeRackButton) removeRackButton.addEventListener("click", function () { if (state.rack_count > 1) changeRackCount(state.rack_count - 1); });
+
+    /* ========================================================
+       PRODUCT DETAILS + VERIFIED ONLINE IMAGE
+    ======================================================== */
+    function clearDetails() {
+        if (detailName) detailName.value = "";
+        if (detailMeta) detailMeta.textContent = "Click a product to edit it.";
+        if (detailId) detailId.value = "";
+        if (detailStock) detailStock.value = "0";
+        if (detailCategory) detailCategory.value = "";
+        if (detailPosition) detailPosition.value = "";
+        if (detailBrand) detailBrand.value = "";
+        if (detailModel) detailModel.value = "";
+        if (detailLocation) detailLocation.value = "";
+        if (detailUnit) detailUnit.value = "Nos";
+        if (saveProductButton) saveProductButton.disabled = true;
+        if (retryImageButton) retryImageButton.disabled = true;
+        if (addButton) addButton.disabled = true;
+        if (removeButton) removeButton.disabled = true;
+        showPreviewEmpty("Select a product to load its verified image.");
+    }
     function showPreviewEmpty(message) {
-        if (previewImage) {
-            previewImage.hidden = true;
-            previewImage.removeAttribute("src");
-            previewImage.alt = "";
-        }
-        if (previewEmpty) {
-            previewEmpty.hidden = false;
-            previewEmpty.textContent = message || "No verified product image.";
-        }
-        if (previewSource) {
-            previewSource.hidden = true;
-            previewSource.removeAttribute("href");
-        }
+        if (previewImage) { previewImage.hidden = true; previewImage.removeAttribute("src"); previewImage.alt = ""; }
+        if (previewEmpty) { previewEmpty.hidden = false; previewEmpty.textContent = message || "No verified product image."; }
+        if (previewSource) { previewSource.hidden = true; previewSource.removeAttribute("href"); }
     }
-
     function showVerifiedPreview(product, info, statusText) {
         if (!previewImage || !safe(info && info.image_url)) return false;
-        const imageUrl = safe(info.image_url);
         const tokenAtLoad = previewRequestToken;
-
         previewImage.onload = function () {
             if (tokenAtLoad !== previewRequestToken) return;
             previewImage.hidden = false;
@@ -406,102 +566,70 @@
         };
         previewImage.alt = safe(product.product_name, "Product image");
         previewImage.hidden = true;
-        previewImage.src = imageUrl;
-
-        if (previewStatus) {
-            previewStatus.textContent = statusText || "Verified product image";
-        }
-        if (previewSource && safe(info.product_url)) {
-            previewSource.href = info.product_url;
-            previewSource.hidden = false;
-        } else if (previewSource) {
-            previewSource.hidden = true;
-            previewSource.removeAttribute("href");
-        }
+        previewImage.src = info.image_url;
+        if (previewStatus) previewStatus.textContent = statusText || "Verified product image";
+        if (previewSource && safe(info.product_url)) { previewSource.href = info.product_url; previewSource.hidden = false; }
         return true;
     }
-
     async function updateProductPreview(product, forceSearch) {
         if (!product) return;
         const requestToken = ++previewRequestToken;
-        const cachedInfo = product.image_info || {};
-
-        // If the page already contains a strict cached match, show it instantly.
-        if (!forceSearch && embeddedImageIsStrict(product, cachedInfo)) {
-            showVerifiedPreview(product, cachedInfo, "Verified cached product image");
+        const cached = product.image_info || {};
+        if (!forceSearch && cached.preview_verified && safe(cached.image_url)) {
+            showVerifiedPreview(product, cached, "Verified cached product image");
             return;
         }
-
         showPreviewEmpty("Searching for the exact product image…");
         if (previewStatus) previewStatus.textContent = "Checking verified online source…";
-
-        const params = new URLSearchParams();
-        params.set("product_name", safe(product.product_name));
+        const params = new URLSearchParams({ product_name: safe(product.product_name) });
         if (safe(product.brand)) params.set("brand", safe(product.brand));
         if (safe(product.model)) params.set("model", safe(product.model));
         if (forceSearch) params.set("force", "1");
-
         try {
-            const response = await fetch("/api/product-preview-image?" + params.toString(), {
-                method: "GET",
-                headers: { "Accept": "application/json" },
-                cache: "no-store"
-            });
-            const info = await response.json().catch(function () { return {}; });
+            const info = await requestJson("/api/product-preview-image?" + params.toString());
             if (requestToken !== previewRequestToken) return;
-
-            if (response.ok && info.success && info.preview_verified && safe(info.image_url)) {
+            if (info.preview_verified && safe(info.image_url)) {
                 product.image_url = info.image_url;
                 product.image_info = info;
                 showVerifiedPreview(product, info, "Verified online product image");
-                return;
+            } else {
+                showPreviewEmpty("No verified product image found. A guessed image was not used.");
+                if (previewStatus) previewStatus.textContent = "No verified image";
             }
-
-            showPreviewEmpty("No verified product image found. A similar-looking image was not used.");
-            if (previewStatus) previewStatus.textContent = "No verified image — not showing a guess";
         } catch (error) {
             if (requestToken !== previewRequestToken) return;
             showPreviewEmpty("Could not verify an online product image right now.");
             if (previewStatus) previewStatus.textContent = "Image verification unavailable";
         }
     }
-
     function updateDetails(product, positionLabel) {
-        if (!product) return;
         selectedProduct = product;
-
         if (detailName) detailName.value = safe(product.product_name, "Product");
-        if (detailMeta) {
-            detailMeta.textContent = "Edit the fields below and click Save Changes.";
-        }
-        if (detailId) detailId.value = safe(product.product_id, "");
+        if (detailMeta) detailMeta.textContent = "Edit normal product fields below; shelf position is changed with Move.";
+        if (detailId) detailId.value = safe(product.product_id);
         if (detailStock) detailStock.value = String(numberValue(product.current_quantity));
-        if (detailCategory) detailCategory.value = safe(product.category, "");
-        if (detailPosition) detailPosition.value = safe(positionLabel, "-");
-        if (detailBrand) detailBrand.value = safe(product.brand, "");
-        if (detailModel) detailModel.value = safe(product.model, "");
-        if (detailLocation) detailLocation.value = safe(product.location, "Category Storage");
+        if (detailCategory) detailCategory.value = safe(product.category);
+        const pos = positionForProduct(product.product_id);
+        if (detailPosition) detailPosition.value = pos ? "Rack " + pos.rack_number + " · Shelf " + pos.shelf_number : safe(positionLabel, "Unassigned");
+        if (detailBrand) detailBrand.value = safe(product.brand);
+        if (detailModel) detailModel.value = safe(product.model);
+        if (detailLocation) detailLocation.value = safe(product.location, "");
         if (detailUnit) detailUnit.value = safe(product.unit, "Nos");
-
-        updateProductPreview(product);
-
         if (saveProductButton) saveProductButton.disabled = false;
         if (saveProductStatus) saveProductStatus.textContent = "Ready to edit.";
         if (retryImageButton) retryImageButton.disabled = false;
         if (addButton) addButton.disabled = false;
         if (removeButton) removeButton.disabled = numberValue(product.current_quantity) <= 0;
+        updateProductPreview(product, false);
     }
-
     async function saveSelectedProduct() {
         if (!selectedProduct || !saveProductButton) return;
-
         const oldId = safe(selectedProduct.product_id);
         const desiredStock = Number(detailStock ? detailStock.value : selectedProduct.current_quantity);
         if (!Number.isFinite(desiredStock) || desiredStock < 0) {
             if (saveProductStatus) saveProductStatus.textContent = "Stock must be 0 or greater.";
             return;
         }
-
         const payload = {
             product_id: safe(detailId && detailId.value),
             product_name: safe(detailName && detailName.value),
@@ -512,215 +640,74 @@
             unit: safe(detailUnit && detailUnit.value, "Nos"),
             current_quantity: desiredStock
         };
-
         if (!payload.product_id || !payload.product_name || !payload.category) {
             if (saveProductStatus) saveProductStatus.textContent = "Product ID, Product Name and Category are required.";
             return;
         }
-
         saveProductButton.disabled = true;
         if (saveProductStatus) saveProductStatus.textContent = "Saving…";
         setBusy(true, "Saving product changes…");
-
         try {
-            const response = await fetch("/api/product/" + encodeURIComponent(oldId) + "/edit", {
+            const result = await requestJson("/api/product/" + encodeURIComponent(oldId) + "/edit", {
                 method: "PUT",
                 headers: { "Accept": "application/json", "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            const result = await response.json().catch(function () { return {}; });
-            if (!response.ok || !result.success || !result.product) {
-                throw new Error(result.message || "Unable to save product changes.");
-            }
-
-            Object.keys(selectedProduct).forEach(function (key) {
-                if (key === "image_info" || key === "image_url") delete selectedProduct[key];
-            });
-            Object.assign(selectedProduct, result.product);
-            selectedProduct.image_info = {};
-            selectedProduct.image_url = "";
-
+            const oldKey = safe(selectedProduct.product_id).toUpperCase();
+            Object.assign(selectedProduct, result.product || payload);
+            const newKey = safe(selectedProduct.product_id).toUpperCase();
+            if (oldKey !== newKey) { productMap.delete(oldKey); productMap.set(newKey, selectedProduct); }
             if (saveProductStatus) saveProductStatus.textContent = "Saved.";
+            await reloadState();
             renderRacks({ keepSelection: true });
         } catch (error) {
             if (saveProductStatus) saveProductStatus.textContent = error.message || "Save failed.";
             window.alert(error.message || "Unable to save product changes.");
-        } finally {
-            saveProductButton.disabled = !selectedProduct;
-            setBusy(false);
-        }
+        } finally { saveProductButton.disabled = !selectedProduct; setBusy(false); }
     }
+    if (saveProductButton) saveProductButton.addEventListener("click", saveSelectedProduct);
+    if (retryImageButton) retryImageButton.addEventListener("click", function () { if (selectedProduct) updateProductPreview(selectedProduct, true); });
 
-    if (saveProductButton) {
-        saveProductButton.addEventListener("click", saveSelectedProduct);
-    }
-
-    if (retryImageButton) {
-        retryImageButton.addEventListener("click", function () {
-            if (!selectedProduct) return;
-            updateProductPreview(selectedProduct, true);
-        });
-    }
-
-    function selectCard(card, scrollIntoView) {
+    function selectProductCard(card) {
         if (!card) return;
-        const index = Number(card.dataset.productIndex);
-        if (!Number.isInteger(index) || !products[index]) return;
-
+        const id = safe(card.dataset.productId).toUpperCase();
+        const product = productMap.get(id);
+        if (!product) return;
         if (selectedCard) selectedCard.classList.remove("selected");
         selectedCard = card;
         selectedCard.classList.add("selected");
-
-        updateDetails(products[index], card.dataset.rackPosition || "-");
-
-        if (scrollIntoView && typeof card.scrollIntoView === "function") {
-            card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-        }
+        updateDetails(product, card.dataset.rackPosition || "-");
     }
 
     world.addEventListener("click", function (event) {
         const card = event.target.closest(".fast-rack-product");
-        if (card && world.contains(card)) selectCard(card, false);
-    });
-
-    renderRacks();
-
-    /* ========================================================
-       LIGHTWEIGHT 3D INTERACTION
-       Left click = select product
-       Right-click + hold + drag = rotate / tilt
-       Wheel = zoom
-       Double click empty area = reset camera
-    ======================================================== */
-
-    let yaw = -2;
-    let pitch = 2;
-    let zoom = 1;
-    let panX = 0;
-    let panY = 0;
-    let dragging = false;
-    let dragMode = "rotate";
-    let startX = 0;
-    let startY = 0;
-    let lastX = 0;
-    let lastY = 0;
-
-    function applyWorldTransform() {
-        world.style.transform =
-            "translate3d(" + panX + "px," + panY + "px,0) " +
-            "rotateX(" + pitch + "deg) rotateY(" + yaw + "deg) scale(" + zoom + ")";
-    }
-
-    applyWorldTransform();
-
-    viewport.addEventListener("contextmenu", function (event) {
-        event.preventDefault();
-    });
-
-    viewport.addEventListener("pointerdown", function (event) {
-        const rightButton = event.button === 2;
-        const productCard = event.target.closest(".fast-rack-product");
-
-        // Normal left-click on a product remains a product selection.
-        if (productCard && !rightButton) return;
-
-        dragging = true;
-        dragMode = "rotate";
-        startX = lastX = event.clientX;
-        startY = lastY = event.clientY;
-
-        viewport.classList.remove("panning");
-        viewport.classList.add("dragging");
-
-        if (viewport.setPointerCapture) viewport.setPointerCapture(event.pointerId);
-        event.preventDefault();
-    });
-
-    viewport.addEventListener("pointermove", function (event) {
-        if (!dragging) return;
-
-        const dx = event.clientX - lastX;
-        const dy = event.clientY - lastY;
-
-        yaw =
-            Math.max(
-                -18,
-                Math.min(
-                    18,
-                    yaw + dx * 0.035
-                )
-            );
-
-        pitch =
-            Math.max(
-                -5,
-                Math.min(
-                    12,
-                    pitch - dy * 0.025
-                )
-            );
-
-        lastX = event.clientX;
-        lastY = event.clientY;
-        applyWorldTransform();
-    });
-
-    function stopDragging() {
-        dragging = false;
-        viewport.classList.remove("dragging");
-        viewport.classList.remove("panning");
-    }
-
-    viewport.addEventListener("pointerup", stopDragging);
-    viewport.addEventListener("pointercancel", stopDragging);
-    viewport.addEventListener("pointerleave", function (event) {
-        if (dragging && event.buttons === 0) stopDragging();
-    });
-
-    viewport.addEventListener("wheel", function (event) {
-        if (event.ctrlKey) return;
-        event.preventDefault();
-        zoom = Math.max(0.68, Math.min(1.35, zoom - event.deltaY * 0.0006));
-        applyWorldTransform();
-    }, { passive: false });
-
-    viewport.addEventListener("dblclick", function (event) {
-        if (event.target.closest(".fast-rack-product")) return;
-        yaw = -2;
-        pitch = 2;
-        zoom = 1;
-        panX = 0;
-        panY = 0;
-        applyWorldTransform();
-    });
-
-    /* ========================================================
-       QUICK +1 / -1 USING EXISTING STOCK API
-    ======================================================== */
-
-    function refreshSelectedStockDisplay() {
-        if (!selectedProduct || !selectedCard) return;
-        const index = Number(selectedCard.dataset.productIndex);
-        const stockBadge = selectedCard.querySelector('[data-stock-for="' + index + '"]');
-        if (stockBadge) {
-            const n = numberValue(selectedProduct.current_quantity);
-            stockBadge.textContent = Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+        if (card && world.contains(card)) {
+            event.stopPropagation();
+            selectProductCard(card);
+            return;
         }
-        if (detailStock) detailStock.textContent = formatQuantity(selectedProduct.current_quantity, selectedProduct.unit);
-    }
+        const shelf = event.target.closest(".fast-rack-shelf");
+        if (shelf && world.contains(shelf)) {
+            setLocationSelection(Number(shelf.dataset.rack), Number(shelf.dataset.shelf));
+            return;
+        }
+        const header = event.target.closest("[data-rack-header]");
+        if (header && world.contains(header)) {
+            setLocationSelection(Number(header.dataset.rackHeader), null);
+        }
+    });
 
+    /* ========================================================
+       QUICK +1 / -1 STOCK — INVENTORY CHANGE, NOT PLACEMENT
+    ======================================================== */
     async function moveOne(movementType) {
         if (!selectedProduct) return;
         if (movementType === "outward" && numberValue(selectedProduct.current_quantity) <= 0) return;
-
         setBusy(true, movementType === "inward" ? "Adding one unit…" : "Removing one unit…");
-        if (addButton) addButton.disabled = true;
-        if (removeButton) removeButton.disabled = true;
-
         try {
-            const response = await fetch("/stock-movement", {
+            const payload = await requestJson("/stock-movement", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
                 body: JSON.stringify({
                     product_id: selectedProduct.product_id,
                     movement_type: movementType,
@@ -733,85 +720,77 @@
                     location: selectedProduct.location || "",
                     reason: movementType === "inward" ? "rack_quick_add" : "rack_quick_remove",
                     reason_label: movementType === "inward" ? "Shelf Rack +1" : "Shelf Rack -1",
-                    remarks: "Quick shelf rack adjustment"
+                    remarks: "Quick shelf rack stock adjustment"
                 })
             });
-
-            let payload = {};
-            try { payload = await response.json(); } catch (ignore) {}
-            if (!response.ok || payload.success === false) {
-                throw new Error(payload.error || payload.message || "Unable to update stock.");
-            }
-
             const result = payload.result || {};
             selectedProduct.current_quantity = result.new_quantity !== undefined
                 ? numberValue(result.new_quantity)
-                : (movementType === "inward"
-                    ? numberValue(selectedProduct.current_quantity) + 1
-                    : Math.max(0, numberValue(selectedProduct.current_quantity) - 1));
-
-            refreshSelectedStockDisplay();
-            if (footer) {
-                footer.textContent = "Stock updated · " + safe(selectedProduct.product_name, "Product") + " · " + formatQuantity(selectedProduct.current_quantity, selectedProduct.unit);
-            }
-        } catch (error) {
-            window.alert(error.message || "Unable to update stock.");
-        } finally {
-            setBusy(false);
-            if (addButton) addButton.disabled = !selectedProduct;
-            if (removeButton) removeButton.disabled = !selectedProduct || numberValue(selectedProduct.current_quantity) <= 0;
-        }
+                : Math.max(0, numberValue(selectedProduct.current_quantity) + (movementType === "inward" ? 1 : -1));
+            if (detailStock) detailStock.value = String(selectedProduct.current_quantity);
+            renderRacks({ keepSelection: true });
+        } catch (error) { window.alert(error.message || "Unable to update stock."); }
+        finally { setBusy(false); }
     }
-
     if (addButton) addButton.addEventListener("click", function () { moveOne("inward"); });
     if (removeButton) removeButton.addEventListener("click", function () { moveOne("outward"); });
 
     /* ========================================================
-       EXCEL IMPORT USING EXISTING IMPORT ROUTE
+       EXISTING EXCEL ENTRY POINT
     ======================================================== */
+    if (fileInput) fileInput.addEventListener("change", function () {
+        if (!fileInput.files || !fileInput.files[0]) return;
+        window.location.href = "/import-excel";
+    });
 
-    if (fileInput) {
-        fileInput.addEventListener("change", async function () {
-            const file = fileInput.files && fileInput.files[0];
-            if (!file) return;
-            if (!file.name.toLowerCase().endsWith(".xlsx")) {
-                window.alert("Please select an .xlsx file.");
-                fileInput.value = "";
-                return;
-            }
-
-            setBusy(true, "Importing Excel…");
-            const form = new FormData();
-            form.append("file", file);
-
-            try {
-                const response = await fetch("/storage-view/upload/shelf-rack", {
-                    method: "POST",
-                    body: form,
-                    credentials: "same-origin"
-                });
-                let payload = {};
-                try { payload = await response.json(); } catch (ignore) {}
-                if (!response.ok || payload.success === false) {
-                    throw new Error(payload.message || "3D Shelf Excel import failed.");
-                }
-                try { window.sessionStorage.setItem("nunes_storage_mode", "shelf"); } catch (ignore) {}
-                window.location.reload();
-            } catch (error) {
-                setBusy(false);
-                window.alert(error.message || "Unable to import the Excel file.");
-                fileInput.value = "";
-            }
-        });
+    /* ========================================================
+       LIGHTWEIGHT 3D INTERACTION — SAME BEHAVIOUR
+    ======================================================== */
+    let yaw = -2, pitch = 2, zoom = 1, panX = 0, panY = 0;
+    let dragging = false, dragMode = "rotate", lastX = 0, lastY = 0;
+    function applyWorldTransform() {
+        world.style.transform = "translate3d(" + panX + "px," + panY + "px,0) rotateX(" + pitch + "deg) rotateY(" + yaw + "deg) scale(" + zoom + ")";
     }
+    applyWorldTransform();
+    viewport.addEventListener("contextmenu", function (event) { event.preventDefault(); });
+    viewport.addEventListener("pointerdown", function (event) {
+        const rightButton = event.button === 2;
+        if (event.target.closest(".fast-rack-product") && !rightButton) return;
+        if (event.target.closest(".fast-rack-shelf") && !rightButton) return;
+        dragging = true;
+        dragMode = rightButton ? "pan" : "rotate";
+        lastX = event.clientX; lastY = event.clientY;
+        viewport.classList.toggle("panning", dragMode === "pan");
+        viewport.classList.toggle("dragging", dragMode === "rotate");
+        if (viewport.setPointerCapture) viewport.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    });
+    viewport.addEventListener("pointermove", function (event) {
+        if (!dragging) return;
+        const dx = event.clientX - lastX, dy = event.clientY - lastY;
+        if (dragMode === "pan") { panX += dx; panY += dy; }
+        else { yaw = Math.max(-13, Math.min(13, yaw + dx * .035)); pitch = Math.max(-4, Math.min(10, pitch - dy * .025)); }
+        lastX = event.clientX; lastY = event.clientY; applyWorldTransform();
+    });
+    function stopDragging() { dragging = false; viewport.classList.remove("dragging"); viewport.classList.remove("panning"); }
+    viewport.addEventListener("pointerup", stopDragging);
+    viewport.addEventListener("pointercancel", stopDragging);
+    viewport.addEventListener("pointerleave", function (event) { if (dragging && event.buttons === 0) stopDragging(); });
+    viewport.addEventListener("wheel", function (event) { if (event.ctrlKey) return; event.preventDefault(); zoom = Math.max(.68, Math.min(1.35, zoom - event.deltaY * .0006)); applyWorldTransform(); }, { passive: false });
+    viewport.addEventListener("dblclick", function (event) {
+        if (event.target.closest(".fast-rack-product")) return;
+        yaw = -2; pitch = 2; zoom = 1; panX = 0; panY = 0; applyWorldTransform();
+    });
+
+    // Initial shared state view.
+    renderRacks();
+    clearDetails();
 
     window.ShelfRack3D = {
         showShelfRack: showShelfRack,
         showOpenRack: showOpenRack,
-        products: products,
-        refresh: function () { renderRacks({ keepSelection: true }); },
-        addRack: function () {
-            if (addRackButton) addRackButton.click();
-        }
+        products: inventory,
+        refresh: async function () { await reloadState(); renderRacks({ keepSelection: true }); },
+        addRack: function () { if (addRackButton) addRackButton.click(); }
     };
 })();

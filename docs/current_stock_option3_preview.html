@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Current Stock
+    </title>
+
+
+    <!-- =====================================================
+         MAIN APPLICATION CSS
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="file:///mnt/data/NUNES_Stock_v3.2.8_Option3/static/style.css"
+    >
+    <link
+        rel="stylesheet"
+        href="file:///mnt/data/NUNES_Stock_v3.2.8_Option3/static/pro_theme.css"
+    >
+
+    
+<link rel="stylesheet" href="file:///mnt/data/NUNES_Stock_v3.2.8_Option3/static/current_stock_option3.css">
+
+
+
+    <!-- =====================================================
+         GLOBAL APP SCROLL FIX
+
+         IMPORTANT:
+         - Browser body stays fixed
+         - Sidebar stays fixed
+         - Right .main workspace scrolls
+         - Works on Add Stock, Home, Current Stock, Storage View,
+           Excel and History pages
+    ====================================================== -->
+
+    <style>
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+
+            margin: 0;
+
+            overflow: hidden;
+        }
+
+
+        .app-shell {
+            width: 100%;
+            height: 100vh;
+
+            min-height: 0;
+        }
+
+
+        /* =================================================
+           SIDEBAR
+        ================================================== */
+
+        .sidebar {
+            height: 100vh;
+
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+
+        /* =================================================
+           MAIN APPLICATION WORKSPACE
+
+           THIS IS THE ACTUAL PAGE SCROLL AREA
+        ================================================== */
+
+        .main {
+            height: 100vh !important;
+            min-height: 0 !important;
+
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+
+            scroll-behavior: smooth;
+
+            overscroll-behavior-y: contain;
+        }
+
+
+        /* =================================================
+           PAGE CONTENT
+
+           Must be allowed to grow naturally.
+        ================================================== */
+
+        .page-content {
+            width: 100%;
+
+            height: auto !important;
+            min-height: 0 !important;
+
+            overflow: visible !important;
+
+            padding-bottom: 70px;
+        }
+
+
+        /* =================================================
+           ADD STOCK PAGE
+
+           Explicitly allow complete form height.
+        ================================================== */
+
+        .add-layout {
+            height: auto !important;
+            min-height: 0 !important;
+
+            overflow: visible !important;
+        }
+
+
+        .stock-form-card {
+            height: auto !important;
+            min-height: 0 !important;
+
+            overflow: visible !important;
+        }
+
+
+        .help-card {
+            height: auto !important;
+        }
+
+
+        /* =================================================
+           STANDARD PANELS SHOULD NEVER CUT THEIR CONTENT
+        ================================================== */
+
+        .confirm-panel,
+        .success-panel,
+        .simple-panel,
+        .stock-search-card,
+        .excel-upload-card {
+            height: auto;
+
+            overflow: visible;
+        }
+
+
+        /* =================================================
+           STORAGE VIEW
+
+           Only actual Three.js scene should clip content.
+        ================================================== */
+
+        #threeStorageContainer,
+        .storage-3d-stage,
+        .three-storage-container {
+            overflow: hidden;
+        }
+
+
+        /* =================================================
+           MOBILE
+
+           On smaller devices return to normal document scroll.
+        ================================================== */
+
+        @media (max-width: 780px) {
+
+            html,
+            body {
+                height: auto;
+
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+
+
+            .app-shell {
+                height: auto;
+                min-height: 100vh;
+            }
+
+
+            .sidebar {
+                height: auto;
+
+                overflow: visible;
+            }
+
+
+            .main {
+                height: auto !important;
+                min-height: 100vh !important;
+
+                overflow: visible !important;
+            }
+
+
+            .page-content {
+                padding-bottom: 40px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body
+    data-app-version="3.2.8"
+    data-inventory-revision="12"
+    data-endpoint=""
+>
+
+
+<div class="app-shell">
+
+
+    <!-- ===================================================
+         SIDEBAR
+    ==================================================== -->
+
+    <aside class="sidebar">
+
+
+        <!-- =================================================
+             BRAND
+        ================================================== -->
+
+        <div class="brand">
+
+            <div class="brand-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/>
+                    <path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/>
+                </svg>
+            </div>
+
+
+            <div class="brand-text">
+
+                <strong>
+                    NUNES STOCK
+                </strong>
+
+                <small>
+                    Instrument Management · v3.2.8
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             NAVIGATION
+        ================================================== -->
+
+        <nav class="nav">
+
+
+            <!-- HOME -->
+
+            <a
+                href="#home"
+                class="nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Home
+                    </strong>
+
+                    <small>
+                        Stock overview
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- ADD STOCK -->
+
+            <a
+                href="#add"
+                class="nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Add Stock
+                    </strong>
+
+                    <small>
+                        Add new items
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- CURRENT STOCK -->
+
+            <a
+                href="#current"
+                class="nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Current Stock
+                    </strong>
+
+                    <small>
+                        Check quantity
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- STORAGE VIEW -->
+
+            <a
+                href="#storage"
+                class="nav-button storage-nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M3 21V9l6 3V9l6 3V6h6v15z"/><path d="M7 16h2M12 16h2M17 16h2"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Storage View
+                    </strong>
+
+                    <small>
+                        Interactive 3D storage
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- ADD FROM EXCEL -->
+
+            <a
+                href="#excel"
+                class="nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Add From Excel
+                    </strong>
+
+                    <small>
+                        Add many items
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- STOCK HISTORY -->
+
+            <a
+                href="#"
+                class="nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Stock History
+                    </strong>
+
+                    <small>
+                        Previous entries
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+        </nav>
+
+
+        <!-- =================================================
+             SIDEBAR BOTTOM
+        ================================================== -->
+
+        <div class="sidebar-bottom">
+
+
+            <a
+                href="#export"
+                class="sidebar-utility-button"
+            >
+
+                <span class="sidebar-utility-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                </span>
+
+
+                <span>
+
+                    <strong>
+                        Master Excel
+                    </strong>
+
+                    <small>
+                        Download latest stock
+                    </small>
+
+                </span>
+
+            </a>
+
+
+            <div class="server-status">
+
+                <span class="status-dot"></span>
+
+
+                <div>
+
+                    <strong>
+                        System Online
+                    </strong>
+
+                    <small>
+                        Ready to use
+                    </small>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+    </aside>
+
+
+    <!-- ===================================================
+         MAIN WORKSPACE
+    ==================================================== -->
+
+    <main
+        id="applicationMain"
+        class="main"
+    >
+
+
+        <!-- =================================================
+             TOP BAR
+        ================================================== -->
+
+        <header class="topbar">
+
+
+            <div class="topbar-title">
+
+                <strong>
+                    Instrument Stock Management
+                </strong>
+
+                <small>
+                    Gopalapuram – Nunes Instrumentation · Inventory, movement and storage control
+                </small>
+
+            </div>
+
+
+            <div class="topbar-actions">
+
+                <details class="branch-switcher">
+
+                    <summary class="branch-switcher-button">
+                        <span class="branch-switcher-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M8 21v-6h8v6M8 10h.01M12 10h.01M16 10h.01"/></svg>
+                        </span>
+                        <span class="branch-switcher-copy">
+                            <small>Active company</small>
+                            <strong>Gopalapuram – Nunes Instrumentation</strong>
+                        </span>
+                        <span class="branch-switcher-chevron">⌄</span>
+                    </summary>
+
+                    <div class="branch-switcher-menu">
+                        <div class="branch-switcher-menu-title">Choose company / branch</div>
+
+                        
+                        <form method="post" action="#switch">
+                            <input type="hidden" name="branch" value="main">
+                            <input type="hidden" name="return_to" value="/current-stock">
+                            <button
+                                type="submit"
+                                class="branch-option "
+                            >
+                                <span class="branch-option-dot"></span>
+                                <span>
+                                    <strong>Rathinapuri – Nunes Instrumentation</strong>
+                                    <small>Open this branch</small>
+                                </span>
+                                
+                            </button>
+                        </form>
+                        
+                        <form method="post" action="#switch">
+                            <input type="hidden" name="branch" value="gobalapuram">
+                            <input type="hidden" name="return_to" value="/current-stock">
+                            <button
+                                type="submit"
+                                class="branch-option active"
+                            >
+                                <span class="branch-option-dot"></span>
+                                <span>
+                                    <strong>Gopalapuram – Nunes Instrumentation</strong>
+                                    <small>Currently selected</small>
+                                </span>
+                                <span class="branch-option-check">✓</span>
+                            </button>
+                        </form>
+                        
+                        <form method="post" action="#switch">
+                            <input type="hidden" name="branch" value="gandhipuram">
+                            <input type="hidden" name="return_to" value="/current-stock">
+                            <button
+                                type="submit"
+                                class="branch-option "
+                            >
+                                <span class="branch-option-dot"></span>
+                                <span>
+                                    <strong>Gandhipuram – Nunes Instrumentation</strong>
+                                    <small>Open this branch</small>
+                                </span>
+                                
+                            </button>
+                        </form>
+                        
+                    </div>
+
+                </details>
+
+                <div class="top-status">
+
+                    <span class="status-dot"></span>
+
+                    Online
+
+                </div>
+
+            </div>
+
+
+        </header>
+
+
+        <!-- =================================================
+             FLASH MESSAGES
+        ================================================== -->
+
+        
+
+            
+
+        
+
+
+        <!-- =================================================
+             PAGE CONTENT
+        ================================================== -->
+
+        <div class="page-content">
+
+            
+<section class="cs3-layout" data-current-stock-option3 data-low-stock-threshold="5">
+    <div class="cs3-main-column">
+        <section class="cs3-hero">
+            <div>
+                <span class="cs3-concept-label">OPTION 3 — Card + Table Hybrid List</span>
+                <h1>Current Stock</h1>
+                <p>View and manage all products in your inventory. Check availability, location and stock status.</p>
+            </div>
+            <div class="cs3-hero-note">
+                <span class="cs3-icon-box" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                </span>
+                <div><strong>Accurate stock. Smarter decisions.</strong><small>Real-time visibility for Gopalapuram.</small></div>
+            </div>
+        </section>
+
+        
+
+        <section class="cs3-kpis" aria-label="Current stock summary">
+            <article class="cs3-kpi cs3-kpi-blue">
+                <span class="cs3-kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
+                <div><small>Total Products</small><strong>6</strong><span>Registered in Gopalapuram</span></div>
+            </article>
+            <article class="cs3-kpi cs3-kpi-green">
+                <span class="cs3-kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
+                <div><small>In Stock</small><strong>3</strong><span>Above low-stock threshold</span></div>
+            </article>
+            <article class="cs3-kpi cs3-kpi-amber">
+                <span class="cs3-kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 9v4M12 17h.01"/></svg></span>
+                <div><small>Low Stock</small><strong>2</strong><span>1–5 units</span></div>
+            </article>
+            <article class="cs3-kpi cs3-kpi-red">
+                <span class="cs3-kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"/></svg></span>
+                <div><small>Outward Today</small><strong>5</strong><span>Units dispatched</span></div>
+            </article>
+            <article class="cs3-kpi cs3-kpi-sky">
+                <span class="cs3-kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M6.5 13.5 12 19l5.5-5.5"/></svg></span>
+                <div><small>Inward Today</small><strong>12</strong><span>Units received</span></div>
+            </article>
+        </section>
+
+        <section class="cs3-filter-card">
+            <div class="cs3-search-wrap">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span>
+                <input id="cs3Search" type="search" placeholder="Search by product name, ID, category, brand, model or location..." autocomplete="off">
+            </div>
+            <select id="cs3CategoryFilter" aria-label="Filter by category">
+                <option value="">All Categories</option>
+            </select>
+            <div class="cs3-status-filters" role="group" aria-label="Stock status filter">
+                <button type="button" class="active" data-status-filter="all">All</button>
+                <button type="button" data-status-filter="in">In Stock</button>
+                <button type="button" data-status-filter="low">Low Stock</button>
+                <button type="button" data-status-filter="out">Out of Stock</button>
+            </div>
+        </section>
+
+        <section class="cs3-table-card">
+            <div class="cs3-table-toolbar">
+                <div>
+                    <strong id="cs3ResultLabel">Showing 6 products</strong>
+                    <small>Live data from Gopalapuram</small>
+                </div>
+                <select id="cs3Sort" aria-label="Sort products">
+                    <option value="name-asc">Sort by: Product Name</option>
+                    <option value="qty-desc">Quantity: High to Low</option>
+                    <option value="qty-asc">Quantity: Low to High</option>
+                    <option value="updated-desc">Recently Updated</option>
+                </select>
+            </div>
+
+            <div class="cs3-table-scroll">
+                <table id="cs3StockTable">
+                    <thead>
+                        <tr>
+                            <th class="cs3-check-col"><input id="cs3SelectAll" type="checkbox" aria-label="Select all visible products"></th>
+                            <th>Product</th>
+                            <th>Product ID</th>
+                            <th>Category</th>
+                            <th>Available Qty</th>
+                            <th>Location (Branch)</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cs3Rows">
+                        
+                        <tr class="cs3-row"
+                            data-name="gas leak detector"
+                            data-product-id="gas-001"
+                            data-category="safety equipment"
+                            data-brand="honeywell"
+                            data-model="gx-3r"
+                            data-location="main storage"
+                            data-status="in"
+                            data-qty="25"
+                            data-updated="2026-09-22 15:00:00">
+                            <td class="cs3-check-col"><input class="cs3-row-check" type="checkbox" aria-label="Select Gas Leak Detector"></td>
+                            <td>
+                                <div class="cs3-product-cell">
+                                    <div class="cs3-thumb">
+                                        
+                                        <span class="cs3-thumb-fallback"  aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                                        </span>
+                                    </div>
+                                    <div><strong>Gas Leak Detector</strong><small>Honeywell · GX-3R</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-code">GAS-001</span></td>
+                            <td><span class="cs3-category">Safety Equipment</span></td>
+                            <td><strong class="cs3-qty cs3-qty-in">25 Nos</strong></td>
+                            <td>
+                                <div class="cs3-location-cell">
+                                    <span class="cs3-location-icon"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></svg></span>
+                                    <div><strong>Main Storage</strong><small>Gopalapuram</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-status cs3-status-in">In Stock</span></td>
+                            <td>
+                                <div class="cs3-actions">
+                                    <button type="button" class="cs3-view-button"
+                                        data-open-product-details
+                                        data-product-id="GAS-001"
+                                        data-product-name="Gas Leak Detector"
+                                        data-product-category="Safety Equipment"
+                                        data-product-brand="Honeywell"
+                                        data-product-model="GX-3R"
+                                        data-product-quantity="25"
+                                        data-product-unit="Nos"
+                                        data-product-location="Main Storage"
+                                        data-product-image=""
+                                        data-product-rack-mapped="1"
+                                        data-product-active="1">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                                        View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <tr class="cs3-row"
+                            data-name="pressure gauge 0-10 bar"
+                            data-product-id="pg-010"
+                            data-category="pressure measurement"
+                            data-brand="wika"
+                            data-model="213.53"
+                            data-location="category storage"
+                            data-status="low"
+                            data-qty="4"
+                            data-updated="2026-09-22 14:00:00">
+                            <td class="cs3-check-col"><input class="cs3-row-check" type="checkbox" aria-label="Select Pressure Gauge 0-10 bar"></td>
+                            <td>
+                                <div class="cs3-product-cell">
+                                    <div class="cs3-thumb">
+                                        
+                                        <span class="cs3-thumb-fallback"  aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                                        </span>
+                                    </div>
+                                    <div><strong>Pressure Gauge 0-10 bar</strong><small>WIKA · 213.53</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-code">PG-010</span></td>
+                            <td><span class="cs3-category">Pressure Measurement</span></td>
+                            <td><strong class="cs3-qty cs3-qty-low">4 Nos</strong></td>
+                            <td>
+                                <div class="cs3-location-cell">
+                                    <span class="cs3-location-icon"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></svg></span>
+                                    <div><strong>Category Storage</strong><small>Gopalapuram</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-status cs3-status-low">Low Stock</span></td>
+                            <td>
+                                <div class="cs3-actions">
+                                    <button type="button" class="cs3-view-button"
+                                        data-open-product-details
+                                        data-product-id="PG-010"
+                                        data-product-name="Pressure Gauge 0-10 bar"
+                                        data-product-category="Pressure Measurement"
+                                        data-product-brand="WIKA"
+                                        data-product-model="213.53"
+                                        data-product-quantity="4"
+                                        data-product-unit="Nos"
+                                        data-product-location="Category Storage"
+                                        data-product-image=""
+                                        data-product-rack-mapped="1"
+                                        data-product-active="1">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                                        View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <tr class="cs3-row"
+                            data-name="temperature sensor pt100"
+                            data-product-id="ts-pt100"
+                            data-category="temperature"
+                            data-brand="omega"
+                            data-model="pt100"
+                            data-location="main storage"
+                            data-status="out"
+                            data-qty="0"
+                            data-updated="2026-09-21 16:00:00">
+                            <td class="cs3-check-col"><input class="cs3-row-check" type="checkbox" aria-label="Select Temperature Sensor PT100"></td>
+                            <td>
+                                <div class="cs3-product-cell">
+                                    <div class="cs3-thumb">
+                                        
+                                        <span class="cs3-thumb-fallback"  aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                                        </span>
+                                    </div>
+                                    <div><strong>Temperature Sensor PT100</strong><small>Omega · PT100</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-code">TS-PT100</span></td>
+                            <td><span class="cs3-category">Temperature</span></td>
+                            <td><strong class="cs3-qty cs3-qty-out">0 Nos</strong></td>
+                            <td>
+                                <div class="cs3-location-cell">
+                                    <span class="cs3-location-icon"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></svg></span>
+                                    <div><strong>Main Storage</strong><small>Gopalapuram</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-status cs3-status-out">Out of Stock</span></td>
+                            <td>
+                                <div class="cs3-actions">
+                                    <button type="button" class="cs3-view-button"
+                                        data-open-product-details
+                                        data-product-id="TS-PT100"
+                                        data-product-name="Temperature Sensor PT100"
+                                        data-product-category="Temperature"
+                                        data-product-brand="Omega"
+                                        data-product-model="PT100"
+                                        data-product-quantity="0"
+                                        data-product-unit="Nos"
+                                        data-product-location="Main Storage"
+                                        data-product-image=""
+                                        data-product-rack-mapped="0"
+                                        data-product-active="1">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                                        View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <tr class="cs3-row"
+                            data-name="flow meter"
+                            data-product-id="fm-001"
+                            data-category="flow measurement"
+                            data-brand="endress+hauser"
+                            data-model="proline"
+                            data-location="secondary storage"
+                            data-status="in"
+                            data-qty="15"
+                            data-updated="2026-09-20 10:00:00">
+                            <td class="cs3-check-col"><input class="cs3-row-check" type="checkbox" aria-label="Select Flow Meter"></td>
+                            <td>
+                                <div class="cs3-product-cell">
+                                    <div class="cs3-thumb">
+                                        
+                                        <span class="cs3-thumb-fallback"  aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                                        </span>
+                                    </div>
+                                    <div><strong>Flow Meter</strong><small>Endress+Hauser · Proline</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-code">FM-001</span></td>
+                            <td><span class="cs3-category">Flow Measurement</span></td>
+                            <td><strong class="cs3-qty cs3-qty-in">15 Nos</strong></td>
+                            <td>
+                                <div class="cs3-location-cell">
+                                    <span class="cs3-location-icon"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></svg></span>
+                                    <div><strong>Secondary Storage</strong><small>Gopalapuram</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-status cs3-status-in">In Stock</span></td>
+                            <td>
+                                <div class="cs3-actions">
+                                    <button type="button" class="cs3-view-button"
+                                        data-open-product-details
+                                        data-product-id="FM-001"
+                                        data-product-name="Flow Meter"
+                                        data-product-category="Flow Measurement"
+                                        data-product-brand="Endress+Hauser"
+                                        data-product-model="Proline"
+                                        data-product-quantity="15"
+                                        data-product-unit="Nos"
+                                        data-product-location="Secondary Storage"
+                                        data-product-image=""
+                                        data-product-rack-mapped="1"
+                                        data-product-active="1">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                                        View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <tr class="cs3-row"
+                            data-name="control valve"
+                            data-product-id="cv-001"
+                            data-category="valves"
+                            data-brand="emerson"
+                            data-model="fisher 667"
+                            data-location="main storage"
+                            data-status="low"
+                            data-qty="3"
+                            data-updated="2026-09-20 08:00:00">
+                            <td class="cs3-check-col"><input class="cs3-row-check" type="checkbox" aria-label="Select Control Valve"></td>
+                            <td>
+                                <div class="cs3-product-cell">
+                                    <div class="cs3-thumb">
+                                        
+                                        <span class="cs3-thumb-fallback"  aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                                        </span>
+                                    </div>
+                                    <div><strong>Control Valve</strong><small>Emerson · Fisher 667</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-code">CV-001</span></td>
+                            <td><span class="cs3-category">Valves</span></td>
+                            <td><strong class="cs3-qty cs3-qty-low">3 Nos</strong></td>
+                            <td>
+                                <div class="cs3-location-cell">
+                                    <span class="cs3-location-icon"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></svg></span>
+                                    <div><strong>Main Storage</strong><small>Gopalapuram</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-status cs3-status-low">Low Stock</span></td>
+                            <td>
+                                <div class="cs3-actions">
+                                    <button type="button" class="cs3-view-button"
+                                        data-open-product-details
+                                        data-product-id="CV-001"
+                                        data-product-name="Control Valve"
+                                        data-product-category="Valves"
+                                        data-product-brand="Emerson"
+                                        data-product-model="Fisher 667"
+                                        data-product-quantity="3"
+                                        data-product-unit="Nos"
+                                        data-product-location="Main Storage"
+                                        data-product-image=""
+                                        data-product-rack-mapped="0"
+                                        data-product-active="1">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                                        View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <tr class="cs3-row"
+                            data-name="data logger"
+                            data-product-id="dl-100"
+                            data-category="data acquisition"
+                            data-brand="testo"
+                            data-model="176"
+                            data-location="electronics room"
+                            data-status="in"
+                            data-qty="50"
+                            data-updated="2026-09-19 11:00:00">
+                            <td class="cs3-check-col"><input class="cs3-row-check" type="checkbox" aria-label="Select Data Logger"></td>
+                            <td>
+                                <div class="cs3-product-cell">
+                                    <div class="cs3-thumb">
+                                        
+                                        <span class="cs3-thumb-fallback"  aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                                        </span>
+                                    </div>
+                                    <div><strong>Data Logger</strong><small>Testo · 176</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-code">DL-100</span></td>
+                            <td><span class="cs3-category">Data Acquisition</span></td>
+                            <td><strong class="cs3-qty cs3-qty-in">50 Nos</strong></td>
+                            <td>
+                                <div class="cs3-location-cell">
+                                    <span class="cs3-location-icon"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></svg></span>
+                                    <div><strong>Electronics Room</strong><small>Gopalapuram</small></div>
+                                </div>
+                            </td>
+                            <td><span class="cs3-status cs3-status-in">In Stock</span></td>
+                            <td>
+                                <div class="cs3-actions">
+                                    <button type="button" class="cs3-view-button"
+                                        data-open-product-details
+                                        data-product-id="DL-100"
+                                        data-product-name="Data Logger"
+                                        data-product-category="Data Acquisition"
+                                        data-product-brand="Testo"
+                                        data-product-model="176"
+                                        data-product-quantity="50"
+                                        data-product-unit="Nos"
+                                        data-product-location="Electronics Room"
+                                        data-product-image=""
+                                        data-product-rack-mapped="0"
+                                        data-product-active="1">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                                        View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="cs3-pagination" id="cs3Pagination">
+                <div><span id="cs3PageStatus">Showing 0 products</span></div>
+                <div class="cs3-pages">
+                    <button id="cs3Prev" type="button" aria-label="Previous page">‹</button>
+                    <div id="cs3PageButtons"></div>
+                    <button id="cs3Next" type="button" aria-label="Next page">›</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <aside class="cs3-side-column">
+        <section class="cs3-side-card cs3-decision-card">
+            <span class="cs3-icon-box"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
+            <div><strong>Accurate stock. Smarter decisions.</strong><small>Real-time visibility across branch inventory.</small></div>
+        </section>
+
+        <section class="cs3-side-card cs3-branch-card">
+            <div class="cs3-selected-branch">
+                <span class="cs3-icon-box"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M8 21v-6h8v6M8 10h.01M12 10h.01M16 10h.01"/></svg></span>
+                <div><small>Selected Branch</small><strong>Gopalapuram</strong><span>Nunes Instrumentation</span></div>
+                <button type="button" id="cs3BranchChange">Change</button>
+            </div>
+            <div class="cs3-sync-row">
+                <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span>
+                <div><small>Live Sync</small><strong>Every 5 sec</strong></div>
+                <em>Synced</em>
+            </div>
+            <div class="cs3-branch-list" id="cs3BranchList">
+                <small>Branches in this company</small>
+                <div>
+                    
+                    <form method="post" action="#switch">
+                        <input type="hidden" name="branch" value="main">
+                        <input type="hidden" name="return_to" value="#current">
+                        <button type="submit" class="" title="27 products · 142 units">
+                            Rathinapuri
+                        </button>
+                    </form>
+                    
+                    <form method="post" action="#switch">
+                        <input type="hidden" name="branch" value="gobalapuram">
+                        <input type="hidden" name="return_to" value="#current">
+                        <button type="submit" class="active" title="12 products · 63 units">
+                            Gopalapuram
+                        </button>
+                    </form>
+                    
+                    <form method="post" action="#switch">
+                        <input type="hidden" name="branch" value="gandhipuram">
+                        <input type="hidden" name="return_to" value="#current">
+                        <button type="submit" class="" title="19 products · 88 units">
+                            Gandhipuram
+                        </button>
+                    </form>
+                    
+                </div>
+            </div>
+            <div class="cs3-quick-actions">
+                <small>Quick Actions</small>
+                <div>
+                    <a class="primary" href="#add"><span>＋</span> Add Stock</a>
+                    <a href="#export"><span>⇩</span> Export</a>
+                </div>
+            </div>
+            <a class="cs3-archive-link" href="#current">
+                Archived Products
+            </a>
+        </section>
+    </aside>
+</section>
+
+<div id="cs3ProductDrawer" class="cs3-drawer-backdrop" hidden>
+    <aside class="cs3-drawer" role="dialog" aria-modal="true" aria-labelledby="cs3DrawerTitle">
+        <div class="cs3-drawer-head">
+            <div><small>PRODUCT DETAILS</small><h2 id="cs3DrawerTitle">Product</h2><p id="cs3DrawerMeta">—</p></div>
+            <button type="button" id="cs3DrawerClose" aria-label="Close">×</button>
+        </div>
+        <div class="cs3-drawer-product">
+            <div class="cs3-drawer-image"><img id="cs3DrawerImage" alt="" hidden><span id="cs3DrawerFallback"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span></div>
+            <div><small>Available now</small><strong id="cs3DrawerQty">0 Nos</strong><span id="cs3DrawerStatus">—</span></div>
+        </div>
+        <div class="cs3-drawer-grid">
+            <div><small>Product ID</small><strong id="cs3DrawerId">—</strong></div>
+            <div><small>Branch</small><strong>Gopalapuram</strong></div>
+            <div><small>Category</small><strong id="cs3DrawerCategory">—</strong></div>
+            <div><small>Rack / 3D</small><strong id="cs3DrawerRack">—</strong></div>
+            <div><small>Location</small><strong id="cs3DrawerLocation">—</strong></div>
+            <div><small>Brand / Model</small><strong id="cs3DrawerBrandModel">—</strong></div>
+        </div>
+        <div class="cs3-drawer-actions">
+            <a href="#add">Add / Remove Stock</a>
+            <button id="cs3ArchiveProduct" type="button">Archive Product</button>
+        </div>
+    </aside>
+</div>
+
+
+        </div>
+
+
+    </main>
+
+
+</div>
+
+
+<!-- =====================================================
+     THREE.JS
+===================================================== -->
+
+<script
+    src="file:///mnt/data/NUNES_Stock_v3.2.8_Option3/static/three.min.js">
+</script>
+
+
+<!-- =====================================================
+     3D STORAGE ENGINE
+===================================================== -->
+
+<script
+    src="file:///mnt/data/NUNES_Stock_v3.2.8_Option3/static/stock_3d.js">
+</script>
+
+
+<!-- =====================================================
+     AUTOMATIC PRODUCT IMAGE LOOKUP / CACHE
+===================================================== -->
+
+<script
+    src="file:///mnt/data/NUNES_Stock_v3.2.8_Option3/static/product_images.js">
+</script>
+
+
+<!-- =====================================================
+     NORMAL APPLICATION LOGIC
+===================================================== -->
+
+<script
+    src="file:///mnt/data/NUNES_Stock_v3.2.8_Option3/static/app.js">
+</script>
+
+
+<!-- =====================================================
+     LIVE CENTRAL-SERVER SYNC
+===================================================== -->
+
+<script
+    src="file:///mnt/data/NUNES_Stock_v3.2.8_Option3/static/live_sync.js">
+</script>
+
+
+<!-- =====================================================
+     PAGE-SPECIFIC JAVASCRIPT
+===================================================== -->
+
+
+<script src="file:///mnt/data/NUNES_Stock_v3.2.8_Option3/static/current_stock_option3.js"></script>
+
+
+
+</body>
+
+</html>

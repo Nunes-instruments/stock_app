@@ -379,16 +379,6 @@
             byId("location");
 
 
-
-        const storageType =
-            byId("storageType");
-
-        const storageTargetRack =
-            byId("storageTargetRack");
-
-        const storageTargetShelf =
-            byId("storageTargetShelf");
-
         const unit =
             byId("unit");
 
@@ -534,92 +524,6 @@
         let lookupTimer =
             null;
 
-
-
-        let storageTotals = {
-            rack: 0,
-            shelf: 0
-        };
-
-        function getSelectedStorageType() {
-            return safeText(
-                storageType ? storageType.value : ""
-            ).toLowerCase();
-        }
-
-        function getSelectedStorageAvailable() {
-            const selected = getSelectedStorageType();
-            return selected === "rack"
-                ? numberValue(storageTotals.rack)
-                : selected === "shelf"
-                    ? numberValue(storageTotals.shelf)
-                    : 0;
-        }
-
-        function renderStorageAvailability() {
-            setText("rackAvailableStock", formatNumber(storageTotals.rack));
-            setText("shelfAvailableStock", formatNumber(storageTotals.shelf));
-
-            const selected = getSelectedStorageType();
-            const note = byId("storageSelectionNote");
-            if (note) {
-                if (!selected) {
-                    note.innerHTML = "<strong>Choose Rack or Shelf.</strong> Quantity will change only in the selected storage side.";
-                } else {
-                    const label = selected === "rack" ? "Rack" : "Shelf";
-                    note.innerHTML = "<strong>" + label + " selected.</strong> Available here: " +
-                        formatNumber(getSelectedStorageAvailable()) + " " +
-                        safeText(unit ? unit.value : "", "Nos") + ".";
-                }
-            }
-        }
-
-        function setStorageType(type) {
-            const normalized = type === "rack" || type === "shelf" ? type : "";
-            if (storageType) storageType.value = normalized;
-            if (storageTargetRack) storageTargetRack.classList.toggle("active", normalized === "rack");
-            if (storageTargetShelf) storageTargetShelf.classList.toggle("active", normalized === "shelf");
-            renderStorageAvailability();
-            updateQuantityDisplay();
-        }
-
-        function loadStorageTotals(product) {
-            storageTotals.rack = numberValue(product && product.rack_quantity);
-            storageTotals.shelf = numberValue(product && product.shelf_quantity);
-
-            if (storageTotals.rack > 0 && storageTotals.shelf <= 0) {
-                setStorageType("rack");
-            } else if (storageTotals.shelf > 0 && storageTotals.rack <= 0) {
-                setStorageType("shelf");
-            } else {
-                setStorageType("");
-            }
-            renderStorageAvailability();
-        }
-
-        function resetStorageTotals() {
-            storageTotals.rack = 0;
-            storageTotals.shelf = 0;
-            setStorageType("");
-        }
-
-        if (storageTargetRack) {
-            storageTargetRack.addEventListener("click", function () {
-                setStorageType("rack");
-            });
-        }
-
-        if (storageTargetShelf) {
-            storageTargetShelf.addEventListener("click", function () {
-                setStorageType("shelf");
-            });
-        }
-
-        const v250StorageFromQuery =
-            new URLSearchParams(window.location.search).get("storage");
-        if (v250StorageFromQuery === "rack" || v250StorageFromQuery === "shelf") {
-            setStorageType(v250StorageFromQuery);
-        }
 
         /* ====================================================
            MOVEMENT DETAILS
@@ -1156,8 +1060,6 @@
 
         function showNewProductStatus() {
 
-            resetStorageTotals();
-
             if (!productStatusCard) {
 
                 return;
@@ -1345,8 +1247,6 @@
                     );
 
 
-                loadStorageTotals(loadedProduct);
-
                 /* AUTO FILL PRODUCT */
 
                 if (productName) {
@@ -1364,9 +1264,35 @@
                     category &&
                     loadedProduct.category
                 ) {
+                    const existingCategory =
+                        safeText(loadedProduct.category);
+
+                    const categoryExists =
+                        Array.from(category.options || [])
+                            .some(function (option) {
+                                return safeText(option.value) === existingCategory;
+                            });
+
+                    if (!categoryExists && existingCategory) {
+                        const legacyOption =
+                            document.createElement("option");
+
+                        legacyOption.value =
+                            existingCategory;
+
+                        legacyOption.textContent =
+                            existingCategory + " · Inventory";
+
+                        legacyOption.dataset.inventoryOnly =
+                            "true";
+
+                        category.appendChild(
+                            legacyOption
+                        );
+                    }
 
                     category.value =
-                        loadedProduct.category;
+                        existingCategory;
                 }
 
 
@@ -1502,10 +1428,6 @@
                 );
 
 
-            const storageAvailable =
-                getSelectedStorageAvailable();
-
-
             setText(
                 "currentStockValue",
                 formatNumber(
@@ -1536,15 +1458,6 @@
 
             if (!reviewButton) {
 
-                return;
-            }
-
-
-            if (!getSelectedStorageType()) {
-                reviewButton.disabled = true;
-                if (reviewButtonHint) {
-                    reviewButtonHint.textContent = "Choose Rack or Shelf";
-                }
                 return;
             }
 
@@ -1621,7 +1534,7 @@
 
 
             if (
-                storageAvailable <=
+                current <=
                 0
             ) {
 
@@ -1662,7 +1575,7 @@
 
             if (
                 moving >
-                storageAvailable
+                current
             ) {
 
                 reviewButton.disabled =
@@ -1675,7 +1588,7 @@
                         (
                             "Only " +
                             formatNumber(
-                                storageAvailable
+                                current
                             ) +
                             " " +
                             selectedUnit +
@@ -1758,14 +1671,14 @@
                         movementType ===
                             "outward" &&
                         loadedProduct &&
-                        getSelectedStorageAvailable() >
+                        getCurrentStock() >
                             0
                     ) {
 
                         next =
                             Math.min(
                                 next,
-                                getSelectedStorageAvailable()
+                                getCurrentStock()
                             );
                     }
 
@@ -1886,12 +1799,6 @@
                 getMovementQuantity();
 
 
-            if (!getSelectedStorageType()) {
-                showError("Choose Rack or Shelf before continuing.");
-                return false;
-            }
-
-
             if (
                 moving <=
                 0
@@ -1921,12 +1828,12 @@
 
 
                 if (
-                    getSelectedStorageAvailable() <=
+                    getCurrentStock() <=
                     0
                 ) {
 
                     showError(
-                        "No stock is available in the selected Rack/Shelf side for OUTWARD."
+                        "This product currently has no stock available for OUTWARD."
                     );
 
                     return false;
@@ -1935,7 +1842,7 @@
 
                 if (
                     moving >
-                    getSelectedStorageAvailable()
+                    getCurrentStock()
                 ) {
 
                     showError(
@@ -1943,7 +1850,7 @@
                             "Outward quantity cannot exceed available stock. " +
                             "Available: " +
                             formatNumber(
-                                getSelectedStorageAvailable()
+                                getCurrentStock()
                             ) +
                             " " +
                             safeText(
@@ -2551,17 +2458,7 @@
                         location
                             ? location.value
                             : "",
-                        ""
-                    ),
-
-                storage_type:
-                    getSelectedStorageType(),
-
-                storage_location:
-                    safeText(
-                        location
-                            ? location.value
-                            : ""
+                        "Category Storage"
                     ),
 
                 reason:
@@ -2674,14 +2571,6 @@
                     numberValue(
                         result.new_quantity
                     );
-
-
-                if (result.storage_type === "rack") {
-                    storageTotals.rack = numberValue(result.storage_type_quantity_after);
-                } else if (result.storage_type === "shelf") {
-                    storageTotals.shelf = numberValue(result.storage_type_quantity_after);
-                }
-                renderStorageAvailability();
 
 
                 if (

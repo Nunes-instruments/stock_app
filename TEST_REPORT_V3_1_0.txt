@@ -1,0 +1,57 @@
+NUNES STOCK v3.1.0 - RELEASE VERIFICATION REPORT
+Date: 22 September 2026
+Release type: Production package prepared from the user-uploaded stock application
+
+RESULT SUMMARY
+==============
+PASS - Protected Rack / Shelf / 3D files verified byte-for-byte by SHA-256.
+PASS - Python source compilation for production modules.
+PASS - Jinja template parsing for all application templates.
+PASS - Full inventory source-of-truth test: 27 active products / 142 total units.
+PASS - Existing Rack/3D mapped view remains separate: 5 mapped products / 42 units.
+PASS - Existing inventory-only product can receive inward and outward stock.
+PASS - Excess outward movement is blocked before negative stock can be created.
+PASS - Archive removes a product from active inventory without deleting its stock history.
+PASS - Restore returns the archived product to active inventory.
+PASS - Concurrency test: 20 parallel inward operations produced exactly 20 units, 0 write errors.
+PASS - SQLite production settings include WAL, busy timeout and immediate write transactions.
+PASS - Dashboard visual render reviewed at 1600 x 1000 after correcting the legacy shell layout conflict.
+PASS - Server/client packaging policy keeps mutable business data outside GitHub source.
+PASS - GitHub updater contains version gate, candidate preflight, live-data backup, health check and code rollback logic.
+PASS - Main-server starter checks the exact expected VERSION before accepting an already-running server.
+PASS - Main-server installer includes uploaded-baseline Git divergence guard and safe-stops before code replacement when an installed checkout contains later/divergent commits.
+
+PROTECTED RACK / 3D FILES
+=========================
+static/stock_3d.js
+static/shelf_rack_3d.js
+static/storage_view.js
+templates/storage_view.html
+
+These four uploaded-version files were not redesigned or rewritten. Their expected hashes are stored in PROTECTED_RACK_FILES.sha256 and are checked by scripts/preflight.py.
+
+IMPORTANT ENVIRONMENT LIMITATIONS
+=================================
+1. The exact Flask/Waitress HTTP preflight could not be executed inside the build container because Flask/Waitress are not installed there and the container has no package-download access. The Windows installer installs requirements_portable.txt first and then runs scripts/preflight.py before it creates/starts the production service. A failed preflight stops setup before startup.
+2. Windows PowerShell / Task Scheduler / Firewall / .lnk creation cannot be executed in this Linux build container. The scripts were reviewed and their launchers were hardened to preserve failure exit codes, but the real Windows setup must still complete its own preflight on the target server PC.
+
+GITHUB SAFETY STATUS
+====================
+Remote repository checked: Nunes-instruments/stock_app
+Remote main VERSION observed: 2.5.2
+Uploaded archive baseline VERSION observed: 2.0.4
+
+The connected GitHub integration returned HTTP 403 for a branch-create write, so this release was NOT pushed from ChatGPT. This is intentional: no claim is made that GitHub main was changed.
+
+PUBLISH_TO_GITHUB.bat never force-pushes main. If the authorized PC sees divergent/newer work on GitHub main, it publishes the local release to branch nunes-v3-1-production rather than overwriting main.
+
+The production installer carries BASELINE_GIT_COMMIT.txt = 7abde5c1a53578d6b88a581f2dc669315ca291e7. If C:\NunesStock\app is already a Git checkout with later/divergent commits and a different VERSION, setup stops before replacing application code.
+
+DATA SAFETY
+===========
+Original supplied main stock database checked before packaging:
+- Products: 27
+- Quantity: 142
+- Stock-history entries: 41
+
+No release verification was run directly against the supplied database. Workflow and concurrency tests used isolated temporary copies.

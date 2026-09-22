@@ -36,8 +36,8 @@ except Exception:
     raise
 
 HOST = os.environ.get("NUNES_STOCK_HOST", "0.0.0.0")
-PORT = int(os.environ.get("NUNES_STOCK_PORT", "5000"))
-THREADS = int(os.environ.get("NUNES_STOCK_THREADS", "12"))
+PORT = int(os.environ.get("NUNES_STOCK_PORT", "5055"))
+THREADS = int(os.environ.get("NUNES_STOCK_THREADS", "8"))
 PID_FILE = DATA_DIR / "server.pid"
 
 

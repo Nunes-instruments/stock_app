@@ -1,0 +1,27 @@
+NUNES STOCK v3.2.1 - RELEASE VERIFICATION
+=========================================
+
+Purpose
+-------
+Correct the update process that could close before the user could read the
+result, while preserving the v3.2 Soft Gradient Modern dashboard and port 5055.
+
+Verified in build environment
+-----------------------------
+PASS - Python source compilation.
+PASS - Protected Rack/3D SHA-256 manifest matches all four protected files.
+PASS - v3.2.1 VERSION and version_info are aligned.
+PASS - Production package contains no SQLite database files.
+PASS - Production package contains no runtime log files.
+PASS - Persistent update launcher is present.
+PASS - Installer writes a permanent install_v321.log path.
+PASS - Update logic preserves an existing 5055 stock.db instead of re-cloning port-5000 data.
+PASS - Code rollback path is present for post-copy installation failures.
+PASS - Scheduled recurring tasks invoke silent WScript wrappers.
+
+Windows-only verification required on the user's server PC
+-----------------------------------------------------------
+The actual UAC elevation, Windows Task Scheduler, Windows Firewall, Python venv
+package installation, port 5055 listener, and Waitress HTTP health check require
+the Windows server PC. The v3.2.1 installer intentionally remains open and logs
+the exact failing step if any of those machine-specific operations fail.

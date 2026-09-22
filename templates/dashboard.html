@@ -1,27 +1,161 @@
 {% extends "base.html" %}
+
 {% block title %}Dashboard{% endblock %}
+
 {% block content %}
-<div class="pro-page">
-<section class="pro-page-header"><div><span class="pro-eyebrow">Inventory overview</span><h1>Stock dashboard</h1><p>Live quantity from Open Rack and Rack &amp; Shelf. Every movement updates these totals.</p></div><a class="pro-primary" href="{{ url_for('add_stock_page') }}">+ New stock movement</a></section>
-<section class="pro-kpi-grid">
-<article class="pro-kpi"><div class="pro-kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></div><div><span class="pro-kpi-label">Products</span><strong class="pro-kpi-value">{{ summary.total_products|default(0)|int }}</strong><span class="pro-kpi-note">Unique live products</span></div></article>
-<article class="pro-kpi"><div class="pro-kpi-icon green"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><div><span class="pro-kpi-label">Total quantity</span><strong class="pro-kpi-value">{{ summary.total_stock_quantity|default(0)|int }}</strong><span class="pro-kpi-note">Open Rack + Rack &amp; Shelf</span></div></article>
-<article class="pro-kpi"><div class="pro-kpi-icon orange"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 10h16M4 15h16"/></svg></div><div><span class="pro-kpi-label">Open Rack</span><strong class="pro-kpi-value">{{ storage_dual_summary.open_rack_quantity|default(0)|int }}</strong><span class="pro-kpi-note">{{ storage_dual_summary.open_rack_products|default(0)|int }} products</span></div></article>
-<article class="pro-kpi"><div class="pro-kpi-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M5 9h14M5 14h14"/></svg></div><div><span class="pro-kpi-label">Rack &amp; Shelf</span><strong class="pro-kpi-value">{{ storage_dual_summary.shelf_quantity|default(0)|int }}</strong><span class="pro-kpi-note">{{ storage_dual_summary.shelf_products|default(0)|int }} products</span></div></article>
-</section>
-<section class="pro-two-column">
-<article class="pro-panel"><header class="pro-panel-header"><div><h2>Quick access</h2><p>Common stock tasks</p></div></header><div class="pro-action-list">
-<a class="pro-action-link" href="{{ url_for('add_stock_page') }}"><span><strong>Stock movement</strong><small>Receive or issue quantity</small></span><span>›</span></a>
-<a class="pro-action-link" href="{{ url_for('current_stock') }}"><span><strong>Current stock</strong><small>Search all live products</small></span><span>›</span></a>
-<a class="pro-action-link" href="{{ url_for('open_rack_page') }}"><span><strong>Open Rack</strong><small>View Rack quantities and locations</small></span><span>›</span></a>
-<a class="pro-action-link" href="{{ url_for('rack_shelf_page') }}"><span><strong>Rack &amp; Shelf</strong><small>Approved Rack/Shelf view</small></span><span>›</span></a>
-</div></article>
-<article class="pro-panel"><header class="pro-panel-header"><div><h2>Today</h2><p>Movement quantity</p></div></header><div class="pro-movement-today"><div class="pro-movement-stat"><small>Inward</small><strong>{{ summary.stock_added_today|default(0)|int }}</strong></div><div class="pro-movement-stat"><small>Outward</small><strong>{{ summary.stock_outward_today|default(0)|int }}</strong></div></div></article>
-</section>
-<section class="pro-panel"><header class="pro-panel-header"><div><h2>Recent stock movement</h2><p>Latest inventory changes</p></div><a class="pro-secondary" href="{{ url_for('import_history') }}">View history</a></header><div class="recent-stock-scroll"><table><thead><tr><th>Product</th><th>Movement</th><th>Previous</th><th>Quantity</th><th>Available</th><th>Date</th></tr></thead><tbody>
-{% if recent_entries %}{% for entry in recent_entries %}{% set previous=entry.previous_quantity|default(0) %}{% set current=entry.new_quantity|default(0) %}{% set movement_quantity=entry.quantity_added|default(0) %}{% if entry.movement_type is defined %}{% set movement_type=entry.movement_type|lower %}{% elif current<previous %}{% set movement_type='outward' %}{% else %}{% set movement_type='inward' %}{% endif %}
-<tr><td><div class="pro-product"><strong>{{ entry.product_name|default('Unknown Product',true) }}</strong><small>{{ entry.product_id|default('-',true) }}</small></div></td><td><span class="pro-badge {{ movement_type }}">{{ 'OUTWARD' if movement_type=='outward' else 'INWARD' }}</span></td><td>{{ previous|int }}</td><td><strong>{{ '-' if movement_type=='outward' else '+' }}{{ movement_quantity|int }}</strong></td><td class="pro-qty">{{ current|int }}</td><td>{{ entry.stock_date|default('-',true) }}</td></tr>
-{% endfor %}{% else %}<tr><td colspan="6" class="open-rack-empty">No stock movement has been recorded yet.</td></tr>{% endif %}
-</tbody></table></div></section>
+<link rel="stylesheet" href="{{ url_for('static', filename='soft_gradient_2026.css', v=app_version) }}">
+<div class="sg-dashboard">
+    <section class="sg-welcome" aria-label="Dashboard greeting">
+        <div>
+            <div class="sg-greeting"><span class="sg-greeting-icon">☀</span><span data-sg-greeting>Good Morning!</span></div>
+            <div class="sg-greeting-copy">Here’s your inventory overview for {{ active_branch_name }}.</div>
+        </div>
+        <div class="sg-clock">
+            <span aria-hidden="true">▣</span>
+            <span><span data-sg-date>Today</span><strong data-sg-time>--:--</strong></span>
+        </div>
+    </section>
+
+    <section class="sg-hero">
+        <div class="sg-hero-copy">
+            <div class="sg-eyebrow">Instrument Stock Management</div>
+            <h1>Inventory Control Center</h1>
+            <p>Live stock across {{ active_branch_name }}. Changes made by staff are synchronized through the main server.</p>
+        </div>
+        <div class="sg-hero-note">
+            Instruments<br>Build a Safer World
+            <strong>Live server · revision {{ inventory_revision }}</strong>
+        </div>
+    </section>
+
+    <section class="sg-kpis" aria-label="Inventory summary">
+        <article class="sg-kpi">
+            <div class="sg-kpi-head">
+                <span class="sg-kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
+                <div><div class="sg-kpi-label">Active Products</div><div class="sg-kpi-value">{{ summary.total_products | default(0) }}</div></div>
+            </div>
+            <div class="sg-kpi-foot">All active inventory records in this branch</div>
+        </article>
+        <article class="sg-kpi green">
+            <div class="sg-kpi-head">
+                <span class="sg-kpi-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v5c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 11v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></svg></span>
+                <div><div class="sg-kpi-label">Available Quantity</div><div class="sg-kpi-value">{{ summary.total_stock_quantity | default(0) }}</div></div>
+            </div>
+            <div class="sg-kpi-foot">Current quantity from the live database</div>
+        </article>
+        <article class="sg-kpi">
+            <div class="sg-kpi-head">
+                <span class="sg-kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 4v13"/><path d="m7 12 5 5 5-5"/><path d="M5 20h14"/></svg></span>
+                <div><div class="sg-kpi-label">Inward Today</div><div class="sg-kpi-value">{{ summary.stock_added_today | default(0) }}</div></div>
+            </div>
+            <div class="sg-kpi-foot">Quantity received today</div>
+        </article>
+        <article class="sg-kpi red">
+            <div class="sg-kpi-head">
+                <span class="sg-kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 20V7"/><path d="m7 12 5-5 5 5"/><path d="M5 4h14"/></svg></span>
+                <div><div class="sg-kpi-label">Outward Today</div><div class="sg-kpi-value">{{ summary.stock_outward_today | default(0) }}</div></div>
+            </div>
+            <div class="sg-kpi-foot">Quantity dispatched today</div>
+        </article>
+    </section>
+
+    <section class="sg-panel">
+        <div class="sg-panel-head">
+            <div class="sg-panel-title">
+                <span class="sg-panel-icon"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M8 21v-6h8v6M8 10h.01M12 10h.01M16 10h.01"/></svg></span>
+                <div><h2>Company / Branch Inventory</h2><p>Each company keeps an independent stock database on the same central server.</p></div>
+            </div>
+            <span class="sg-link">View all branches →</span>
+        </div>
+        <div class="sg-branches">
+            {% for branch in branch_overview %}
+            <article class="sg-branch {% if branch.active %}active{% endif %}">
+                <div class="sg-branch-head">
+                    <div class="sg-branch-name">
+                        <span class="sg-branch-icon"><svg viewBox="0 0 24 24"><path d="M5 21V5h10v16M15 10h4v11"/><path d="M8 9h4M8 13h4M8 17h4M18 14h.01M18 18h.01"/></svg></span>
+                        <h3>{{ branch.name }}</h3>
+                    </div>
+                    {% if branch.active %}<span class="sg-chip">ACTIVE</span>{% else %}<span class="sg-chip muted">INACTIVE</span>{% endif %}
+                </div>
+                <div class="sg-branch-metrics">
+                    <div class="sg-branch-metric"><small>Products</small><strong>{{ branch.products }}</strong></div>
+                    <div class="sg-branch-metric"><small>Quantity</small><strong>{{ branch.quantity }}</strong></div>
+                    <div class="sg-branch-metric"><small>Inward Today</small><strong>{{ branch.inward }}</strong></div>
+                    <div class="sg-branch-metric"><small>Outward Today</small><strong>{{ branch.outward }}</strong></div>
+                </div>
+                <form method="post" action="{{ url_for('switch_branch') }}">
+                    <input type="hidden" name="branch" value="{{ branch.key }}">
+                    <input type="hidden" name="return_to" value="{{ request.path }}">
+                    <button class="sg-branch-button" type="submit">{% if branch.active %}Working in this branch →{% else %}Open this branch →{% endif %}</button>
+                </form>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="sg-actions" aria-label="Quick actions">
+        <a class="sg-action" href="{{ url_for('add_stock_page') }}"><span class="sg-action-icon"><svg viewBox="0 0 24 24"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg></span><span><strong>Stock Movement</strong><small>Add inward stock or safely dispatch outward stock.</small></span><span class="sg-action-chevron">›</span></a>
+        <a class="sg-action green" href="{{ url_for('current_stock') }}"><span class="sg-action-icon"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span><strong>Current Stock</strong><small>Search all active inventory, including non-rack items.</small></span><span class="sg-action-chevron">›</span></a>
+        <a class="sg-action purple" href="{{ url_for('storage_view') }}"><span class="sg-action-icon"><svg viewBox="0 0 24 24"><path d="M4 20V9l5 3V9l5 3V6h6v14z"/><path d="M7 16h2M12 16h2M17 16h2"/></svg></span><span><strong>Rack & 3D View</strong><small>Open the existing protected rack and shelf experience.</small></span><span class="sg-action-chevron">›</span></a>
+        <a class="sg-action orange" href="{{ url_for('import_excel') }}"><span class="sg-action-icon"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span><span><strong>Excel Import</strong><small>Bulk-add stock while preserving existing records.</small></span><span class="sg-action-chevron">›</span></a>
+    </section>
+
+    <section class="sg-lower">
+        <div class="sg-panel">
+            <div class="sg-panel-head">
+                <div class="sg-panel-title">
+                    <span class="sg-panel-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+                    <div><h2>Recent Stock Movement</h2><p>Latest confirmed inward and outward transactions.</p></div>
+                </div>
+                <a class="sg-link" href="{{ url_for('import_history') }}">View full history →</a>
+            </div>
+            <div class="sg-table-wrap">
+                <table class="sg-table">
+                    <thead><tr><th>Product</th><th>Movement</th><th>Change</th><th>Available</th><th>Date</th></tr></thead>
+                    <tbody>
+                    {% if recent_entries %}
+                        {% for entry in recent_entries %}
+                        {% set current = entry.new_quantity | default(0) %}
+                        {% set move_type = entry.movement_type | default('inward') | lower %}
+                        <tr>
+                            <td><div class="sg-product"><strong>{{ entry.product_name | default('Unknown Product', true) }}</strong><small>{{ entry.product_id | default('-', true) }}</small></div></td>
+                            <td><span class="sg-move {{ move_type }}">{{ 'OUTWARD' if move_type == 'outward' else 'INWARD' }}</span></td>
+                            <td>{% if move_type == 'outward' %}<span class="sg-minus">−{{ entry.quantity_added | default(0) }}</span>{% else %}<span class="sg-plus">+{{ entry.quantity_added | default(0) }}</span>{% endif %}</td>
+                            <td><strong>{{ current }}</strong></td>
+                            <td>{{ entry.stock_date | default('-', true) }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="5" style="padding:30px;text-align:center;color:#7f93a7;">No stock movement has been recorded yet.</td></tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <aside>
+            <section class="sg-panel">
+                <div class="sg-panel-head">
+                    <div class="sg-panel-title">
+                        <span class="sg-panel-icon green"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></span>
+                        <div><h2>System Status</h2><p>Central server readiness</p></div>
+                    </div>
+                </div>
+                <div class="sg-status-body">
+                    <div class="sg-status-row"><span>Main server</span><strong class="good">● Online</strong></div>
+                    <div class="sg-status-row"><span>Live browser sync</span><strong class="good">↻ Every 5 sec</strong></div>
+                    <div class="sg-status-row"><span>Excel imports</span><strong>{{ total_imports | default(0) }}</strong></div>
+                    <div class="sg-status-row"><span>App version</span><strong>v{{ app_version }}</strong></div>
+                    <div class="sg-status-row"><span>Data policy</span><strong>History preserved</strong></div>
+                    <div class="sg-health"><strong>✓ System healthy</strong><small>Stock management is running normally.</small></div>
+                    <div class="sg-promo"><strong>Smarter Inventory<br>Brighter Tomorrow</strong><small>Reliable instruments. A safer world.</small></div>
+                </div>
+            </section>
+        </aside>
+    </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='dashboard_soft_gradient.js', v=app_version) }}"></script>
 {% endblock %}

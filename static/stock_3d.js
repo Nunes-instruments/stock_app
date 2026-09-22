@@ -293,7 +293,7 @@
 
 
     renderer.setClearColor(
-        0xedf6ff,
+        0x071421,
         1
     );
 
@@ -308,15 +308,15 @@
 
     scene.background =
         new THREE.Color(
-            0xedf6ff
+            0x071421
         );
 
 
     scene.fog =
         new THREE.Fog(
-            0xedf6ff,
-            34,
-            92
+            0x071421,
+            30,
+            85
         );
 
 
@@ -421,20 +421,6 @@
 
     let pointerDownCabinet =
         null;
-
-
-    // V6.1: right-click + hold + drag pans Open Rack.
-    let rightDragActive =
-        false;
-
-    let rightDragPointerId =
-        null;
-
-    let rightDragLastX =
-        0;
-
-    let rightDragLastY =
-        0;
 
 
     let cameraTween =
@@ -3967,86 +3953,9 @@
        CURSOR
     ======================================================== */
 
-    canvas.style.touchAction = "none";
-
     canvas.addEventListener(
         "pointermove",
         function (event) {
-
-            if (rightDragActive) {
-
-                // V6.2 OPEN RACK ORBIT DRAG
-                // Right-click + hold + drag rotates the OLD/Open Rack view.
-                const dx =
-                    event.clientX -
-                    rightDragLastX;
-
-                const dy =
-                    event.clientY -
-                    rightDragLastY;
-
-                rightDragLastX =
-                    event.clientX;
-
-                rightDragLastY =
-                    event.clientY;
-
-                if (
-                    cameraTween &&
-                    cameraTween.cancel
-                ) {
-                    cameraTween.cancel();
-                }
-
-                const offset =
-                    camera.position
-                        .clone()
-                        .sub(
-                            cameraTarget
-                        );
-
-                const spherical =
-                    new THREE.Spherical()
-                        .setFromVector3(
-                            offset
-                        );
-
-                spherical.theta -=
-                    dx * 0.009;
-
-                spherical.phi =
-                    clamp(
-                        spherical.phi +
-                        dy * 0.0065,
-                        0.48,
-                        1.48
-                    );
-
-                spherical.radius =
-                    clamp(
-                        spherical.radius,
-                        8.5,
-                        48
-                    );
-
-                offset.setFromSpherical(
-                    spherical
-                );
-
-                camera.position
-                    .copy(
-                        cameraTarget
-                    )
-                    .add(
-                        offset
-                    );
-
-                canvas.style.cursor =
-                    "grabbing";
-
-                event.preventDefault();
-                return;
-            }
 
             if (
                 animationBusy
@@ -4054,6 +3963,7 @@
 
                 canvas.style.cursor =
                     "default";
+
 
                 return;
             }
@@ -4068,30 +3978,18 @@
             canvas.style.cursor =
                 cabinet
                     ? "pointer"
-                    : "grab";
+                    : "default";
         }
     );
 
 
     canvas.addEventListener(
         "pointerleave",
-        function (event) {
-
-            if (
-                rightDragActive &&
-                event.buttons === 0
-            ) {
-                rightDragActive =
-                    false;
-
-                rightDragPointerId =
-                    null;
-            }
+        function () {
 
             canvas.style.cursor =
-                rightDragActive
-                    ? "grabbing"
-                    : "default";
+                "default";
+
 
             pointerDownCabinet =
                 null;
@@ -4103,213 +4001,10 @@
         "pointerdown",
         function (event) {
 
-            if (event.button === 2) {
-
-                rightDragActive =
-                    true;
-
-                rightDragPointerId =
-                    event.pointerId;
-
-                rightDragLastX =
-                    event.clientX;
-
-                rightDragLastY =
-                    event.clientY;
-
-                pointerDownCabinet =
-                    null;
-
-                if (
-                    canvas.setPointerCapture
-                ) {
-                    try {
-                        canvas.setPointerCapture(
-                            event.pointerId
-                        );
-                    } catch (ignore) {}
-                }
-
-                canvas.style.cursor =
-                    "grabbing";
-
-                event.preventDefault();
-                return;
-            }
-
-            if (event.button !== 0) {
-                return;
-            }
-
             pointerDownCabinet =
                 getCabinetUnderPointer(
                     event
                 );
-        }
-    );
-
-
-    // V6.1 RIGHT DRAG STOP
-    canvas.addEventListener(
-        "contextmenu",
-        function (event) {
-            event.preventDefault();
-        }
-    );
-
-
-    function stopOpenRackRightDrag(event) {
-
-        if (!rightDragActive) {
-            return;
-        }
-
-        if (
-            event &&
-            rightDragPointerId !== null &&
-            event.pointerId !== undefined &&
-            event.pointerId !== rightDragPointerId
-        ) {
-            return;
-        }
-
-        if (
-            canvas.releasePointerCapture &&
-            rightDragPointerId !== null
-        ) {
-            try {
-                canvas.releasePointerCapture(
-                    rightDragPointerId
-                );
-            } catch (ignore) {}
-        }
-
-        rightDragActive =
-            false;
-
-        rightDragPointerId =
-            null;
-
-        canvas.style.cursor =
-            "grab";
-    }
-
-
-    canvas.addEventListener(
-        "pointerup",
-        stopOpenRackRightDrag
-    );
-
-
-    canvas.addEventListener(
-        "pointercancel",
-        stopOpenRackRightDrag
-    );
-
-
-    /* ========================================================
-       V6.3 OPEN RACK COMMON CONTROLS
-       Left click = select/open
-       Right hold + drag = rotate
-       Wheel = zoom
-       Double click empty area = reset
-    ======================================================== */
-
-    canvas.addEventListener(
-        "wheel",
-        function (event) {
-
-            if (animationBusy) {
-                return;
-            }
-
-            event.preventDefault();
-
-            if (
-                cameraTween &&
-                cameraTween.cancel
-            ) {
-                cameraTween.cancel();
-            }
-
-            const offset =
-                camera.position
-                    .clone()
-                    .sub(
-                        cameraTarget
-                    );
-
-            const currentDistance =
-                offset.length();
-
-            const factor =
-                event.deltaY > 0
-                    ? 1.10
-                    : 0.90;
-
-            const nextDistance =
-                clamp(
-                    currentDistance * factor,
-                    8.5,
-                    48
-                );
-
-            if (currentDistance > 0.001) {
-                offset.setLength(
-                    nextDistance
-                );
-
-                camera.position
-                    .copy(
-                        cameraTarget
-                    )
-                    .add(
-                        offset
-                    );
-            }
-        },
-        {
-            passive:
-                false
-        }
-    );
-
-
-    canvas.addEventListener(
-        "dblclick",
-        function (event) {
-
-            if (animationBusy) {
-                return;
-            }
-
-            if (
-                getCabinetUnderPointer(
-                    event
-                )
-            ) {
-                return;
-            }
-
-            const cabinet =
-                cabinets[
-                    viewingIndex
-                ] ||
-                null;
-
-            if (!cabinet) {
-                return;
-            }
-
-            moveCamera(
-                getBrowseCameraPosition(
-                    cabinet
-                ),
-                getBrowseTarget(
-                    cabinet
-                ),
-                450
-            );
         }
     );
 

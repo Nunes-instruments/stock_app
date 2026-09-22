@@ -1,102 +1,130 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
-title NUNES Stock - Publish to GitHub
-set "REPO=https://github.com/Nunes-instruments/stock_app.git"
+title NUNES Stock v3.2.11 - Safe GitHub Main Publish R2
 
-echo =====================================================
-echo NUNES STOCK - SAFE GITHUB PUBLISH
-echo =====================================================
-echo.
-where git >nul 2>&1
-if errorlevel 1 (
-  echo ERROR: Git for Windows is not installed.
-  echo Install Git, then run this file again.
-  if /I not "%~1"=="--no-pause" pause
+for %%I in ("%~dp0.") do set "SOURCE=%%~fI"
+set "REPO=https://github.com/Nunes-instruments/stock_app.git"
+set "TEMP_REPO=%TEMP%\NunesStock_v3211_Publish_R2"
+set "RUNTIME=%LOCALAPPDATA%\NunesStockRuntimeV31\venv\Scripts\python.exe"
+set "PREFLIGHT_DATA=%TEMP%\NunesStock_v3211_publish_preflight_data_R2"
+set "OVERLAY=%SOURCE%\scripts\safe_publish_overlay.py"
+
+if not exist "%OVERLAY%" set "OVERLAY=%SOURCE%\safe_publish_overlay.py"
+
+echo ============================================================
+echo  NUNES STOCK v3.2.11 - SAFE GITHUB MAIN PUBLISH R2
+echo ============================================================
+echo Repository : %REPO%
+echo Source     : %SOURCE%
+echo Version    : 3.2.11
+echo Data files : NEVER PUBLISHED
+echo Force push : NEVER USED
+echo ============================================================
+
+where git >nul 2>&1 || (echo ERROR: Git for Windows is required.& pause & exit /b 1)
+if not exist "%OVERLAY%" (echo ERROR: Safe overlay helper is missing: %OVERLAY%& pause & exit /b 1)
+if not exist "%SOURCE%\VERSION" (echo ERROR: VERSION file missing from live app.& pause & exit /b 1)
+set /p LIVE_VERSION=<"%SOURCE%\VERSION"
+if /I not "!LIVE_VERSION!"=="3.2.11" (
+  echo ERROR: Live application version is !LIVE_VERSION!, not 3.2.11.
+  echo Publish was stopped so the wrong release cannot reach GitHub main.
+  pause
   exit /b 1
 )
 
-if not exist ".git" (
-  git init
-  if errorlevel 1 goto :FAIL
+set "PYTHON="
+if exist "%RUNTIME%" set "PYTHON=%RUNTIME%"
+if not defined PYTHON (
+  where py >nul 2>&1 || (echo ERROR: Python runtime was not found.& pause & exit /b 1)
+  set "PYTHON=py -3"
 )
 
-git branch -M main >nul 2>&1
+if exist "%TEMP_REPO%" rmdir /s /q "%TEMP_REPO%"
+if exist "%PREFLIGHT_DATA%" rmdir /s /q "%PREFLIGHT_DATA%"
 
-rem Repository-only identity. This does not change Git settings for other projects.
+echo [1/7] Cloning current GitHub main...
+git clone "%REPO%" "%TEMP_REPO%"
+if errorlevel 1 goto :FAIL
+
+echo [2/7] Overlaying tested v3.2.11 code safely...
+%PYTHON% "%OVERLAY%" overlay "%SOURCE%" "%TEMP_REPO%"
+if errorlevel 1 goto :FAIL
+
+echo [3/7] Staging and verifying no business/runtime data...
+pushd "%TEMP_REPO%"
+git add -A
+%PYTHON% "%OVERLAY%" validate "%TEMP_REPO%"
+if errorlevel 1 (popd & goto :FAIL)
+
+echo [4/7] Running source and production preflight...
+%PYTHON% -m compileall -q .
+if errorlevel 1 (popd & goto :FAIL)
+if exist "scripts\preflight.py" (
+  set "NUNES_STOCK_DATA_DIR=%PREFLIGHT_DATA%"
+  %PYTHON% scripts\preflight.py
+  if errorlevel 1 (popd & goto :FAIL)
+) else (
+  echo ERROR: scripts\preflight.py is missing from the release.
+  popd
+  goto :FAIL
+)
+
+echo [5/7] Creating release commit...
 git config user.name "Nunes Instruments Stock Server"
 git config user.email "stock-server@nunes.local"
-
-rem Line endings are controlled by .gitattributes, not by a global Windows setting.
-git config core.autocrlf false
-git config core.safecrlf false
-
-git remote get-url origin >nul 2>&1
-if errorlevel 1 (
-  git remote add origin "%REPO%"
-) else (
-  git remote set-url origin "%REPO%"
-)
-
-echo [1/5] Checking business-data protection...
-git check-ignore stock.db >nul 2>&1
-if errorlevel 1 (
-  echo ERROR: stock.db is not ignored. Publish stopped for safety.
-  if /I not "%~1"=="--no-pause" pause
-  exit /b 1
-)
-git check-ignore stock_gandhipuram.db >nul 2>&1
-if errorlevel 1 (
-  echo ERROR: branch database is not ignored. Publish stopped for safety.
-  if /I not "%~1"=="--no-pause" pause
-  exit /b 1
-)
-
-echo [2/5] Applying Windows/Git line-ending rules...
-git add .gitattributes .gitignore >nul 2>&1
-
-echo [3/5] Adding CODE only...
-git add .
-if errorlevel 1 goto :FAIL
-rem Re-normalize any files that were already staged by an earlier failed publish.
-git add --renormalize . >nul 2>&1
-if errorlevel 1 goto :FAIL
-
-echo [4/5] Creating commit if needed...
-set "APPVER=unknown"
-if exist "VERSION" set /p APPVER=<VERSION
 git diff --cached --quiet
 if errorlevel 1 (
-  git commit -m "NUNES Stock v%APPVER% - production release"
-  if errorlevel 1 goto :FAIL
+  git commit -m "NUNES Stock v3.2.11 - Shared clients and persistent Shelf Rack"
+  if errorlevel 1 (popd & goto :FAIL)
 ) else (
-  echo No new code changes to commit.
+  echo No code changes to publish.
 )
 
-echo [5/5] Publishing to GitHub main...
-echo GitHub may open a sign-in window on first use.
-git push -u origin main
-if errorlevel 1 goto :FAIL
+echo [6/7] Pushing normal fast-forward update to main...
+git push origin HEAD:main
+if errorlevel 1 (popd & goto :FAIL)
 
+echo [7/7] Verifying GitHub main version...
+git fetch origin main
+if errorlevel 1 (popd & goto :FAIL)
+set "REMOTE_VERSION="
+for /f "usebackq delims=" %%V in (`git show origin/main:VERSION 2^>nul`) do if not defined REMOTE_VERSION set "REMOTE_VERSION=%%V"
+if /I not "!REMOTE_VERSION!"=="3.2.11" (
+  echo ERROR: GitHub main VERSION is !REMOTE_VERSION!, expected 3.2.11.
+  popd
+  goto :FAIL
+)
+for /f "delims=" %%H in ('git rev-parse HEAD') do set "PUBLISHED_COMMIT=%%H"
+popd
+
+if exist "%TEMP_REPO%" rmdir /s /q "%TEMP_REPO%"
+if exist "%PREFLIGHT_DATA%" rmdir /s /q "%PREFLIGHT_DATA%"
 echo.
-echo =====================================================
-echo [OK] GITHUB PUBLISH COMPLETE
-echo =====================================================
-echo Repository: %REPO%
-echo Git identity: repository-only Nunes Instruments Stock Server
-echo Databases, uploads, backups and runtime data were NOT uploaded.
-echo.
-if /I not "%~1"=="--no-pause" pause
+echo ============================================================
+echo  PUBLISH COMPLETE - VERIFIED
+echo ============================================================
+echo GitHub main version : 3.2.11
+echo Commit              : !PUBLISHED_COMMIT!
+echo Force push          : NOT USED
+echo Database/data       : NOT PUBLISHED
+echo ============================================================
+echo The main server can now use its normal 5-minute Git updater.
+echo ============================================================
+pause
 exit /b 0
 
 :FAIL
+set "ERR=%ERRORLEVEL%"
+if "%ERR%"=="0" set "ERR=1"
+if exist "%PREFLIGHT_DATA%" rmdir /s /q "%PREFLIGHT_DATA%" >nul 2>&1
 echo.
-echo =====================================================
-echo ERROR: GitHub publish did not complete.
-echo =====================================================
-echo No stock database was deleted.
-echo If the message is about GitHub authentication, sign in when prompted
- echo and run this file again.
-echo.
-if /I not "%~1"=="--no-pause" pause
-exit /b 1
+echo ============================================================
+echo  PUBLISH FAILED - ERROR CODE %ERR%
+echo ============================================================
+echo No force push was attempted.
+echo Current live stock database was not changed.
+if exist "%TEMP_REPO%" echo Temporary clone kept for inspection: %TEMP_REPO%
+echo ============================================================
+pause
+exit /b %ERR%

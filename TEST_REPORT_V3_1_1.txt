@@ -1,0 +1,25 @@
+NUNES STOCK v3.1.1 - STARTUP RELIABILITY VERIFICATION
+====================================================
+Build date: 2026-09-22
+
+PASSED IN THIS BUILD ENVIRONMENT
+- Python source compile check: PASS
+- Protected Rack / Shelf / 3D SHA-256 verification: PASS
+- Included main database readable: PASS
+- Included main database products: 27
+- Included main database total quantity: 142
+- Included main database stock history entries: 41
+- Startup launcher now prints Version / Port / PID / Owner URL / Staff URL after health succeeds.
+- Failure path prints the reason and tails server_stderr.log, server.log and startup_diagnostic.log.
+- SERVER_STATUS.bat added.
+- RESTART_MAIN_SERVER.bat added.
+- RUN_SERVER_DIAGNOSTIC.bat added for foreground traceback.
+- Setup adds a 1-minute NUNES Stock watchdog task.
+- v3.1.0 bundled install is recognized as a safe in-place hotfix source.
+
+NOT EXECUTED HERE
+- Windows Task Scheduler creation, Windows Firewall rule creation, UAC elevation, and live Waitress binding cannot be executed in this Linux build environment.
+- Those operations are performed and verified on the actual Windows main-server PC by SETUP_MAIN_SERVER.bat / APPLY_STARTUP_FIX.bat.
+
+IMPORTANT
+The startup hotfix does not modify stock databases or protected Rack / Shelf / 3D files.

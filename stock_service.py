@@ -3,7 +3,8 @@ from pathlib import Path
 import json
 import sqlite3
 
-from database import get_connection
+from database import get_connection, bump_inventory_revision, record_audit_event
+from runtime_paths import STORAGE_CATEGORIES_FILE
 
 
 # =============================================================
@@ -11,11 +12,6 @@ from database import get_connection
 # =============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
-
-STORAGE_CATEGORIES_FILE = (
-    BASE_DIR / "storage_categories.json"
-)
-
 
 # =============================================================
 # DEFAULT STORAGE CATEGORIES
@@ -200,252 +196,6 @@ def clean_quantity(value):
 
     return number
 
-
-
-# =============================================================
-# RACK / SHELF OPERATIONAL ALLOCATIONS
-#
-# One product can be split across Rack and Shelf locations.
-# The product master keeps the grand quantity; this table keeps
-# the physical quantity in each storage side/location.
-# =============================================================
-
-def normalize_storage_type(value):
-    value = normalize_text(value).lower().replace("_", " ").strip()
-    if not value:
-        return ""
-    if value in {"rack", "open", "open rack", "open-rack"}:
-        return "rack"
-    if value in {"shelf", "shelf rack", "3d shelf", "3d shelf rack", "shelf-rack"}:
-        return "shelf"
-    raise ValueError("Storage must be either Rack or Shelf.")
-
-
-def _ensure_storage_allocation_table(cursor):
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS storage_allocations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id TEXT NOT NULL,
-            storage_type TEXT NOT NULL
-                CHECK (storage_type IN ('rack', 'shelf')),
-            location_code TEXT NOT NULL DEFAULT '',
-            quantity REAL NOT NULL DEFAULT 0
-                CHECK (quantity >= 0),
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            UNIQUE(product_id, storage_type, location_code),
-            FOREIGN KEY (product_id)
-                REFERENCES products(product_id)
-                ON UPDATE CASCADE
-                ON DELETE CASCADE
-        )
-        """
-    )
-
-
-def _default_storage_location(storage_type):
-    return "Open Rack" if storage_type == "rack" else "Shelf Rack"
-
-
-def _upsert_storage_allocation(cursor, product_id, storage_type, location_code, amount, now):
-    cursor.execute(
-        """
-        SELECT id, quantity
-        FROM storage_allocations
-        WHERE product_id = ? AND storage_type = ? AND location_code = ?
-        """,
-        (product_id, storage_type, location_code),
-    )
-    row = cursor.fetchone()
-    if row:
-        new_value = float(row["quantity"] or 0) + float(amount or 0)
-        cursor.execute(
-            "UPDATE storage_allocations SET quantity = ?, updated_at = ? WHERE id = ?",
-            (new_value, now, row["id"]),
-        )
-        return new_value
-
-    cursor.execute(
-        """
-        INSERT INTO storage_allocations
-        (product_id, storage_type, location_code, quantity, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (product_id, storage_type, location_code, float(amount or 0), now, now),
-    )
-    return float(amount or 0)
-
-
-def get_product_storage_allocations(product_id):
-    product_id = normalize_product_id(product_id)
-    if not product_id:
-        return {
-            "storage_allocations": [],
-            "rack_quantity": 0,
-            "shelf_quantity": 0,
-            "allocated_quantity": 0,
-        }
-
-    conn = get_connection()
-    cursor = conn.cursor()
-    try:
-        _ensure_storage_allocation_table(cursor)
-        cursor.execute(
-            """
-            SELECT storage_type, location_code, quantity
-            FROM storage_allocations
-            WHERE product_id = ? AND quantity > 0
-            ORDER BY storage_type, location_code, id
-            """,
-            (product_id,),
-        )
-        rows = [dict(row) for row in cursor.fetchall()]
-    finally:
-        conn.close()
-
-    rack = sum(float(row.get("quantity") or 0) for row in rows if row.get("storage_type") == "rack")
-    shelf = sum(float(row.get("quantity") or 0) for row in rows if row.get("storage_type") == "shelf")
-    for row in rows:
-        row["quantity"] = clean_quantity(row.get("quantity"))
-
-    return {
-        "storage_allocations": rows,
-        "rack_quantity": clean_quantity(rack),
-        "shelf_quantity": clean_quantity(shelf),
-        "allocated_quantity": clean_quantity(rack + shelf),
-    }
-
-
-def apply_storage_allocation(
-    cursor,
-    product_id,
-    movement_type,
-    quantity,
-    storage_type,
-    storage_location,
-    now,
-    expected_previous_quantity=0,
-):
-    _ensure_storage_allocation_table(cursor)
-    storage_type = normalize_storage_type(storage_type)
-    requested_location = normalize_text(storage_location)
-    quantity = float(quantity or 0)
-    expected_previous_quantity = float(expected_previous_quantity or 0)
-
-    cursor.execute(
-        """
-        SELECT id, storage_type, location_code, quantity
-        FROM storage_allocations
-        WHERE product_id = ? AND quantity > 0
-        ORDER BY id
-        """,
-        (product_id,),
-    )
-    existing_rows = [dict(row) for row in cursor.fetchall()]
-    active_types = sorted({row["storage_type"] for row in existing_rows})
-
-    if not storage_type:
-        if len(active_types) == 1:
-            storage_type = active_types[0]
-        elif not active_types:
-            # Backward compatibility for older callers. The new UI always asks.
-            storage_type = "shelf"
-        else:
-            raise ValueError("Choose Rack or Shelf for this movement.")
-
-    default_location = _default_storage_location(storage_type)
-    bootstrap_location = requested_location or default_location
-
-    allocated_before = sum(float(row.get("quantity") or 0) for row in existing_rows)
-    gap = expected_previous_quantity - allocated_before
-    if gap > 0.000001:
-        _upsert_storage_allocation(
-            cursor, product_id, storage_type, bootstrap_location, gap, now
-        )
-    elif gap < -0.000001:
-        raise ValueError(
-            "Storage allocation is above the product total. Run the clean reset or correct the storage allocation before moving stock."
-        )
-
-    affected_locations = []
-
-    if movement_type == "inward":
-        target_location = requested_location or default_location
-        location_after = _upsert_storage_allocation(
-            cursor, product_id, storage_type, target_location, quantity, now
-        )
-        affected_locations.append(target_location)
-    else:
-        if requested_location:
-            cursor.execute(
-                """
-                SELECT id, location_code, quantity
-                FROM storage_allocations
-                WHERE product_id = ? AND storage_type = ?
-                  AND UPPER(TRIM(location_code)) = UPPER(TRIM(?))
-                  AND quantity > 0
-                ORDER BY id
-                """,
-                (product_id, storage_type, requested_location),
-            )
-        else:
-            cursor.execute(
-                """
-                SELECT id, location_code, quantity
-                FROM storage_allocations
-                WHERE product_id = ? AND storage_type = ? AND quantity > 0
-                ORDER BY id
-                """,
-                (product_id, storage_type),
-            )
-
-        rows = [dict(row) for row in cursor.fetchall()]
-        available = sum(float(row.get("quantity") or 0) for row in rows)
-        if quantity > available + 0.000001:
-            label = "Rack" if storage_type == "rack" else "Shelf"
-            raise ValueError(
-                f"Outward quantity cannot exceed {label} stock. Available in {label}: {clean_quantity(available)}."
-            )
-
-        remaining = quantity
-        for row in rows:
-            if remaining <= 0.000001:
-                break
-            current = float(row.get("quantity") or 0)
-            take = min(current, remaining)
-            new_value = current - take
-            affected_locations.append(row.get("location_code") or default_location)
-            if new_value <= 0.000001:
-                cursor.execute("DELETE FROM storage_allocations WHERE id = ?", (row["id"],))
-            else:
-                cursor.execute(
-                    "UPDATE storage_allocations SET quantity = ?, updated_at = ? WHERE id = ?",
-                    (new_value, now, row["id"]),
-                )
-            remaining -= take
-        location_after = 0
-
-    cursor.execute(
-        "SELECT COALESCE(SUM(quantity), 0) AS total FROM storage_allocations WHERE product_id = ? AND quantity > 0",
-        (product_id,),
-    )
-    total_after = float(cursor.fetchone()["total"] or 0)
-    cursor.execute(
-        "SELECT COALESCE(SUM(quantity), 0) AS total FROM storage_allocations WHERE product_id = ? AND storage_type = ? AND quantity > 0",
-        (product_id, storage_type),
-    )
-    type_after = float(cursor.fetchone()["total"] or 0)
-
-    return {
-        "storage_type": storage_type,
-        "storage_label": "Rack" if storage_type == "rack" else "Shelf",
-        "storage_location": requested_location or (affected_locations[0] if len(set(affected_locations)) == 1 and affected_locations else default_location),
-        "affected_locations": sorted(set(affected_locations)),
-        "storage_type_quantity_after": clean_quantity(type_after),
-        "storage_total_quantity_after": clean_quantity(total_after),
-        "location_quantity_after": clean_quantity(location_after),
-    }
 
 # =============================================================
 # STORAGE CATEGORY MASTER
@@ -853,10 +603,53 @@ def get_product(
 
 
 # =============================================================
-# ALL VALID PRODUCTS
+# FULL ACTIVE INVENTORY
 #
-# IMPORTANT:
-# Old sample/test rows are filtered out here.
+# This is the source of truth for dashboard/current-stock/export.
+# Rack/3D remains intentionally limited to the storage master via
+# get_all_products() below so the rack experience is unchanged.
+# =============================================================
+
+def get_inventory_products(include_archived=False):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        if include_archived:
+            cursor.execute(
+                """
+                SELECT *
+                FROM products
+                ORDER BY is_active DESC, product_name ASC
+                """
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT *
+                FROM products
+                WHERE COALESCE(is_active, 1) = 1
+                ORDER BY product_name ASC
+                """
+            )
+
+        products = [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+    for product in products:
+        product["current_quantity"] = clean_quantity(
+            product.get("current_quantity")
+        )
+
+    return products
+
+
+# =============================================================
+# RACK / STORAGE-MASTER PRODUCTS
+#
+# Do not broaden this list: the Shelf / Rack / 3D engine depends
+# on the configured storage master and must remain visually stable.
 # =============================================================
 
 def get_all_products():
@@ -869,6 +662,7 @@ def get_all_products():
             """
             SELECT *
             FROM products
+            WHERE COALESCE(is_active, 1) = 1
             ORDER BY product_name ASC
             """
         )
@@ -1019,21 +813,6 @@ def create_product(
             "Product Name is required."
         )
 
-    # ---------------------------------------------------------
-    # INVENTORY MASTER VALIDATION
-    # ---------------------------------------------------------
-
-    if not is_product_in_storage_master(
-        product_name,
-        category,
-    ):
-
-        raise ValueError(
-            f"'{product_name}' is not configured under "
-            f"the storage category '{category}'. "
-            "Add the product type to the category master first."
-        )
-
     try:
 
         opening_quantity = float(
@@ -1092,6 +871,13 @@ def create_product(
             ),
         )
 
+        record_audit_event(
+            "product_created",
+            product_id,
+            f"Opening quantity: {clean_quantity(opening_quantity)}",
+            conn=conn,
+        )
+        bump_inventory_revision(conn=conn)
         conn.commit()
 
         return {
@@ -1232,7 +1018,7 @@ def add_stock(
     try:
 
         cursor.execute(
-            "BEGIN"
+            "BEGIN IMMEDIATE"
         )
 
         cursor.execute(
@@ -1260,6 +1046,11 @@ def add_stock(
                 existing_product
             )
 
+            if not int(existing_product.get("is_active", 1) or 0):
+                raise ValueError(
+                    f"Product '{product_id}' is archived. Restore it before changing stock."
+                )
+
             effective_category = (
                 category
                 or existing_product.get(
@@ -1275,16 +1066,6 @@ def add_stock(
                     ""
                 )
             )
-
-            if not is_product_in_storage_master(
-                effective_name,
-                effective_category,
-            ):
-
-                raise ValueError(
-                    f"'{effective_name}' is not part of the "
-                    "configured storage product master."
-                )
 
             previous_quantity = float(
                 existing_product.get(
@@ -1391,17 +1172,6 @@ def add_stock(
                     "Product Name is required."
                 )
 
-            if not is_product_in_storage_master(
-                product_name,
-                category,
-            ):
-
-                raise ValueError(
-                    f"'{product_name}' is not configured under "
-                    f"'{category}'. Add it as a product type "
-                    "in Category Management first."
-                )
-
             previous_quantity = 0.0
 
             new_quantity = (
@@ -1498,6 +1268,13 @@ def add_stock(
             ),
         )
 
+        record_audit_event(
+            "stock_inward",
+            product_id,
+            f"Quantity: {clean_quantity(quantity_added)} | Entry: {entry_number}",
+            conn=conn,
+        )
+        bump_inventory_revision(conn=conn)
         conn.commit()
 
         return {
@@ -1567,8 +1344,6 @@ def process_stock_movement(
     model="",
     unit="Nos",
     location="",
-    storage_type="",
-    storage_location="",
     reason="",
     reason_label="",
     reference="",
@@ -1622,14 +1397,6 @@ def process_stock_movement(
 
     location = normalize_text(
         location
-    )
-
-    storage_type = normalize_storage_type(
-        storage_type
-    )
-
-    storage_location = normalize_text(
-        storage_location
     )
 
     reason = normalize_text(
@@ -1688,7 +1455,7 @@ def process_stock_movement(
     try:
 
         cursor.execute(
-            "BEGIN"
+            "BEGIN IMMEDIATE"
         )
 
         cursor.execute(
@@ -1729,16 +1496,6 @@ def process_stock_movement(
 
                 raise ValueError(
                     "Product Name is required for first INWARD."
-                )
-
-            if not is_product_in_storage_master(
-                product_name,
-                category,
-            ):
-
-                raise ValueError(
-                    f"'{product_name}' is not configured under "
-                    f"'{category}'."
                 )
 
             previous_quantity = 0.0
@@ -1787,6 +1544,11 @@ def process_stock_movement(
                 existing_product
             )
 
+            if not int(existing_product.get("is_active", 1) or 0):
+                raise ValueError(
+                    f"Product '{product_id}' is archived. Restore it before changing stock."
+                )
+
             product_created = False
 
             effective_category = (
@@ -1804,16 +1566,6 @@ def process_stock_movement(
                     ""
                 )
             )
-
-            if not is_product_in_storage_master(
-                effective_product_name,
-                effective_category,
-            ):
-
-                raise ValueError(
-                    f"'{effective_product_name}' is not part "
-                    "of the active storage product master."
-                )
 
             previous_quantity = float(
                 existing_product.get(
@@ -1938,29 +1690,6 @@ def process_stock_movement(
             )
 
         # =====================================================
-        # PHYSICAL RACK / SHELF QUANTITY
-        # =====================================================
-
-        allocation_result = apply_storage_allocation(
-            cursor=cursor,
-            product_id=product_id,
-            movement_type=movement_type,
-            quantity=quantity,
-            storage_type=storage_type,
-            storage_location=storage_location or location,
-            now=now,
-            expected_previous_quantity=previous_quantity,
-        )
-
-        allocated_total = float(
-            allocation_result.get("storage_total_quantity_after") or 0
-        )
-        if abs(allocated_total - float(new_quantity or 0)) > 0.000001:
-            raise ValueError(
-                "Rack/Shelf quantity and product total did not match. Movement was cancelled."
-            )
-
-        # =====================================================
         # HISTORY DESCRIPTION
         # =====================================================
 
@@ -1972,15 +1701,6 @@ def process_stock_movement(
                 else "OUTWARD"
             )
         ]
-
-        history_parts.append(
-            f"Storage: {allocation_result.get('storage_label')}"
-            + (
-                f" / {allocation_result.get('storage_location')}"
-                if allocation_result.get("storage_location")
-                else ""
-            )
-        )
 
         if reason_label:
 
@@ -2078,6 +1798,16 @@ def process_stock_movement(
             ),
         )
 
+        record_audit_event(
+            f"stock_{movement_type}",
+            product_id,
+            (
+                f"Quantity: {clean_quantity(quantity)} | Entry: {entry_number}"
+                + (f" | Reason: {reason_label or reason}" if (reason_label or reason) else "")
+            ),
+            conn=conn,
+        )
+        bump_inventory_revision(conn=conn)
         conn.commit()
 
         return {
@@ -2118,24 +1848,6 @@ def process_stock_movement(
                 clean_quantity(
                     new_quantity
                 ),
-
-            "storage_type":
-                allocation_result.get("storage_type"),
-
-            "storage_label":
-                allocation_result.get("storage_label"),
-
-            "storage_location":
-                allocation_result.get("storage_location"),
-
-            "affected_locations":
-                allocation_result.get("affected_locations", []),
-
-            "storage_type_quantity_after":
-                allocation_result.get("storage_type_quantity_after", 0),
-
-            "storage_total_quantity_after":
-                allocation_result.get("storage_total_quantity_after", 0),
 
             "unit":
                 unit,
@@ -2180,8 +1892,6 @@ def stock_movement(
     model="",
     unit="Nos",
     location="",
-    storage_type="",
-    storage_location="",
     reason="",
     reason_label="",
     reference="",
@@ -2200,8 +1910,6 @@ def stock_movement(
         model=model,
         unit=unit,
         location=location,
-        storage_type=storage_type,
-        storage_location=storage_location,
         reason=reason,
         reason_label=reason_label,
         reference=reference,
@@ -2255,7 +1963,7 @@ def get_stock_history(
     )
 
     valid_products = (
-        get_all_products()
+        get_inventory_products(include_archived=True)
     )
 
     valid_product_ids = {
@@ -2455,7 +2163,7 @@ def get_recent_stock_entries(
 
 def get_total_products():
 
-    products = get_all_products()
+    products = get_inventory_products()
 
     return len(
         products
@@ -2472,7 +2180,7 @@ def get_total_products():
 
 def get_total_stock_quantity():
 
-    products = get_all_products()
+    products = get_inventory_products()
 
     total = sum(
         float(
@@ -2603,6 +2311,90 @@ def get_dashboard_summary():
         "stock_outward_today":
             get_stock_outward_today(),
     }
+
+
+# =============================================================
+# SAFE PRODUCT REMOVE / RESTORE
+#
+# Products are archived instead of deleted so stock history and
+# auditability are never destroyed.
+# =============================================================
+
+def archive_product(product_id, reason=""):
+    product_id = normalize_product_id(product_id)
+    if not product_id:
+        raise ValueError("Product ID is required.")
+
+    conn = get_connection()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT product_id, current_quantity, is_active FROM products WHERE product_id = ?",
+            (product_id,),
+        ).fetchone()
+        if not row:
+            raise ValueError("Product not found.")
+        if not int(row["is_active"] if row["is_active"] is not None else 1):
+            return {"success": True, "product_id": product_id, "already_archived": True}
+
+        now = get_now()
+        conn.execute(
+            """
+            UPDATE products
+            SET is_active = 0, archived_at = ?, updated_at = ?
+            WHERE product_id = ?
+            """,
+            (now, now, product_id),
+        )
+        record_audit_event(
+            "product_archived",
+            product_id,
+            f"Reason: {normalize_text(reason) or 'Not specified'} | Stock retained: {clean_quantity(row['current_quantity'])}",
+            conn=conn,
+        )
+        bump_inventory_revision(conn=conn)
+        conn.commit()
+        return {"success": True, "product_id": product_id, "archived_at": now}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def restore_product(product_id):
+    product_id = normalize_product_id(product_id)
+    if not product_id:
+        raise ValueError("Product ID is required.")
+
+    conn = get_connection()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT product_id FROM products WHERE product_id = ?",
+            (product_id,),
+        ).fetchone()
+        if not row:
+            raise ValueError("Product not found.")
+
+        now = get_now()
+        conn.execute(
+            """
+            UPDATE products
+            SET is_active = 1, archived_at = NULL, updated_at = ?
+            WHERE product_id = ?
+            """,
+            (now, product_id),
+        )
+        record_audit_event("product_restored", product_id, "", conn=conn)
+        bump_inventory_revision(conn=conn)
+        conn.commit()
+        return {"success": True, "product_id": product_id}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 # =============================================================
@@ -2768,6 +2560,13 @@ def update_product_details(
             ),
         )
 
+        record_audit_event(
+            "product_updated",
+            product_id,
+            "Product details updated.",
+            conn=conn,
+        )
+        bump_inventory_revision(conn=conn)
         conn.commit()
 
     except Exception:
@@ -2943,3 +2742,289 @@ def print_inventory_scope():
     )
 
     print()
+# =============================================================
+# SHARED SHELF / RACK POSITIONS (v3.2.11)
+#
+# These mappings describe WHERE a product is stored.  They never change
+# the product's inventory quantity.  Because the mapping lives in each
+# branch SQLite database, owner/staff browsers always see the same rack.
+# =============================================================
+
+SHELVES_PER_RACK = 5
+MIN_SHELF_RACKS = 1
+MAX_SHELF_RACKS = 12
+
+
+def _coerce_position_number(value, field_name):
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"{field_name} must be a whole number.")
+    if number < 1:
+        raise ValueError(f"{field_name} must be 1 or greater.")
+    return number
+
+
+def get_shelf_rack_count():
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            "SELECT state_value FROM app_state WHERE state_key = 'shelf_rack_count'"
+        ).fetchone()
+        count = int(row["state_value"] if row else 3)
+    finally:
+        conn.close()
+    return max(MIN_SHELF_RACKS, min(MAX_SHELF_RACKS, count))
+
+
+def _bootstrap_legacy_shelf_positions():
+    """Persist the old visual shelf distribution once, then stop randomizing it.
+
+    v3.2.10 displayed storage-master products by array index across 3x5 shelves.
+    When this new table is empty, reproduce that exact deterministic placement
+    for the previously visible storage-master products. New/inventory-only items
+    remain unassigned until the user explicitly attaches them.
+    """
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        existing = cursor.execute("SELECT COUNT(*) AS total FROM shelf_positions").fetchone()
+        if int(existing["total"] or 0) > 0:
+            return False
+
+        rack_row = cursor.execute(
+            "SELECT state_value FROM app_state WHERE state_key = 'shelf_rack_count'"
+        ).fetchone()
+        rack_count = max(MIN_SHELF_RACKS, min(MAX_SHELF_RACKS, int(rack_row["state_value"] if rack_row else 3)))
+        rows = [dict(row) for row in cursor.execute(
+            """
+            SELECT product_id, product_name, category
+            FROM products
+            WHERE COALESCE(is_active, 1) = 1
+            ORDER BY category COLLATE NOCASE, product_name COLLATE NOCASE, product_id COLLATE NOCASE
+            """
+        ).fetchall()]
+        legacy_products = [
+            row for row in rows
+            if is_product_in_storage_master(row.get("product_name"), row.get("category"))
+        ]
+        if not legacy_products:
+            return False
+
+        now = get_now()
+        total_shelves = rack_count * SHELVES_PER_RACK
+        cursor.execute("BEGIN IMMEDIATE")
+        for index, product in enumerate(legacy_products):
+            bucket = index % total_shelves
+            rack_number = (bucket // SHELVES_PER_RACK) + 1
+            shelf_number = (bucket % SHELVES_PER_RACK) + 1
+            cursor.execute(
+                """
+                INSERT OR IGNORE INTO shelf_positions
+                    (product_id, rack_number, shelf_number, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (product["product_id"], rack_number, shelf_number, now, now),
+            )
+        record_audit_event(
+            "shelf_layout_migration",
+            "",
+            f"Persisted legacy Shelf Rack layout for {len(legacy_products)} products",
+            conn=conn,
+        )
+        bump_inventory_revision(conn=conn)
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def get_shelf_positions():
+    _bootstrap_legacy_shelf_positions()
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT sp.product_id, sp.rack_number, sp.shelf_number,
+                   sp.created_at, sp.updated_at,
+                   p.product_name, p.category, p.brand, p.model,
+                   p.unit, p.location, p.current_quantity, p.is_active
+            FROM shelf_positions sp
+            JOIN products p ON p.product_id = sp.product_id
+            WHERE COALESCE(p.is_active, 1) = 1
+            ORDER BY sp.rack_number, sp.shelf_number,
+                     p.product_name COLLATE NOCASE, p.product_id COLLATE NOCASE
+            """
+        ).fetchall()
+        positions = [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+    for row in positions:
+        row["current_quantity"] = clean_quantity(row.get("current_quantity"))
+    return positions
+
+
+def get_shelf_rack_state():
+    return {
+        "rack_count": get_shelf_rack_count(),
+        "shelves_per_rack": SHELVES_PER_RACK,
+        "positions": get_shelf_positions(),
+    }
+
+
+def assign_product_to_shelf(product_id, rack_number, shelf_number):
+    product_id = normalize_product_id(product_id)
+    if not product_id:
+        raise ValueError("Product ID is required.")
+
+    rack_number = _coerce_position_number(rack_number, "Rack")
+    shelf_number = _coerce_position_number(shelf_number, "Shelf")
+    if shelf_number > SHELVES_PER_RACK:
+        raise ValueError(f"Shelf must be between 1 and {SHELVES_PER_RACK}.")
+
+    rack_count = get_shelf_rack_count()
+    if rack_number > rack_count:
+        raise ValueError(f"Rack {rack_number} does not exist. Add the rack first.")
+
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("BEGIN IMMEDIATE")
+        product = cursor.execute(
+            "SELECT product_id, product_name, is_active FROM products WHERE product_id = ?",
+            (product_id,),
+        ).fetchone()
+        if not product:
+            raise ValueError(f"Product '{product_id}' was not found.")
+        if not int(product["is_active"] or 0):
+            raise ValueError(f"Product '{product_id}' is archived. Restore it first.")
+
+        now = get_now()
+        existing = cursor.execute(
+            "SELECT rack_number, shelf_number FROM shelf_positions WHERE product_id = ?",
+            (product_id,),
+        ).fetchone()
+        if existing:
+            cursor.execute(
+                """
+                UPDATE shelf_positions
+                SET rack_number = ?, shelf_number = ?, updated_at = ?
+                WHERE product_id = ?
+                """,
+                (rack_number, shelf_number, now, product_id),
+            )
+            action = "shelf_move"
+        else:
+            cursor.execute(
+                """
+                INSERT INTO shelf_positions
+                    (product_id, rack_number, shelf_number, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (product_id, rack_number, shelf_number, now, now),
+            )
+            action = "shelf_attach"
+
+        record_audit_event(
+            action,
+            product_id,
+            f"Rack {rack_number} | Shelf {shelf_number}",
+            conn=conn,
+        )
+        bump_inventory_revision(conn=conn)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    return {
+        "product_id": product_id,
+        "rack_number": rack_number,
+        "shelf_number": shelf_number,
+        "location_label": f"Rack {rack_number} · Shelf {shelf_number}",
+    }
+
+
+def unassign_product_from_shelf(product_id):
+    product_id = normalize_product_id(product_id)
+    if not product_id:
+        raise ValueError("Product ID is required.")
+
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("BEGIN IMMEDIATE")
+        row = cursor.execute(
+            "SELECT rack_number, shelf_number FROM shelf_positions WHERE product_id = ?",
+            (product_id,),
+        ).fetchone()
+        if not row:
+            conn.commit()
+            return {"product_id": product_id, "removed": False}
+
+        cursor.execute("DELETE FROM shelf_positions WHERE product_id = ?", (product_id,))
+        record_audit_event(
+            "shelf_remove",
+            product_id,
+            f"Removed from Rack {row['rack_number']} | Shelf {row['shelf_number']} (inventory kept)",
+            conn=conn,
+        )
+        bump_inventory_revision(conn=conn)
+        conn.commit()
+        return {"product_id": product_id, "removed": True}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def set_shelf_rack_count(value):
+    rack_count = _coerce_position_number(value, "Rack count")
+    if rack_count > MAX_SHELF_RACKS:
+        raise ValueError(f"Rack count cannot exceed {MAX_SHELF_RACKS}.")
+
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("BEGIN IMMEDIATE")
+        row = cursor.execute(
+            "SELECT MAX(rack_number) AS max_rack FROM shelf_positions"
+        ).fetchone()
+        max_used = int(row["max_rack"] or 0)
+        if rack_count < max_used:
+            raise ValueError(
+                f"Rack {max_used} still contains products. Move or remove those shelf assignments first."
+            )
+
+        cursor.execute(
+            """
+            INSERT INTO app_state (state_key, state_value, updated_at)
+            VALUES ('shelf_rack_count', ?, ?)
+            ON CONFLICT(state_key) DO UPDATE SET
+                state_value = excluded.state_value,
+                updated_at = excluded.updated_at
+            """,
+            (rack_count, get_now()),
+        )
+        record_audit_event(
+            "shelf_layout",
+            "",
+            f"Rack count changed to {rack_count}",
+            conn=conn,
+        )
+        bump_inventory_revision(conn=conn)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    return {"rack_count": rack_count, "shelves_per_rack": SHELVES_PER_RACK}

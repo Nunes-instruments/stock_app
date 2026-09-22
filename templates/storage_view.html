@@ -2401,141 +2401,48 @@ Storage View
 }
 
 
-/* ============================================================
-   V6.3 UNIFIED 3D ENVIRONMENT
-============================================================ */
-:root{
-  --storage-3d-bg:#edf6ff;
-  --storage-3d-border:#c9deef;
-  --storage-3d-blue:#2f7de8;
-}
-.main{
-  background:linear-gradient(180deg,#f6fbff 0%,#edf6ff 100%)!important;
-}
-.storage-warehouse-card,
-.storage-shelf-stage{
-  border:1px solid var(--storage-3d-border)!important;
-  border-radius:20px!important;
-  background:var(--storage-3d-bg)!important;
-  box-shadow:0 18px 42px rgba(43,93,137,.12)!important;
-}
-#threeStorageContainer,
-#shelfRackCanvasWrap{
-  background:var(--storage-3d-bg)!important;
-}
-#shelfRackFastViewport{
-  background:radial-gradient(circle at 50% 16%,#fff 0%,#f6fbff 24%,#edf6ff 64%,#e4f0fa 100%)!important;
-}
-#shelfRackFastViewport::before{
-  background:
-    linear-gradient(rgba(95,145,187,.10) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(95,145,187,.10) 1px,transparent 1px),
-    linear-gradient(180deg,rgba(222,239,252,.08),rgba(196,221,241,.34))!important;
-  background-size:42px 42px,42px 42px,auto!important;
-}
-.storage-main-toolbar,
-.storage-rack-modebar{
-  border:1px solid #d1e3f2!important;
-  border-radius:16px!important;
-  background:rgba(255,255,255,.96)!important;
-  box-shadow:0 10px 28px rgba(41,86,126,.09)!important;
-  backdrop-filter:blur(14px)!important;
-}
-.storage-machine-state{color:#264e6d!important}
-.storage-home-button,
-.storage-rack-home{
-  min-height:42px!important;
-  border:1px solid #cbdfee!important;
-  border-radius:11px!important;
-  background:#f8fcff!important;
-  color:#245b89!important;
-  font-size:11px!important;
-}
-.storage-nav-button,
-.machine-action-button,
-.storage-rack-mode-button,
-.storage-rack-action{
-  border:1px solid #c7ddef!important;
-  border-radius:11px!important;
-  background:#f7fbff!important;
-  color:#285b84!important;
-  box-shadow:0 4px 12px rgba(36,85,128,.045)!important;
-}
-.storage-nav-button:hover,
-.machine-action-button:hover:not(:disabled),
-.storage-rack-mode-button:hover,
-.storage-rack-action:hover:not(:disabled){
-  border-color:#9bc5ea!important;
-  background:#eaf5ff!important;
-  color:#1d66ac!important;
-}
-.storage-all-button,
-.machine-action-button.primary,
-.storage-rack-mode-button.active,
-.storage-rack-mode-button.storage-rack-show-3d.active,
-.storage-rack-mode-button.storage-rack-show-open.active{
-  border:1px solid #2f7de8!important;
-  background:linear-gradient(135deg,#438fe9,#2874d5)!important;
-  color:#fff!important;
-  box-shadow:0 8px 20px rgba(47,125,232,.20)!important;
-}
-.storage-select-help,
-.shelf-rack-scene-footer{
-  min-height:40px!important;
-  display:inline-flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  padding:0 16px!important;
-  border:1px solid rgba(174,207,235,.96)!important;
-  border-radius:999px!important;
-  background:rgba(255,255,255,.94)!important;
-  color:#24597f!important;
-  font-size:11px!important;
-  font-weight:850!important;
-  box-shadow:0 8px 22px rgba(36,83,124,.10)!important;
-  backdrop-filter:blur(10px)!important;
-}
-.shelf-rack-scene-title,
-.shelf-rack-details{
-  border-color:#c9deef!important;
-  background:rgba(255,255,255,.95)!important;
-  box-shadow:0 12px 30px rgba(34,78,116,.10)!important;
-}
-.shelf-rack-scene-title strong,
-.shelf-rack-details h3{color:#17466c!important}
-.storage-warehouse-arrow{
-  border:1px solid #b9d7ef!important;
-  background:rgba(255,255,255,.92)!important;
-  color:#2567a5!important;
-  box-shadow:0 10px 25px rgba(37,84,126,.12)!important;
-}
-.storage-warehouse-arrow:hover{
-  border-color:#76abe0!important;
-  background:#e8f4ff!important;
-  color:#185d9f!important;
-}
-.storage-view-products-button{
-  border-color:#79ace1!important;
-  background:linear-gradient(135deg,#438fe9,#2874d5)!important;
-  color:#fff!important;
-}
-#shelfRackStage,
-#storageAnimationStage{
-  transition:opacity .16s ease,transform .16s ease,box-shadow .16s ease!important;
-}
-
+/* v3.2.11 shared shelf placement controls; existing rack geometry is unchanged. */
+#shelfRackAttachProduct { background:#0f766e !important; border-color:#0f766e !important; color:#fff !important; }
+.fast-rack-shelf { cursor:pointer; }
+.fast-rack-shelf.selected-location { outline:3px solid rgba(43,112,228,.45); outline-offset:3px; }
+.fast-rack-header { cursor:pointer; }
+.fast-rack-header.selected-location { box-shadow:0 0 0 3px rgba(43,112,228,.22); }
+.shelf-location-list-card { margin-top:14px; padding:18px; border:1px solid #cddceb; border-radius:18px; background:#fff; box-shadow:0 12px 30px rgba(15,39,64,.08); }
+.shelf-location-list-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:14px; }
+.shelf-location-kicker { display:block; color:#2b70e4; font-size:10px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; }
+.shelf-location-list-head h3,.shelf-attach-header h3 { margin:3px 0 2px; color:#10283f; font-size:22px; }
+.shelf-location-list-head p,.shelf-attach-header p { margin:0; color:#60758a; font-size:12px; font-weight:700; }
+.shelf-location-list-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+#shelfLocationSearch,#shelfAttachSearch { min-width:300px; height:42px; border:1px solid #cbd9e8; border-radius:10px; padding:0 12px; font-size:13px; }
+#shelfLocationAttachButton { height:42px; border:0; border-radius:10px; padding:0 16px; background:#2b70e4; color:#fff; font-weight:900; cursor:pointer; }
+#shelfLocationAttachButton:disabled { opacity:.45; cursor:not-allowed; }
+.shelf-location-product-list { display:grid; gap:9px; }
+.shelf-location-product-row { display:grid; grid-template-columns:64px minmax(220px,1.4fr) minmax(150px,.8fr) 110px minmax(160px,.8fr) auto; gap:12px; align-items:center; border:1px solid #dbe6f1; border-radius:12px; padding:10px; background:#fafeff; }
+.shelf-location-product-image { width:58px; height:58px; border-radius:10px; border:1px solid #d6e2ee; background:#fff; object-fit:contain; }
+.shelf-location-product-placeholder { width:58px; height:58px; border-radius:10px; display:grid; place-items:center; background:#edf5ff; color:#2b70e4; font-size:18px; font-weight:900; }
+.shelf-location-product-name { color:#10283f; font-size:14px; font-weight:900; }
+.shelf-location-product-sub { margin-top:3px; color:#60758a; font-size:11px; font-weight:700; }
+.shelf-location-qty { color:#0c8d58; font-size:17px; font-weight:900; }
+.shelf-location-position { color:#24435e; font-size:12px; font-weight:800; }
+.shelf-location-row-actions { display:flex; gap:7px; justify-content:flex-end; }
+.shelf-location-row-actions button { min-height:34px; border:1px solid #bfd1e4; border-radius:8px; background:#fff; color:#205fc8; padding:0 10px; font-size:11px; font-weight:900; cursor:pointer; }
+.shelf-location-row-actions button.danger { color:#c33a3a; border-color:#efc6c6; }
+.shelf-location-empty { padding:26px; border:1px dashed #cbd9e8; border-radius:12px; text-align:center; color:#60758a; font-size:13px; font-weight:800; }
+.shelf-attach-modal { position:fixed; inset:0; z-index:5000; }
+.shelf-attach-backdrop { position:absolute; inset:0; background:rgba(9,29,49,.48); }
+.shelf-attach-dialog { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(820px,92vw); max-height:82vh; overflow:hidden; display:flex; flex-direction:column; background:#fff; border-radius:18px; box-shadow:0 30px 80px rgba(9,29,49,.3); }
+.shelf-attach-header { display:flex; justify-content:space-between; gap:20px; padding:18px 20px 12px; border-bottom:1px solid #e1eaf3; }
+#shelfAttachClose { width:38px; height:38px; border:0; border-radius:10px; background:#edf4fb; color:#173a5a; font-size:24px; cursor:pointer; }
+.shelf-attach-search-row { padding:12px 20px; display:grid; grid-template-columns:130px 130px 1fr; gap:8px; }
+#shelfAttachSearch,#shelfAttachRack,#shelfAttachShelf { width:100%; min-width:0; height:42px; border:1px solid #cbd9e8; border-radius:10px; padding:0 10px; background:#fff; color:#10283f; font-size:13px; }
+.shelf-attach-product-list { padding:0 20px 20px; overflow:auto; display:grid; gap:8px; }
+.shelf-attach-product-item { display:grid; grid-template-columns:minmax(200px,1fr) 120px 150px auto; gap:10px; align-items:center; border:1px solid #dbe6f1; border-radius:11px; padding:10px 12px; }
+.shelf-attach-product-item strong { color:#10283f; font-size:13px; }
+.shelf-attach-product-item small { display:block; color:#6d8195; margin-top:2px; }
+.shelf-attach-product-item button { min-height:36px; border:0; border-radius:9px; background:#2b70e4; color:#fff; padding:0 12px; font-weight:900; cursor:pointer; }
+@media(max-width:900px){ .shelf-location-list-head{align-items:stretch;flex-direction:column}.shelf-location-list-actions{width:100%}#shelfLocationSearch{min-width:0;flex:1}.shelf-location-product-row{grid-template-columns:58px 1fr auto}.shelf-location-product-row > :nth-child(3),.shelf-location-product-row > :nth-child(5){display:none}.shelf-location-row-actions{grid-column:2 / -1;justify-content:flex-start}.shelf-attach-product-item{grid-template-columns:1fr auto}.shelf-attach-product-item > :nth-child(2),.shelf-attach-product-item > :nth-child(3){display:none}}
 </style>
 
-
-
-<style>
-.storage-source-totals{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.storage-source-pill{min-height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 11px;border:1px solid #b8cff0;border-radius:9px;background:#eef5ff;color:#1f5fbf;font-size:10px;font-weight:900}
-.storage-source-pill strong{color:#10283f;font-size:13px}
-#openRackFileInput{display:none}
-.storage-upload-busy{opacity:.65;pointer-events:none}
-#shelfRackAddProduct,#shelfRackQuickAdd,#shelfRackQuickRemove{display:none!important}
-</style>
 
 <div id="storageViewApp" data-active-branch="{{ active_branch_key }}" data-active-branch-name="{{ active_branch_name }}">
 
@@ -2595,18 +2502,16 @@ Storage View
             </div>
 
             <span class="storage-rack-branch">{{ active_branch_name }}</span>
-            {% if active_branch_key == 'main' %}
-            <div class="storage-source-totals" aria-label="Storage data source totals">
-                <span class="storage-source-pill">3D Shelf <strong>{{ storage_dual_summary.shelf_products|int }}</strong></span>
-                <span class="storage-source-pill">Open Rack <strong>{{ storage_dual_summary.open_rack_products|int }}</strong></span>
-            </div>
-            {% endif %}
         </div>
 
         <div class="storage-rack-mode-actions" aria-label="Shelf rack stock actions">
-            <a href="{{ url_for('add_stock_page') }}" id="shelfRackAddProduct" class="storage-rack-action storage-rack-wide-action" title="Add a new product or stock item">
-                + Product
+            <a href="{{ url_for('add_stock_page') }}" id="shelfRackAddProduct" class="storage-rack-action storage-rack-wide-action" title="Register a new inventory product">
+                + New Product
             </a>
+
+            <button id="shelfRackAttachProduct" type="button" class="storage-rack-action storage-rack-wide-action" title="Attach an existing inventory product to the selected shelf">
+                Attach Product
+            </button>
 
             <button id="shelfRackAddRack" type="button" class="storage-rack-action storage-rack-wide-action" title="Add another horizontal rack">
                 + Rack
@@ -2619,10 +2524,10 @@ Storage View
             <button id="shelfRackQuickAdd" type="button" class="storage-rack-action" title="Add one unit to the selected product" aria-label="Add one unit" disabled>+</button>
             <button id="shelfRackQuickRemove" type="button" class="storage-rack-action" title="Remove one unit from the selected product" aria-label="Remove one unit" disabled>−</button>
 
-            <label for="shelfRackFileInput" class="storage-rack-action storage-rack-file-action" title="Load a separate 3D Shelf Rack Excel file">
-                Attach 3D Shelf Excel
+            <label for="shelfRackFileInput" class="storage-rack-action storage-rack-file-action" title="Import an Excel stock file">
+                Attach Excel
             </label>
-            <input id="shelfRackFileInput" type="file" accept=".xlsx" aria-label="Attach 3D Shelf Rack Excel file">
+            <input id="shelfRackFileInput" type="file" accept=".xlsx" aria-label="Attach Excel stock file">
         </div>
 
     </section>
@@ -2638,7 +2543,7 @@ Storage View
 
             <div class="shelf-rack-scene-title">
                 <strong id="shelfRackSceneTitle">3D Shelf Rack · 3 Horizontal Racks</strong>
-                <span id="shelfRackSceneDescription">Products stay in the horizontal Shelf Rack design. Left-click to select/open · Right-click + hold + drag to rotate · Mouse wheel to zoom · Double-click empty area to reset.</span>
+                <span id="shelfRackSceneDescription">Products are arranged across wide horizontal racks. Left-drag to tilt, right-click + drag to move the scene, scroll to zoom, and click a product for its verified image preview.</span>
             </div>
 
             <aside class="shelf-rack-details" id="shelfRackDetails" aria-live="polite">
@@ -2686,11 +2591,48 @@ Storage View
                 </div>
             </aside>
 
-            <div id="shelfRackSceneFooter" class="shelf-rack-scene-footer">3 racks · {{ shelf_products|length }} products · ready</div>
+            <div id="shelfRackSceneFooter" class="shelf-rack-scene-footer">3 racks · {{ products|length }} products · ready</div>
 
             <div id="shelfRackBusy" class="shelf-rack-busy" aria-hidden="true">
                 <div id="shelfRackBusyText" class="shelf-rack-busy-card">Updating stock…</div>
             </div>
+        </div>
+
+        <section class="shelf-location-list-card" id="shelfLocationListCard" aria-live="polite">
+            <div class="shelf-location-list-head">
+                <div>
+                    <span class="shelf-location-kicker">Shelf Contents</span>
+                    <h3 id="shelfLocationListTitle">Select a rack or shelf</h3>
+                    <p id="shelfLocationListCopy">Click a shelf to see every assigned product below.</p>
+                </div>
+                <div class="shelf-location-list-actions">
+                    <input id="shelfLocationSearch" type="search" placeholder="Search products in this rack / shelf" autocomplete="off">
+                    <button id="shelfLocationAttachButton" type="button" disabled>Attach Product</button>
+                </div>
+            </div>
+            <div id="shelfLocationProductList" class="shelf-location-product-list">
+                <div class="shelf-location-empty">Select a rack or shelf above to view products.</div>
+            </div>
+        </section>
+
+        <div id="shelfAttachModal" class="shelf-attach-modal" hidden>
+            <div class="shelf-attach-backdrop" data-shelf-modal-close></div>
+            <section class="shelf-attach-dialog" role="dialog" aria-modal="true" aria-labelledby="shelfAttachTitle">
+                <div class="shelf-attach-header">
+                    <div>
+                        <span class="shelf-location-kicker">Attach / Move Product</span>
+                        <h3 id="shelfAttachTitle">Choose a product</h3>
+                        <p id="shelfAttachTarget">Select a shelf first.</p>
+                    </div>
+                    <button id="shelfAttachClose" type="button" aria-label="Close">×</button>
+                </div>
+                <div class="shelf-attach-search-row">
+                    <select id="shelfAttachRack" aria-label="Target rack"></select>
+                    <select id="shelfAttachShelf" aria-label="Target shelf"></select>
+                    <input id="shelfAttachSearch" type="search" placeholder="Search product name, ID, brand or model" autocomplete="off">
+                </div>
+                <div id="shelfAttachProductList" class="shelf-attach-product-list"></div>
+            </section>
         </div>
     </section>
 
@@ -2806,15 +2748,13 @@ Storage View
             </button>
 
 
-            <label
-                for="openRackFileInput"
+            <button
+                id="openStorageCategoryModalButton"
+                type="button"
                 class="machine-action-button add-category-button"
-                data-open-rack-upload-label
-                title="Load the Open Rack master Excel"
             >
-                Attach Open Rack Master
-            </label>
-            <input id="openRackFileInput" type="file" accept=".xlsx,.xls" aria-label="Attach Open Rack Master Excel">
+                ＋ Add Category
+            </button>
 
         </div>
 
@@ -2867,7 +2807,7 @@ Storage View
                 id="storageSelectHelp"
                 class="storage-select-help"
             >
-                Left-click to select/open · Right-click + hold + drag to rotate · Mouse wheel to zoom · Double-click empty area to reset
+                👆 Click a cabinet to open and inspect it · Use ‹ › to move between categories
             </div>
 
 
@@ -2969,7 +2909,6 @@ Storage View
                     id="manageStorageCategoryButton"
                     type="button"
                     class="manage-category-button"
-                    style="display:none"
                 >
                     ⚙ Manage Category
                 </button>
@@ -3725,10 +3664,13 @@ Storage View
      DATABASE PRODUCT DATA
 ========================================================== -->
 
-<script id="shelfRackProductsData" type="application/json">{{ shelf_products | tojson }}</script>
-<script id="openRackProductsData" type="application/json">{{ open_rack_products | tojson }}</script>
-<script id="storageProductsData" type="application/json">[]</script>
-<script src="{{ url_for('static', filename='storage_dual_upload.js', v=app_version) }}"></script>
+<script
+    id="storageProductsData"
+    type="application/json"
+>{{ products | tojson }}</script>
+
+<script id="shelfInventoryData" type="application/json">{{ shelf_inventory | tojson }}</script>
+<script id="shelfRackStateData" type="application/json">{{ shelf_rack_state | tojson }}</script>
 
 
 {% endblock %}
@@ -3740,7 +3682,7 @@ Storage View
     src="{{ url_for(
         'static',
         filename='shelf_rack_3d.js',
-        v='20260905_v5_4_verified_product_images'
+        v='20260922_v6_0_shared_shelf_positions'
     ) }}"
 ></script>
 

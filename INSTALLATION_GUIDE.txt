@@ -1,0 +1,22 @@
+NUNES STOCK v3.2.3 - PARALLEL MAIN SERVER INSTALLATION
+
+Run: RUN_THIS_5055_MAIN_SERVER_SETUP.bat as Administrator.
+
+Old server:
+  Port: 5000
+  Code: C:\NunesStock\app
+  Data: C:\ProgramData\NunesStock\data
+  Status: left unchanged
+
+New server:
+  Port: 5055
+  Code: C:\NunesStockV31\app
+  Data: C:\ProgramData\NunesStockV31\data
+
+On first install the current live SQLite databases are safely snapshotted into the new v3 data folder while the old server remains online.
+
+After setup check:
+  http://127.0.0.1:5055/api/system/health
+  http://127.0.0.1:5055
+
+If startup fails, run SERVER_STATUS.bat or RUN_SERVER_DIAGNOSTIC.bat from C:\NunesStockV31\app.

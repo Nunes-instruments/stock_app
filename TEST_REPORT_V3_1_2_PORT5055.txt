@@ -1,0 +1,18 @@
+NUNES STOCK v3.1.2 PORT 5055 - BUILD CHECK
+Date: 2026-09-22
+
+PASS - Python source compilation.
+PASS - Protected Rack/3D SHA-256 hashes match the release manifest.
+PASS - SQLite snapshot helper tested against the supplied runtime data copy.
+PASS - Snapshot DB integrity_check returned OK.
+PASS - Snapshot main database contained 27 products / 142 total quantity in the local validation dataset.
+PASS - Port/runtime/data paths separated from the existing port-5000 server.
+PASS - Existing server install/data folders are not targeted by the v3 installer.
+
+NOT EXECUTED IN THIS LINUX BUILD ENVIRONMENT:
+- Full Flask/Waitress HTTP preflight, because dependency download was blocked by DNS/network in the build environment.
+
+WINDOWS INSTALLER BEHAVIOR:
+- Installs Python dependencies first.
+- Runs scripts\preflight.py before starting port 5055.
+- If preflight fails, the new 5055 server is not started and the old 5000 server is not intentionally changed.

@@ -1,0 +1,34 @@
+NUNES STOCK v3.2.9 TEST REPORT
+==============================
+
+CODE / STATIC VALIDATION
+- Python compileall: PASS
+- Jinja syntax parse: PASS
+- current_stock_option1.js syntax: PASS
+- import_excel_option1.js syntax: PASS
+- Protected Rack/3D SHA-256 manifest: PASS
+- Excel template byte generation function: present and wired
+- No database/runtime files intended for release package
+
+VISUAL CODE REVIEW
+- Current Stock rendered at 1680x920 from the actual Jinja/CSS/JS source: PASS
+- Add From Excel rendered at 1680x920 from the actual Jinja/CSS/JS source: PASS
+- No horizontal page overflow in rendered previews
+- Current Stock uses selected Executive Clean List layout
+- Add From Excel uses selected first full-width import layout
+
+PRODUCTION PREFLIGHT IN PACKAGE
+The Windows updater runs scripts/preflight.py before replacing live code. It verifies:
+- protected Rack/3D checksums
+- Python compilation
+- inward/outward calculations
+- negative stock protection
+- revision increment
+- archive/restore + history preservation
+- HTTP 200 for health/state/dashboard/current-stock/storage-view/add-stock/import-excel/template-download
+- Current Stock Option 1 marker for Rathinapuri, Gopalapuram and Gandhipuram
+- all three branch names remain available through the global branch selector
+- Add From Excel Option 1 marker
+
+LIMITATION OF THIS BUILD ENVIRONMENT
+Flask/Waitress cannot be downloaded in this Linux build container because outbound package network access is blocked. Therefore the full Flask test-client preflight is not marked as executed here. The installed Windows runtime already contains Flask/Waitress and the live updater runs the complete preflight before touching live code.

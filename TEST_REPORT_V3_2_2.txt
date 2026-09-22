@@ -1,0 +1,33 @@
+NUNES STOCK v3.2.2 - INSTALLER RECOVERY TEST REPORT
+Date: 2026-09-22
+
+PURPOSE
+Fix the v3.2.1 persistent installer failure at Step 7:
+  error: No such remote: 'origin'
+
+CHANGES
+- Detects whether Git origin exists before changing it.
+- Adds origin when missing.
+- Corrects origin URL when it exists but points elsewhere.
+- Does not treat missing origin as a fatal setup error.
+- Removes old recurring visible watchdog/updater tasks early in setup.
+- Uses hidden WScript tasks after setup succeeds.
+- Preserves the existing 5055 stock database and backups.
+- Rack / Shelf / 3D protected files remain unchanged.
+
+VERIFIED IN BUILD ENVIRONMENT
+PASS - Python source compilation.
+PASS - Protected Rack/3D SHA-256 manifest.
+PASS - No SQLite database, WAL/SHM, or runtime log files bundled in release.
+PASS - Installer no longer contains `git remote remove origin`.
+PASS - Scheduled-task deletion uses a non-fatal path when a task does not exist.
+PASS - VERSION and version_info report 3.2.2.
+
+CONFIRMED FROM USER'S WINDOWS v3.2.1 RUN
+PASS - Python dependencies already installed.
+PASS - Production preflight completed successfully before Step 7.
+PASS - Existing port-5055 database was backed up and preserved.
+PASS - Existing NUNES process on port 5055 was stopped safely.
+
+WINDOWS-SPECIFIC NOTE
+The v3.2.2 changes are installer / Git tracking / scheduler changes. The full application workflow preflight already passed on the user's Windows machine in v3.2.1 before the Step 7 Git-origin failure. The build environment cannot execute Windows Task Scheduler or PowerShell 5.1, so final Windows scheduler/health verification occurs during the 10-stage persistent installer.

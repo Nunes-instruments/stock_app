@@ -1,65 +1,23 @@
-NUNES STOCK v2.0.0 - SETUP ORDER
-================================
+NUNES STOCK v3.2.3 - PORT 5055 SETUP
 
-IMPORTANT ARCHITECTURE
-1. GitHub stores CODE only.
-2. Main Server PC stores LIVE STOCK DATA in C:\ProgramData\NunesStock\data.
-3. Staff/Owner PCs use browser desktop icons; they do not store separate databases.
-4. GitHub updates cannot overwrite live stock data.
+MAIN SERVER PC
+1. Extract the ZIP.
+2. Right-click RUN_THIS_5055_MAIN_SERVER_SETUP.bat -> Run as administrator.
+3. Existing v2.5.2 port 5000 remains untouched.
+4. New v3 installs to C:\NunesStockV31\app.
+5. New v3 data uses C:\ProgramData\NunesStockV31\data.
+6. New server URL: http://127.0.0.1:5055
+7. Staff URL: http://<MAIN-SERVER-IP>:5055
 
-FIRST TIME - DO THIS IN THIS ORDER
-----------------------------------
-A. On the MAIN SERVER PC install Git for Windows + Python 3.12 once.
-B. Extract this ZIP to a normal folder.
-C. Run PUBLISH_TO_GITHUB.bat.
-   - Sign in to GitHub when requested.
-   - This publishes CODE to Nunes-instruments/stock_app.
-   - .db / uploads / runtime data are ignored and are NOT uploaded.
-D. Run SETUP_MAIN_SERVER.bat as Administrator.
-   - It preserves existing stock data first.
-   - It installs/clones app code into C:\NunesStock\app.
-   - It stores persistent data in C:\ProgramData\NunesStock\data.
-   - It creates the Owner and Update desktop shortcuts.
-   - It starts the server and configures automatic start/update checks.
-E. On each STAFF PC run SETUP_STAFF_PC.bat and enter the main server IP.
-F. On an OWNER PC run SETUP_OWNER_PC.bat and enter the main server IP.
+STAFF PC
+1. Extract the client package or this package.
+2. Run SETUP_STAFF_PC.bat.
+3. Enter the MAIN SERVER IP only.
+4. A NUNES Stock V3 desktop shortcut is created.
 
-DAILY USE
----------
-- Main server: starts automatically after Windows sign-in.
-- Staff/owner: double-click NUNES Stock desktop icon.
-- All users see the same central live data.
-- If the main server PC is OFF, client PCs cannot use the app.
+OWNER PC
+1. Run SETUP_OWNER_PC.bat.
+2. Enter the MAIN SERVER IP only.
 
-FUTURE CODE UPDATE
-------------------
-1. Change code in the GitHub repository / push a new commit to main.
-2. Main server checks GitHub every 15 minutes.
-3. Before applying a new version it creates a database backup.
-4. It pulls code and restarts only NUNES Stock.
-5. Staff/owner uses the new server version on their next page load/refresh.
-6. For immediate update, double-click NUNES Stock - Update Server on the main server.
-
-BACKUP
-------
-Run CREATE_BACKUP.bat any time.
-Backups: C:\ProgramData\NunesStock\data\backups
-
-OLD TEST DATA
--------------
-The supplied package has explicit TEST001 / Manual Test / sample import transactions removed from the supplied main database.
-Normal startup NEVER performs cleanup automatically.
-CLEAN_OLD_TEST_DATA.bat remains as a one-time maintenance tool for an old legacy copy and makes a backup first.
-
-SERVER URL
-----------
-Main server itself: http://127.0.0.1:5000
-Staff/Owner PCs:    http://MAIN-SERVER-IP:5000
-
-GITHUB FIRST-PUBLISH NOTE
--------------------------
-PUBLISH_TO_GITHUB.bat now sets a repository-only Git author automatically.
-If an earlier attempt stopped at "Author identity unknown", simply run this updated
-PUBLISH_TO_GITHUB.bat again. Do NOT delete the .git folder and do NOT delete stock data.
-The LF/CRLF messages are harmless line-ending warnings; v2.0.1 controls them using
-.gitattributes.
+IMPORTANT
+The old 5000 server and new 5055 server have separate data after the first snapshot. Do not make production stock changes in both at the same time.
