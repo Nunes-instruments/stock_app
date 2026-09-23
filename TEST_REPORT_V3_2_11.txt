@@ -1,0 +1,47 @@
+NUNES STOCK v3.2.11 - TEST REPORT
+=================================
+Release focus:
+- Shared Staff / Owner browser-client model
+- Persistent branch-scoped Shelf Rack positions
+- Shelf click -> product list + verified online image enrichment
+- Attach / Move / Remove shelf placement without changing inventory quantity
+
+LOCAL BUILD VALIDATION
+----------------------
+PASS - Python compileall for application source.
+PASS - Jinja syntax parse for all templates.
+PASS - JavaScript syntax check for shelf_rack_3d.js and live_sync.js.
+PASS - storage position core test: attach Rack 1/Shelf 2.
+PASS - storage position move test: moved same product to Rack 2/Shelf 4 with only one assignment remaining.
+PASS - rack removal protection: cannot remove a rack that still contains assigned products.
+PASS - shelf remove test: assignment removed while product inventory quantity remained unchanged.
+PASS - branch schema migration: shelf_positions + shelf_rack_count created for Rathinapuri, Gopalapuram and Gandhipuram databases.
+PASS - one-time legacy Shelf Rack bootstrap: previously visible storage-master product persisted to Rack 1/Shelf 1 with stock quantity unchanged.
+PASS - protected-file checksum manifest after intentional v3.2.11 Shelf Rack wiring update.
+PASS - static/stock_3d.js unchanged from v3.2.10.
+PASS - static/storage_view.js unchanged from v3.2.10.
+
+TARGET WINDOWS PREFLIGHT
+------------------------
+The Windows live updater runs scripts/preflight.py using the installed Flask runtime BEFORE replacing live code.
+That preflight additionally checks:
+- normal inward/outward stock movement
+- negative stock protection
+- archive/restore + history preservation
+- Shelf Rack attach/move/remove without quantity changes
+- all three branch Shelf Rack APIs
+- dashboard/current-stock/add-stock/import/history/storage routes
+- protected Rack/3D hashes
+
+CLIENT UPDATE MODEL
+-------------------
+Staff/Owner PCs do not contain application code or databases.
+The desktop shortcut opens the main server URL on port 5055.
+Therefore future code releases are delivered from the server immediately.
+The browser polls /api/system/state every 5 seconds:
+- idle read pages reload automatically when VERSION changes
+- active entry/edit pages show a reload notice to avoid losing unsaved work
+
+LIMITATION OF THIS BUILD ENVIRONMENT
+------------------------------------
+Flask/Waitress are not installed in this Linux packaging environment, so the full Flask HTTP test-client preflight is not marked as executed here. The live Windows updater executes that preflight using the already-installed NUNES runtime before making live changes.

@@ -2,7 +2,7 @@ param([ValidateSet('Staff','Owner')][string]$Role='Staff')
 $ErrorActionPreference = 'Stop'
 
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host " NUNES STOCK v3.2.11 - $Role DESKTOP SETUP" -ForegroundColor Cyan
+Write-Host " NUNES STOCK v3.2.12 - $Role DESKTOP SETUP" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host "This PC will NOT install the stock application or database."
 Write-Host "It opens the central main server directly on port 5055."

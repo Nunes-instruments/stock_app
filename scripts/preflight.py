@@ -186,9 +186,8 @@ def main() -> int:
                     f"HTTP preflight failed for {url}: {response.status_code}"
                 )
 
-        # Branch behavior check. v3.2.11 intentionally preserves whichever
-        # Current Stock visual design is already installed, so do not gate
-        # this storage/client update on a cosmetic marker from another release.
+        # Unified release gate: every branch must render the approved
+        # Executive Current Stock UI, not a legacy v3.2.8 page.
         for branch_key in ("main", "gobalapuram", "gandhipuram"):
             response = client.post(
                 "/switch-branch",
@@ -200,6 +199,17 @@ def main() -> int:
                     f"Branch Current Stock preflight failed for {branch_key}: "
                     f"{response.status_code}"
                 )
+            html = response.get_data(as_text=True)
+            for marker in (
+                "OPTION 1 — Executive Clean List",
+                "data-current-stock-option1",
+                "Available Quantity",
+                "Archived Products",
+            ):
+                if marker not in html:
+                    raise RuntimeError(
+                        f"Approved Current Stock marker {marker!r} missing for {branch_key}."
+                    )
             health_response = client.get("/api/system/health")
             health_payload = health_response.get_json() or {}
             if health_response.status_code != 200 or health_payload.get("active_branch") != branch_key:
@@ -245,14 +255,22 @@ def main() -> int:
                 if marker not in storage_html:
                     raise RuntimeError(f"Shelf UI marker {marker!r} missing for {branch_key}.")
 
-        # Excel import/history compatibility checks. The Shelf/client update
-        # must preserve the currently installed UI rather than requiring
-        # labels from v3.2.9/v3.2.10. Verify the routes and branch behavior.
+        # Unified release gate: the approved full-width Excel Import and
+        # Executive Stock History must be present in the same release.
         import_response = client.get("/import-excel")
+        import_html = import_response.get_data(as_text=True)
         if import_response.status_code != 200:
             raise RuntimeError(
                 f"Excel import page preflight failed: {import_response.status_code}"
             )
+        for marker in (
+            "data-import-option1",
+            "BULK STOCK IMPORT",
+            "Drag &amp; drop your Excel file here",
+            "Download Excel Template",
+        ):
+            if marker not in import_html:
+                raise RuntimeError(f"Approved Excel Import marker {marker!r} is missing.")
         template_response = client.get("/download-import-template")
         if template_response.status_code != 200:
             raise RuntimeError("Excel import template download preflight failed.")
@@ -268,12 +286,37 @@ def main() -> int:
                     f"Branch Stock History preflight failed for {branch_key}: "
                     f"{response.status_code}"
                 )
+            html = response.get_data(as_text=True)
+            for marker in (
+                "data-history-executive",
+                "ACTIVITY LEDGER — Executive Clean History",
+                "Stock Movements",
+                "Excel Imports",
+                "Export CSV",
+            ):
+                if marker not in html:
+                    raise RuntimeError(
+                        f"Approved Stock History marker {marker!r} missing for {branch_key}."
+                    )
             health_response = client.get("/api/system/health")
             health_payload = health_response.get_json() or {}
             if health_response.status_code != 200 or health_payload.get("active_branch") != branch_key:
                 raise RuntimeError(
                     f"History branch session did not switch correctly to {branch_key}."
                 )
+
+        # Static files needed by the three approved screens must ship with
+        # the release payload; missing CSS/JS is treated as a release failure.
+        for rel in (
+            "static/current_stock_option1.css",
+            "static/current_stock_option1.js",
+            "static/import_excel_option1.css",
+            "static/import_excel_option1.js",
+            "static/history_executive.css",
+            "static/history_executive.js",
+        ):
+            if not (APP_DIR / rel).exists():
+                raise RuntimeError(f"Required unified UI asset is missing: {rel}")
 
     print("NUNES STOCK PREFLIGHT: PASS")
     return 0

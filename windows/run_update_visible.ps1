@@ -48,7 +48,7 @@ if (-not (Test-Admin)) {
 
 Clear-Host
 Write-Host '============================================================' -ForegroundColor Cyan
-Write-Host ' NUNES STOCK v3.2.8 - PERSISTENT VISIBLE UPDATE' -ForegroundColor Cyan
+Write-Host ' NUNES STOCK v3.2.12 - PERSISTENT VISIBLE UPDATE' -ForegroundColor Cyan
 Write-Host '============================================================' -ForegroundColor Cyan
 Write-Host 'Port        : 5055'
 Write-Host 'UI          : Concept 3 - Soft Gradient Modern'

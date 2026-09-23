@@ -1,0 +1,53 @@
+NUNES STOCK v3.2.12 - BUILD / VALIDATION REPORT
+Build date: 2026-09-22
+
+UNIFIED CONTENT
+PASS - v3.2.9 Executive Current Stock template included.
+PASS - v3.2.9 full-width Add From Excel template included.
+PASS - v3.2.10 Executive Stock History template included.
+PASS - v3.2.11 shared Shelf Rack database/API/UI wiring included.
+PASS - v3.2.11 central Staff/Owner client model included.
+PASS - v3.2.11 R3 maintenance-aware server/update coordination included.
+
+STATIC / SOURCE VALIDATION
+PASS - Python compileall across the complete v3.2.12 source.
+PASS - All Jinja HTML templates parsed successfully.
+PASS - current_stock_option1.js syntax check.
+PASS - import_excel_option1.js syntax check.
+PASS - history_executive.js syntax check.
+PASS - shelf_rack_3d.js syntax check.
+PASS - live_sync.js syntax check.
+
+CUMULATIVE UPGRADE TEST
+PASS - v3.2.12 payload overlaid onto an untouched v3.2.8 source candidate.
+PASS - resulting candidate VERSION = 3.2.12.
+PASS - Current Stock approved UI markers present after v3.2.8 -> v3.2.12 overlay.
+PASS - Add From Excel approved UI markers present after v3.2.8 -> v3.2.12 overlay.
+PASS - Stock History approved UI markers present after v3.2.8 -> v3.2.12 overlay.
+PASS - Shelf Rack shared UI markers present after v3.2.8 -> v3.2.12 overlay.
+PASS - all templates still parse after cumulative overlay.
+PASS - required JavaScript still parses after cumulative overlay.
+
+RACK / SHELF SAFETY
+PASS - protected checksum manifest verified against release files.
+PASS - static/stock_3d.js remains protected.
+PASS - static/storage_view.js remains protected.
+PASS - intentional shared Shelf Rack files match their release hashes.
+PASS - isolated shelf attach -> move -> unassign workflow preserved product stock quantity.
+
+DATA / PUBLISH SAFETY
+PASS - no .db/.sqlite/.db-wal/.db-shm files bundled in complete source.
+PASS - no runtime .log files bundled.
+PASS - no ZIP/RAR runtime archives bundled inside source.
+PASS - GitHub publisher uses normal fast-forward push; force push is not used.
+PASS - publisher blocks database, log, credential, archive and runtime files.
+PASS - publisher sources files from embedded complete v3.2.12 source, not an older installed source.
+
+WINDOWS LIVE GATE
+The build container does not contain Flask/Waitress, so a full live HTTP server
+was not started here. The Windows installer therefore runs the production
+preflight with the already-installed NUNES Python runtime BEFORE touching live
+code. It then starts port 5055 and separately verifies the real live pages.
+The user's previous v3.2.11 candidate preflight already demonstrated that the
+Shelf Rack APIs pass on that Windows runtime; v3.2.12 additionally ships and
+gates the previously-missing approved UI files.

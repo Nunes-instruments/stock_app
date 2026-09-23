@@ -1,9 +1,9 @@
-NUNES STOCK v3.2.8 - PORT 5055 PERSISTENT UPDATE
+NUNES STOCK v3.2.12 - PORT 5055 PERSISTENT UPDATE
 
 RUN ONLY:
   RUN_THIS_V3_2_3_UPDATE.bat
 
-WHAT v3.2.8 FIXES
+WHAT v3.2.12 FIXES
 - Fixes the v3.2.2 Step 7 false failure caused by Git writing a successful
   branch-switch message to STDERR.
 - Git and Task Scheduler native commands are now judged by EXIT CODE.
@@ -23,6 +23,6 @@ INSTALLER LOG:
   C:\ProgramData\NunesStockV31\data\install_v323.log
 
 AFTER INSTALLATION SUCCESS:
-  Run PUBLISH_TO_GITHUB.bat once if you want GitHub main to become v3.2.8.
+  Run PUBLISH_TO_GITHUB.bat once if you want GitHub main to become v3.2.12.
   Future releases with a higher VERSION can then be picked up automatically
   by the silent 5-minute updater.

@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Add From Excel
+    </title>
+
+
+    <!-- =====================================================
+         MAIN APPLICATION CSS
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
+    <link
+        rel="stylesheet"
+        href="/static/pro_theme.css"
+    >
+
+    
+<link rel="stylesheet" href="/static/import_excel_option1.css">
+
+
+
+    <!-- =====================================================
+         GLOBAL APP SCROLL FIX
+
+         IMPORTANT:
+         - Browser body stays fixed
+         - Sidebar stays fixed
+         - Right .main workspace scrolls
+         - Works on Add Stock, Home, Current Stock, Storage View,
+           Excel and History pages
+    ====================================================== -->
+
+    <style>
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+
+            margin: 0;
+
+            overflow: hidden;
+        }
+
+
+        .app-shell {
+            width: 100%;
+            height: 100vh;
+
+            min-height: 0;
+        }
+
+
+        /* =================================================
+           SIDEBAR
+        ================================================== */
+
+        .sidebar {
+            height: 100vh;
+
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+
+        /* =================================================
+           MAIN APPLICATION WORKSPACE
+
+           THIS IS THE ACTUAL PAGE SCROLL AREA
+        ================================================== */
+
+        .main {
+            height: 100vh !important;
+            min-height: 0 !important;
+
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+
+            scroll-behavior: smooth;
+
+            overscroll-behavior-y: contain;
+        }
+
+
+        /* =================================================
+           PAGE CONTENT
+
+           Must be allowed to grow naturally.
+        ================================================== */
+
+        .page-content {
+            width: 100%;
+
+            height: auto !important;
+            min-height: 0 !important;
+
+            overflow: visible !important;
+
+            padding-bottom: 70px;
+        }
+
+
+        /* =================================================
+           ADD STOCK PAGE
+
+           Explicitly allow complete form height.
+        ================================================== */
+
+        .add-layout {
+            height: auto !important;
+            min-height: 0 !important;
+
+            overflow: visible !important;
+        }
+
+
+        .stock-form-card {
+            height: auto !important;
+            min-height: 0 !important;
+
+            overflow: visible !important;
+        }
+
+
+        .help-card {
+            height: auto !important;
+        }
+
+
+        /* =================================================
+           STANDARD PANELS SHOULD NEVER CUT THEIR CONTENT
+        ================================================== */
+
+        .confirm-panel,
+        .success-panel,
+        .simple-panel,
+        .stock-search-card,
+        .excel-upload-card {
+            height: auto;
+
+            overflow: visible;
+        }
+
+
+        /* =================================================
+           STORAGE VIEW
+
+           Only actual Three.js scene should clip content.
+        ================================================== */
+
+        #threeStorageContainer,
+        .storage-3d-stage,
+        .three-storage-container {
+            overflow: hidden;
+        }
+
+
+        /* =================================================
+           MOBILE
+
+           On smaller devices return to normal document scroll.
+        ================================================== */
+
+        @media (max-width: 780px) {
+
+            html,
+            body {
+                height: auto;
+
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+
+
+            .app-shell {
+                height: auto;
+                min-height: 100vh;
+            }
+
+
+            .sidebar {
+                height: auto;
+
+                overflow: visible;
+            }
+
+
+            .main {
+                height: auto !important;
+                min-height: 100vh !important;
+
+                overflow: visible !important;
+            }
+
+
+            .page-content {
+                padding-bottom: 40px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body
+    data-app-version="3.2.9"
+    data-inventory-revision="10"
+    data-endpoint="import_excel"
+>
+
+
+<div class="app-shell">
+
+
+    <!-- ===================================================
+         SIDEBAR
+    ==================================================== -->
+
+    <aside class="sidebar">
+
+
+        <!-- =================================================
+             BRAND
+        ================================================== -->
+
+        <div class="brand">
+
+            <div class="brand-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/>
+                    <path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/>
+                </svg>
+            </div>
+
+
+            <div class="brand-text">
+
+                <strong>
+                    NUNES STOCK
+                </strong>
+
+                <small>
+                    Instrument Management · v3.2.9
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             NAVIGATION
+        ================================================== -->
+
+        <nav class="nav">
+
+
+            <!-- HOME -->
+
+            <a
+                href="/"
+                class="nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Home
+                    </strong>
+
+                    <small>
+                        Stock overview
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- ADD STOCK -->
+
+            <a
+                href="/add-stock"
+                class="nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Add Stock
+                    </strong>
+
+                    <small>
+                        Add new items
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- CURRENT STOCK -->
+
+            <a
+                href="/current-stock"
+                class="nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Current Stock
+                    </strong>
+
+                    <small>
+                        Check quantity
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- STORAGE VIEW -->
+
+            <a
+                href="/storage-view"
+                class="nav-button storage-nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M3 21V9l6 3V9l6 3V6h6v15z"/><path d="M7 16h2M12 16h2M17 16h2"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Storage View
+                    </strong>
+
+                    <small>
+                        Interactive 3D storage
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- ADD FROM EXCEL -->
+
+            <a
+                href="/import-excel"
+                class="nav-button active"
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Add From Excel
+                    </strong>
+
+                    <small>
+                        Add many items
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+            <!-- STOCK HISTORY -->
+
+            <a
+                href="/import-history"
+                class="nav-button "
+            >
+
+                <span class="nav-button-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                </span>
+
+
+                <span class="nav-button-content">
+
+                    <strong>
+                        Stock History
+                    </strong>
+
+                    <small>
+                        Previous entries
+                    </small>
+
+                </span>
+
+
+                <span class="nav-button-arrow">
+                    ›
+                </span>
+
+            </a>
+
+
+        </nav>
+
+
+        <!-- =================================================
+             SIDEBAR BOTTOM
+        ================================================== -->
+
+        <div class="sidebar-bottom">
+
+
+            <a
+                href="#"
+                class="sidebar-utility-button"
+            >
+
+                <span class="sidebar-utility-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                </span>
+
+
+                <span>
+
+                    <strong>
+                        Master Excel
+                    </strong>
+
+                    <small>
+                        Download latest stock
+                    </small>
+
+                </span>
+
+            </a>
+
+
+            <div class="server-status">
+
+                <span class="status-dot"></span>
+
+
+                <div>
+
+                    <strong>
+                        System Online
+                    </strong>
+
+                    <small>
+                        Ready to use
+                    </small>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+    </aside>
+
+
+    <!-- ===================================================
+         MAIN WORKSPACE
+    ==================================================== -->
+
+    <main
+        id="applicationMain"
+        class="main"
+    >
+
+
+        <!-- =================================================
+             TOP BAR
+        ================================================== -->
+
+        <header class="topbar">
+
+
+            <div class="topbar-title">
+
+                <strong>
+                    Instrument Stock Management
+                </strong>
+
+                <small>
+                    Rathinapuri – Nunes Instrumentation · Inventory, movement and storage control
+                </small>
+
+            </div>
+
+
+            <div class="topbar-actions">
+
+                <details class="branch-switcher">
+
+                    <summary class="branch-switcher-button">
+                        <span class="branch-switcher-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M8 21v-6h8v6M8 10h.01M12 10h.01M16 10h.01"/></svg>
+                        </span>
+                        <span class="branch-switcher-copy">
+                            <small>Active company</small>
+                            <strong>Rathinapuri – Nunes Instrumentation</strong>
+                        </span>
+                        <span class="branch-switcher-chevron">⌄</span>
+                    </summary>
+
+                    <div class="branch-switcher-menu">
+                        <div class="branch-switcher-menu-title">Choose company / branch</div>
+
+                        
+                        <form method="post" action="#">
+                            <input type="hidden" name="branch" value="main">
+                            <input type="hidden" name="return_to" value="/import-excel">
+                            <button
+                                type="submit"
+                                class="branch-option active"
+                            >
+                                <span class="branch-option-dot"></span>
+                                <span>
+                                    <strong>Rathinapuri – Nunes Instrumentation</strong>
+                                    <small>Currently selected</small>
+                                </span>
+                                <span class="branch-option-check">✓</span>
+                            </button>
+                        </form>
+                        
+                        <form method="post" action="#">
+                            <input type="hidden" name="branch" value="gobalapuram">
+                            <input type="hidden" name="return_to" value="/import-excel">
+                            <button
+                                type="submit"
+                                class="branch-option "
+                            >
+                                <span class="branch-option-dot"></span>
+                                <span>
+                                    <strong>Gopalapuram – Nunes Instrumentation</strong>
+                                    <small>Open this branch</small>
+                                </span>
+                                
+                            </button>
+                        </form>
+                        
+                        <form method="post" action="#">
+                            <input type="hidden" name="branch" value="gandhipuram">
+                            <input type="hidden" name="return_to" value="/import-excel">
+                            <button
+                                type="submit"
+                                class="branch-option "
+                            >
+                                <span class="branch-option-dot"></span>
+                                <span>
+                                    <strong>Gandhipuram – Nunes Instrumentation</strong>
+                                    <small>Open this branch</small>
+                                </span>
+                                
+                            </button>
+                        </form>
+                        
+                    </div>
+
+                </details>
+
+                <div class="top-status">
+
+                    <span class="status-dot"></span>
+
+                    Online
+
+                </div>
+
+            </div>
+
+
+        </header>
+
+
+        <!-- =================================================
+             FLASH MESSAGES
+        ================================================== -->
+
+        
+
+            
+
+        
+
+
+        <!-- =================================================
+             PAGE CONTENT
+        ================================================== -->
+
+        <div class="page-content">
+
+            
+<section class="ix1-page" data-import-option1>
+    <header class="ix1-heading">
+        <div>
+            <span class="ix1-label">BULK STOCK IMPORT</span>
+            <h1>Add From Excel</h1>
+            <p>Upload your stock Excel file to add multiple items to Rathinapuri – Nunes Instrumentation.</p>
+        </div>
+        <span class="ix1-xlsx-badge">XLSX</span>
+    </header>
+
+    <section class="ix1-card">
+        <div class="ix1-stepper" aria-label="Import workflow">
+            <div class="ix1-step active"><span>1</span><strong>Upload File</strong></div>
+            <div class="ix1-step-line"></div>
+            <div class="ix1-step "><span>2</span><strong>Validate Rows</strong></div>
+            <div class="ix1-step-line"></div>
+            <div class="ix1-step "><span>3</span><strong>Import Result</strong></div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" id="excelUploadForm" class="ix1-form">
+            <input id="excelFileInput" class="ix1-native-file" type="file" name="excel_file" accept=".xlsx" required>
+
+            <div class="ix1-main-grid">
+                <label class="ix1-dropzone" id="excelDropzone" for="excelFileInput">
+                    <span class="ix1-cloud" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M7 18H5.5A3.5 3.5 0 0 1 5 11a7 7 0 0 1 13.5 1.9A2.8 2.8 0 0 1 18 18h-2"/><path d="M12 12v8M8.8 15.2 12 12l3.2 3.2"/></svg>
+                    </span>
+                    <strong>Drag &amp; drop your Excel file here</strong>
+                    <span>or click to browse from your computer</span>
+                    <em id="excelChooseButton">Choose file</em>
+                    <small>Only .xlsx files are supported.</small>
+                </label>
+
+                <aside class="ix1-help-column">
+                    <section class="ix1-help-card">
+                        <div class="ix1-help-title">
+                            <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/></svg></span>
+                            <div><strong>Download Template</strong><small>Use our template to ensure correct format.</small></div>
+                        </div>
+                        <a class="ix1-template-button" href="#">⇩ Download Excel Template</a>
+                    </section>
+
+                    <section class="ix1-help-card ix1-columns-card">
+                        <strong>Supported Columns</strong>
+                        <div class="ix1-column-grid">
+                            <span>✓ Product ID (required)</span>
+                            <span>✓ Product Name (required)</span>
+                            <span>✓ Category (required)</span>
+                            <span>✓ Quantity (required)</span>
+                            <span>✓ Brand / Model</span>
+                            <span>✓ Unit / Location</span>
+                            <span>✓ Stock Date</span>
+                            <span>✓ Remarks</span>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+
+            <div class="ix1-selected-file" id="excelSelectedFile" aria-live="polite">
+                <span class="ix1-file-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/></svg></span>
+                <div><small>SELECTED FILE</small><strong id="excelFileName">No file selected</strong></div>
+                <span class="ix1-file-type">.XLSX</span>
+            </div>
+
+            <div class="ix1-submit-row">
+                <div class="ix1-safety-note"><span>✓</span><div><strong>Safe import</strong><small>Rows are validated before they are stored. Existing history is preserved.</small></div></div>
+                <button type="submit" class="ix1-submit" id="excelSubmitButton"><span>⇩</span> UPLOAD &amp; ADD STOCK</button>
+            </div>
+        </form>
+    </section>
+
+    
+
+    
+</section>
+
+
+        </div>
+
+
+    </main>
+
+
+</div>
+
+
+<!-- =====================================================
+     THREE.JS
+===================================================== -->
+
+<script
+    src="/static/three.min.js">
+</script>
+
+
+<!-- =====================================================
+     3D STORAGE ENGINE
+===================================================== -->
+
+<script
+    src="/static/stock_3d.js">
+</script>
+
+
+<!-- =====================================================
+     AUTOMATIC PRODUCT IMAGE LOOKUP / CACHE
+===================================================== -->
+
+<script
+    src="/static/product_images.js">
+</script>
+
+
+<!-- =====================================================
+     NORMAL APPLICATION LOGIC
+===================================================== -->
+
+<script
+    src="/static/app.js">
+</script>
+
+
+<!-- =====================================================
+     LIVE CENTRAL-SERVER SYNC
+===================================================== -->
+
+<script
+    src="/static/live_sync.js">
+</script>
+
+
+<!-- =====================================================
+     PAGE-SPECIFIC JAVASCRIPT
+===================================================== -->
+
+
+<script src="/static/import_excel_option1.js"></script>
+
+
+
+</body>
+
+</html>

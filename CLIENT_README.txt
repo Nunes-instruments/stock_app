@@ -1,4 +1,4 @@
-NUNES STOCK v3.2.11 - STAFF / OWNER CLIENT MODEL
+NUNES STOCK v3.2.12 - STAFF / OWNER CLIENT MODEL
 =================================================
 
 IMPORTANT

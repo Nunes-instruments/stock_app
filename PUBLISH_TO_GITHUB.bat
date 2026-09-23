@@ -1,23 +1,23 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
-title NUNES Stock v3.2.11 - Safe GitHub Main Publish R2
+title NUNES Stock v3.2.12 - Unified Safe GitHub Main Publish
 
 for %%I in ("%~dp0.") do set "SOURCE=%%~fI"
 set "REPO=https://github.com/Nunes-instruments/stock_app.git"
-set "TEMP_REPO=%TEMP%\NunesStock_v3211_Publish_R2"
+set "TEMP_REPO=%TEMP%\NunesStock_v3212_Publish"
 set "RUNTIME=%LOCALAPPDATA%\NunesStockRuntimeV31\venv\Scripts\python.exe"
-set "PREFLIGHT_DATA=%TEMP%\NunesStock_v3211_publish_preflight_data_R2"
+set "PREFLIGHT_DATA=%TEMP%\NunesStock_v3212_publish_preflight_data"
 set "OVERLAY=%SOURCE%\scripts\safe_publish_overlay.py"
 
 if not exist "%OVERLAY%" set "OVERLAY=%SOURCE%\safe_publish_overlay.py"
 
 echo ============================================================
-echo  NUNES STOCK v3.2.11 - SAFE GITHUB MAIN PUBLISH R2
+echo  NUNES STOCK v3.2.12 - UNIFIED SAFE GITHUB MAIN PUBLISH
 echo ============================================================
 echo Repository : %REPO%
 echo Source     : %SOURCE%
-echo Version    : 3.2.11
+echo Version    : 3.2.12
 echo Data files : NEVER PUBLISHED
 echo Force push : NEVER USED
 echo ============================================================
@@ -26,8 +26,8 @@ where git >nul 2>&1 || (echo ERROR: Git for Windows is required.& pause & exit /
 if not exist "%OVERLAY%" (echo ERROR: Safe overlay helper is missing: %OVERLAY%& pause & exit /b 1)
 if not exist "%SOURCE%\VERSION" (echo ERROR: VERSION file missing from live app.& pause & exit /b 1)
 set /p LIVE_VERSION=<"%SOURCE%\VERSION"
-if /I not "!LIVE_VERSION!"=="3.2.11" (
-  echo ERROR: Live application version is !LIVE_VERSION!, not 3.2.11.
+if /I not "!LIVE_VERSION!"=="3.2.12" (
+  echo ERROR: Live application version is !LIVE_VERSION!, not 3.2.12.
   echo Publish was stopped so the wrong release cannot reach GitHub main.
   pause
   exit /b 1
@@ -47,7 +47,7 @@ echo [1/7] Cloning current GitHub main...
 git clone "%REPO%" "%TEMP_REPO%"
 if errorlevel 1 goto :FAIL
 
-echo [2/7] Overlaying tested v3.2.11 code safely...
+echo [2/7] Overlaying tested v3.2.12 unified code safely...
 %PYTHON% "%OVERLAY%" overlay "%SOURCE%" "%TEMP_REPO%"
 if errorlevel 1 goto :FAIL
 
@@ -75,7 +75,7 @@ git config user.name "Nunes Instruments Stock Server"
 git config user.email "stock-server@nunes.local"
 git diff --cached --quiet
 if errorlevel 1 (
-  git commit -m "NUNES Stock v3.2.11 - Shared clients and persistent Shelf Rack"
+  git commit -m "NUNES Stock v3.2.12 - Unified UI, history, shared Shelf Rack and clients"
   if errorlevel 1 (popd & goto :FAIL)
 ) else (
   echo No code changes to publish.
@@ -90,8 +90,8 @@ git fetch origin main
 if errorlevel 1 (popd & goto :FAIL)
 set "REMOTE_VERSION="
 for /f "usebackq delims=" %%V in (`git show origin/main:VERSION 2^>nul`) do if not defined REMOTE_VERSION set "REMOTE_VERSION=%%V"
-if /I not "!REMOTE_VERSION!"=="3.2.11" (
-  echo ERROR: GitHub main VERSION is !REMOTE_VERSION!, expected 3.2.11.
+if /I not "!REMOTE_VERSION!"=="3.2.12" (
+  echo ERROR: GitHub main VERSION is !REMOTE_VERSION!, expected 3.2.12.
   popd
   goto :FAIL
 )
@@ -104,7 +104,7 @@ echo.
 echo ============================================================
 echo  PUBLISH COMPLETE - VERIFIED
 echo ============================================================
-echo GitHub main version : 3.2.11
+echo GitHub main version : 3.2.12
 echo Commit              : !PUBLISHED_COMMIT!
 echo Force push          : NOT USED
 echo Database/data       : NOT PUBLISHED

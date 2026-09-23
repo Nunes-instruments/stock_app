@@ -1,0 +1,10 @@
+NUNES STOCK v3.2.12 - UNIFIED RELEASE
+
+Current Stock : Executive Clean List
+Add From Excel: Full-width import workflow
+Stock History : Executive movement ledger + Excel imports
+Shelf Rack    : Shared persistent attach/move/remove/list
+Clients       : Staff/Owner central-server shortcuts
+Branches      : Rathinapuri / Gopalapuram / Gandhipuram
+Port          : 5055
+Data          : Preserved; databases not included in release

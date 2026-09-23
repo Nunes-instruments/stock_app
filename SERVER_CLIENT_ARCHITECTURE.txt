@@ -1,0 +1,30 @@
+NUNES STOCK v3.2.12 - CENTRAL SERVER / STAFF / OWNER ARCHITECTURE
+================================================================
+
+MAIN SERVER PC
+- Runs NUNES Stock on port 5055.
+- Stores all three branch SQLite databases.
+- Checks GitHub main every 5 minutes using the existing silent updater.
+- New GitHub release must have a higher VERSION number and pass preflight.
+- On successful server update, clients receive the new application automatically because they are browser clients.
+
+STAFF / OWNER PCs
+- No Python / Flask / Git / Node / SQLite application installation.
+- One desktop shortcut opens http://MAIN-SERVER:5055 in browser app mode.
+- Browser polls /api/system/state every 5 seconds.
+- Idle read-only pages refresh automatically when server VERSION or inventory revision changes.
+- Active forms/editors preserve unsaved work and show a Reload notice instead of forcing a refresh.
+
+BRANCH DATA
+- Rathinapuri -> stock.db
+- Gopalapuram -> stock_gobalapuram.db (legacy filename preserved)
+- Gandhipuram -> stock_gandhipuram.db
+- Branch selection is held in each browser session.
+
+SHELF RACK
+- shelf_positions table exists independently in every branch database.
+- Rack count is stored in each branch app_state as shelf_rack_count.
+- Shelf placement is not stock quantity. Attach/move/remove placement cannot add/delete stock.
+- Quick +1 / -1 still uses normal stock movement history.
+- Clicking a shelf/rack shows its assigned products below.
+- First v3.2.12 use migrates the previous deterministic Shelf Rack view into persistent positions once, then stops browser-side redistribution.

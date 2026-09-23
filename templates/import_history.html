@@ -1,147 +1,174 @@
 {% extends "base.html" %}
 
-{% block title %}
-Stock History
+{% block title %}Stock History{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='history_executive.css', v=app_version) }}">
 {% endblock %}
 
-
 {% block content %}
+<section class="hx-page" data-history-executive>
+    <section class="hx-hero">
+        <div class="hx-hero-copy">
+            <span class="hx-label">ACTIVITY LEDGER — Executive Clean History</span>
+            <h1>Stock History</h1>
+            <p>Review every inward and outward movement for {{ active_branch_short }} with clear quantity, product and reference details.</p>
+        </div>
+        <div class="hx-live-card">
+            <span class="hx-live-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v6h6"/><path d="M12 8v5l3 2"/></svg>
+            </span>
+            <div>
+                <strong>Branch Activity</strong>
+                <small>Live history from {{ active_branch_short }}.</small>
+            </div>
+        </div>
+    </section>
 
-<section class="page-heading">
+    <section class="hx-kpis" aria-label="Stock history summary">
+        <article class="hx-kpi hx-kpi-blue">
+            <span class="hx-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>
+            <div><small>Total Movements</small><strong>{{ history_metrics.total_movements }}</strong><span>Recorded stock transactions</span></div>
+        </article>
+        <article class="hx-kpi hx-kpi-green">
+            <span class="hx-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 19V5M7 10l5-5 5 5"/></svg></span>
+            <div><small>Inward Quantity</small><strong>{{ history_metrics.inward_quantity }}</strong><span>Total units received</span></div>
+        </article>
+        <article class="hx-kpi hx-kpi-red">
+            <span class="hx-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M7 14l5 5 5-5"/></svg></span>
+            <div><small>Outward Quantity</small><strong>{{ history_metrics.outward_quantity }}</strong><span>Total units dispatched</span></div>
+        </article>
+        <article class="hx-kpi hx-kpi-purple">
+            <span class="hx-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
+            <div><small>Products Touched</small><strong>{{ history_metrics.products_touched }}</strong><span>Unique products moved</span></div>
+        </article>
+    </section>
 
-    <p class="eyebrow">
-        PREVIOUS ENTRIES
-    </p>
+    <section class="hx-tabs" aria-label="History type">
+        <button type="button" class="hx-tab active" data-history-tab="movements">Stock Movements <span>{{ history_metrics.total_movements }}</span></button>
+        <button type="button" class="hx-tab" data-history-tab="imports">Excel Imports <span>{{ history_metrics.excel_imports }}</span></button>
+    </section>
 
-    <h1>
-        Stock History
-    </h1>
+    <section class="hx-panel" data-history-panel="movements">
+        <div class="hx-filter-card">
+            <div class="hx-search-wrap">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span>
+                <input id="hxSearch" type="search" placeholder="Search product, ID, reference, source or details..." autocomplete="off">
+            </div>
+            <select id="hxTypeFilter" aria-label="Filter by movement type">
+                <option value="">All Movements</option>
+                <option value="inward">Inward</option>
+                <option value="outward">Outward</option>
+            </select>
+            <select id="hxSourceFilter" aria-label="Filter by source">
+                <option value="">All Sources</option>
+                <option value="manual">Manual / Stock Form</option>
+                <option value="excel">Excel Import</option>
+            </select>
+            <label class="hx-date-field"><span>From</span><input id="hxDateFrom" type="date" aria-label="From date"></label>
+            <label class="hx-date-field"><span>To</span><input id="hxDateTo" type="date" aria-label="To date"></label>
+            <button type="button" class="hx-action" id="hxReset">Reset</button>
+            <button type="button" class="hx-action hx-action-primary" id="hxExport">⇩ Export CSV</button>
+        </div>
 
+        <div class="hx-table-card">
+            <div class="hx-table-scroll">
+                <table id="hxMovementTable">
+                    <thead>
+                        <tr>
+                            <th data-sort-key="date">Date &amp; Time <span>↕</span></th>
+                            <th data-sort-key="type">Movement <span>↕</span></th>
+                            <th data-sort-key="product">Product <span>↕</span></th>
+                            <th data-sort-key="productId">Product ID <span>↕</span></th>
+                            <th data-sort-key="qty">Qty <span>↕</span></th>
+                            <th>Before</th>
+                            <th>After</th>
+                            <th data-sort-key="location">Location <span>↕</span></th>
+                            <th data-sort-key="source">Source / Reference <span>↕</span></th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hxMovementRows">
+                        {% for row in movements %}
+                        <tr class="hx-movement-row"
+                            data-type="{{ row.movement_type }}"
+                            data-source="{{ row.source_key }}"
+                            data-date="{{ row.date_key }}"
+                            data-product="{{ (row.product_name or '')|lower }}"
+                            data-product-id="{{ (row.product_id or '')|lower }}"
+                            data-location="{{ (row.location or '')|lower }}"
+                            data-source-text="{{ (row.source_label or '')|lower }}"
+                            data-reference="{{ (row.reference or '')|lower }}"
+                            data-details="{{ (row.details_display or '')|lower }}"
+                            data-qty="{{ row.quantity_added }}"
+                            data-created="{{ row.created_at or row.stock_date or '' }}">
+                            <td><span class="hx-date">{{ row.date_display }}</span><small>{{ row.entry_number or '—' }}</small></td>
+                            <td><span class="hx-movement hx-movement-{{ row.movement_type }}">{{ row.movement_label }}</span></td>
+                            <td><strong class="hx-product-name">{{ row.product_name or 'Unknown product' }}</strong><small>{{ row.category or '—' }}</small></td>
+                            <td><span class="hx-code">{{ row.product_id }}</span></td>
+                            <td><strong class="hx-qty hx-qty-{{ row.movement_type }}">{{ row.movement_sign }}{{ row.quantity_added }}</strong> <small>{{ row.unit or 'Nos' }}</small></td>
+                            <td>{{ row.previous_quantity }}</td>
+                            <td><strong>{{ row.new_quantity }}</strong></td>
+                            <td>{{ row.location or 'Not assigned' }}</td>
+                            <td><strong>{{ row.source_label }}</strong><small>{{ row.reference or '—' }}</small></td>
+                            <td><span class="hx-details" title="{{ row.details_display }}">{{ row.details_display }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr class="hx-server-empty"><td colspan="10">No stock movements have been recorded in this branch yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div id="hxNoResults" class="hx-empty" hidden>No matching stock movements found.</div>
+            </div>
+            <footer class="hx-footer">
+                <div id="hxStatus">Showing 0 movements</div>
+                <div class="hx-pagination">
+                    <button type="button" id="hxPrev" aria-label="Previous page">‹</button>
+                    <div id="hxPages"></div>
+                    <button type="button" id="hxNext" aria-label="Next page">›</button>
+                    <select id="hxPageSize" aria-label="Rows per page">
+                        <option value="10" selected>10 per page</option>
+                        <option value="25">25 per page</option>
+                        <option value="50">50 per page</option>
+                        <option value="100">100 per page</option>
+                    </select>
+                </div>
+            </footer>
+        </div>
+    </section>
+
+    <section class="hx-panel" data-history-panel="imports" hidden>
+        <div class="hx-import-head">
+            <div><span class="hx-label">BULK IMPORT HISTORY</span><h2>Excel Imports</h2><p>Every workbook import for {{ active_branch_short }} remains available here.</p></div>
+            <a class="hx-action hx-action-primary" href="{{ url_for('import_excel') }}">＋ Add From Excel</a>
+        </div>
+        <div class="hx-table-card">
+            <div class="hx-table-scroll">
+                <table class="hx-import-table">
+                    <thead><tr><th>File</th><th>Import No.</th><th>Rows</th><th>Added</th><th>Problems</th><th>Total Qty</th><th>Status</th><th>Date</th></tr></thead>
+                    <tbody>
+                        {% for row in imports %}
+                        <tr>
+                            <td><strong>{{ row.file_name }}</strong><small>{{ row.original_file_name or '' }}</small></td>
+                            <td>{{ row.import_number or '—' }}</td>
+                            <td>{{ row.total_rows }}</td>
+                            <td><span class="hx-import-good">{{ row.success_rows }}</span></td>
+                            <td><span class="{{ 'hx-import-bad' if row.failed_rows else '' }}">{{ row.failed_rows }}</span></td>
+                            <td><strong>+{{ row.total_quantity_added }}</strong></td>
+                            <td><span class="hx-import-status">{{ row.status }}</span></td>
+                            <td>{{ row.imported_at }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="hx-server-empty">No Excel imports have been recorded in this branch yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </section>
+{% endblock %}
 
-<section class="history-search-card" aria-label="Search stock history">
-    <span class="history-search-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="7"></circle>
-            <path d="m20 20-4-4"></path>
-        </svg>
-    </span>
-    <input
-        id="historySearch"
-        type="search"
-        placeholder="Search file, import number, rows, quantity or date..."
-        autocomplete="off"
-        aria-label="Search stock history"
-    >
-</section>
-
-<section class="simple-panel history-table-panel">
-
-    <div class="table-scroll">
-
-        <table>
-
-            <thead>
-
-            <tr>
-                <th>File</th>
-                <th>Rows</th>
-                <th>Added</th>
-                <th>Problems</th>
-                <th>Total Qty</th>
-                <th>Date</th>
-            </tr>
-
-            </thead>
-
-
-            <tbody>
-
-            {% for row in imports %}
-
-            <tr data-history-row>
-
-                <td>
-
-                    <strong>
-                        {{ row.file_name }}
-                    </strong>
-
-                    <small class="table-sub">
-                        {{ row.import_number }}
-                    </small>
-
-                </td>
-
-                <td>
-                    {{ row.total_rows }}
-                </td>
-
-                <td>
-                    <span class="green-pill">
-                        {{ row.success_rows }}
-                    </span>
-                </td>
-
-                <td>
-                    {{ row.failed_rows }}
-                </td>
-
-                <td>
-                    +{{ row.total_quantity_added }}
-                </td>
-
-                <td>
-                    {{ row.imported_at }}
-                </td>
-
-            </tr>
-
-            {% else %}
-
-            <tr>
-
-                <td
-                    colspan="6"
-                    class="empty-row"
-                >
-                    No Excel history available.
-                </td>
-
-            </tr>
-
-            {% endfor %}
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-</section>
-
-<div id="historyNoResults" class="history-no-results hidden">No matching stock history found.</div>
-
-<script>
-(function () {
-    const input = document.getElementById('historySearch');
-    const rows = Array.from(document.querySelectorAll('[data-history-row]'));
-    const noResults = document.getElementById('historyNoResults');
-    if (!input || !rows.length) return;
-
-    function filterHistory() {
-        const query = input.value.trim().toLowerCase();
-        let visible = 0;
-        rows.forEach(function (row) {
-            const match = !query || row.textContent.toLowerCase().includes(query);
-            row.hidden = !match;
-            if (match) visible += 1;
-        });
-        if (noResults) noResults.classList.toggle('hidden', visible !== 0);
-    }
-
-    input.addEventListener('input', filterHistory);
-})();
-</script>
-
+{% block scripts %}
+<script src="{{ url_for('static', filename='history_executive.js', v=app_version) }}"></script>
 {% endblock %}

@@ -3,246 +3,200 @@
 {% block title %}Current Stock{% endblock %}
 
 {% block head_extra %}
-<link rel="stylesheet" href="{{ url_for('static', filename='current_stock_option3.css', v=app_version) }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='current_stock_option1.css', v=app_version) }}">
 {% endblock %}
 
 {% block content %}
-<section class="cs3-layout" data-current-stock-option3 data-low-stock-threshold="{{ low_stock_threshold }}">
-    <div class="cs3-main-column">
-        <section class="cs3-hero">
+<section class="cs1-page" data-current-stock-option1 data-low-stock-threshold="{{ low_stock_threshold }}">
+    <section class="cs1-hero">
+        <div class="cs1-hero-copy">
+            <span class="cs1-concept-label">OPTION 1 — Executive Clean List</span>
+            <h1>{{ 'Archived Products' if show_archived else 'Current Stock' }}</h1>
+            <p>
+                {% if show_archived %}
+                Review archived products while keeping their complete stock history preserved.
+                {% else %}
+                Search and view your live inventory. Monitor stock levels, filter by category, and manage your products.
+                {% endif %}
+            </p>
+        </div>
+        <div class="cs1-live-card">
+            <span class="cs1-live-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+            </span>
             <div>
-                <span class="cs3-concept-label">OPTION 3 — Card + Table Hybrid List</span>
-                <h1>Current Stock</h1>
-                <p>View and manage all products in your inventory. Check availability, location and stock status.</p>
+                <strong>Live Inventory</strong>
+                <small>Real-time stock information for {{ active_branch_short }}.</small>
             </div>
-            <div class="cs3-hero-note">
-                <span class="cs3-icon-box" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
-                </span>
-                <div><strong>Accurate stock. Smarter decisions.</strong><small>Real-time visibility for {{ active_branch_short }}.</small></div>
-            </div>
-        </section>
+        </div>
+    </section>
 
-        {% if show_archived %}
-        <section class="cs3-archived-banner">
-            <div><strong>Archived Products</strong><span>History and quantity are preserved. Restore a product whenever it is needed again.</span></div>
-            <a href="{{ url_for('current_stock') }}">Back to Active Stock</a>
-        </section>
-        {% endif %}
+    <section class="cs1-kpis" aria-label="Current stock summary">
+        <article class="cs1-kpi cs1-kpi-blue">
+            <span class="cs1-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
+            <div><small>Total Products</small><strong>{{ stock_metrics.total_products }}</strong><span>Unique products in inventory</span></div>
+        </article>
+        <article class="cs1-kpi cs1-kpi-green">
+            <span class="cs1-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
+            <div><small>Available Quantity</small><strong>{{ stock_metrics.available_quantity }}</strong><span>Units available in stock</span></div>
+        </article>
+        <article class="cs1-kpi cs1-kpi-amber">
+            <span class="cs1-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 9v4M12 17h.01"/></svg></span>
+            <div><small>Low Stock</small><strong>{{ stock_metrics.low_stock_products }}</strong><span>Products with 1–{{ low_stock_threshold }} units</span></div>
+        </article>
+        <article class="cs1-kpi cs1-kpi-red">
+            <span class="cs1-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m9 9 6 6M15 9l-6 6"/></svg></span>
+            <div><small>Out of Stock</small><strong>{{ stock_metrics.out_of_stock_products }}</strong><span>Products with no stock</span></div>
+        </article>
+    </section>
 
-        <section class="cs3-kpis" aria-label="Current stock summary">
-            <article class="cs3-kpi cs3-kpi-blue">
-                <span class="cs3-kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
-                <div><small>Total Products</small><strong>{{ stock_metrics.total_products }}</strong><span>Registered in {{ active_branch_short }}</span></div>
-            </article>
-            <article class="cs3-kpi cs3-kpi-green">
-                <span class="cs3-kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
-                <div><small>In Stock</small><strong>{{ stock_metrics.in_stock_products }}</strong><span>Above low-stock threshold</span></div>
-            </article>
-            <article class="cs3-kpi cs3-kpi-amber">
-                <span class="cs3-kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 9v4M12 17h.01"/></svg></span>
-                <div><small>Low Stock</small><strong>{{ stock_metrics.low_stock_products }}</strong><span>1–{{ low_stock_threshold }} units</span></div>
-            </article>
-            <article class="cs3-kpi cs3-kpi-red">
-                <span class="cs3-kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"/></svg></span>
-                <div><small>Outward Today</small><strong>{{ stock_metrics.outward_today }}</strong><span>Units dispatched</span></div>
-            </article>
-            <article class="cs3-kpi cs3-kpi-sky">
-                <span class="cs3-kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M6.5 13.5 12 19l5.5-5.5"/></svg></span>
-                <div><small>Inward Today</small><strong>{{ stock_metrics.inward_today }}</strong><span>Units received</span></div>
-            </article>
-        </section>
+    <section class="cs1-filter-card" aria-label="Inventory filters">
+        <div class="cs1-search-wrap">
+            <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span>
+            <input id="cs1Search" type="search" placeholder="Search by product name, ID, brand, model or category..." autocomplete="off">
+        </div>
+        <select id="cs1CategoryFilter" aria-label="Filter by category"><option value="">All Categories</option></select>
+        <select id="cs1StatusFilter" aria-label="Filter by stock status">
+            <option value="">All Status</option>
+            <option value="in">In Stock</option>
+            <option value="low">Low Stock</option>
+            <option value="out">Out of Stock</option>
+        </select>
+        <select id="cs1LocationFilter" aria-label="Filter by location"><option value="">All Locations</option></select>
+        <a class="cs1-action cs1-action-primary" href="{{ url_for('add_stock_page') }}"><span>＋</span> Add Stock</a>
+        <a class="cs1-action" href="{{ url_for('download_master_stock') }}"><span>⇩</span> Export</a>
+        <a class="cs1-archive-link" href="{{ url_for('current_stock', show='archived') if not show_archived else url_for('current_stock') }}">
+            <span>▣</span> {{ 'Archived Products' if not show_archived else 'Active Products' }}
+        </a>
+    </section>
 
-        <section class="cs3-filter-card">
-            <div class="cs3-search-wrap">
-                <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span>
-                <input id="cs3Search" type="search" placeholder="Search by product name, ID, category, brand, model or location..." autocomplete="off">
-            </div>
-            <select id="cs3CategoryFilter" aria-label="Filter by category">
-                <option value="">All Categories</option>
-            </select>
-            <div class="cs3-status-filters" role="group" aria-label="Stock status filter">
-                <button type="button" class="active" data-status-filter="all">All</button>
-                <button type="button" data-status-filter="in">In Stock</button>
-                <button type="button" data-status-filter="low">Low Stock</button>
-                <button type="button" data-status-filter="out">Out of Stock</button>
-            </div>
-        </section>
-
-        <section class="cs3-table-card">
-            <div class="cs3-table-toolbar">
-                <div>
-                    <strong id="cs3ResultLabel">Showing {{ products|length }} products</strong>
-                    <small>Live data from {{ active_branch_short }}</small>
-                </div>
-                <select id="cs3Sort" aria-label="Sort products">
-                    <option value="name-asc">Sort by: Product Name</option>
-                    <option value="qty-desc">Quantity: High to Low</option>
-                    <option value="qty-asc">Quantity: Low to High</option>
-                    <option value="updated-desc">Recently Updated</option>
-                </select>
-            </div>
-
-            <div class="cs3-table-scroll">
-                <table id="cs3StockTable">
-                    <thead>
-                        <tr>
-                            <th class="cs3-check-col"><input id="cs3SelectAll" type="checkbox" aria-label="Select all visible products"></th>
-                            <th>Product</th>
-                            <th>Product ID</th>
-                            <th>Category</th>
-                            <th>Available Qty</th>
-                            <th>Location (Branch)</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="cs3Rows">
-                        {% for product in products %}
-                        <tr class="cs3-row"
-                            data-name="{{ product.product_name|lower }}"
-                            data-product-id="{{ product.product_id|lower }}"
-                            data-category="{{ product.category|lower }}"
-                            data-brand="{{ (product.brand or '')|lower }}"
-                            data-model="{{ (product.model or '')|lower }}"
-                            data-location="{{ (product.location or '')|lower }}"
-                            data-status="{{ product.stock_status_key }}"
-                            data-qty="{{ product.current_quantity }}"
-                            data-updated="{{ product.updated_at or '' }}">
-                            <td class="cs3-check-col"><input class="cs3-row-check" type="checkbox" aria-label="Select {{ product.product_name }}"></td>
-                            <td>
-                                <div class="cs3-product-cell">
-                                    <div class="cs3-thumb">
-                                        {% if product.image_url %}
-                                        <img src="{{ product.image_url }}" alt="{{ product.product_name }}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
-                                        {% endif %}
-                                        <span class="cs3-thumb-fallback" {% if product.image_url %}style="display:none"{% endif %} aria-hidden="true">
-                                            <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
-                                        </span>
-                                    </div>
-                                    <div><strong>{{ product.product_name }}</strong><small>{{ product.brand or 'Brand not assigned' }}{% if product.model %} · {{ product.model }}{% endif %}</small></div>
+    <section class="cs1-table-card">
+        <div class="cs1-table-scroll">
+            <table id="cs1StockTable">
+                <thead>
+                    <tr>
+                        <th data-sort-key="name">Product <span>↕</span></th>
+                        <th data-sort-key="productId">Product ID <span>↕</span></th>
+                        <th data-sort-key="category">Category <span>↕</span></th>
+                        <th data-sort-key="brandModel">Brand / Model <span>↕</span></th>
+                        <th data-sort-key="qty">Available <span>↕</span></th>
+                        <th>Unit <span>↕</span></th>
+                        <th data-sort-key="location">Location <span>↕</span></th>
+                        <th data-sort-key="status">Status <span>↕</span></th>
+                        <th data-sort-key="updated">Updated <span>↕</span></th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="cs1Rows">
+                    {% for product in products %}
+                    <tr class="cs1-row"
+                        data-name="{{ product.product_name|lower }}"
+                        data-product-id="{{ product.product_id|lower }}"
+                        data-category="{{ product.category|lower }}"
+                        data-brand="{{ (product.brand or '')|lower }}"
+                        data-model="{{ (product.model or '')|lower }}"
+                        data-brand-model="{{ ((product.brand or '') ~ ' ' ~ (product.model or ''))|lower }}"
+                        data-location="{{ (product.location or '')|lower }}"
+                        data-status="{{ product.stock_status_key }}"
+                        data-qty="{{ product.current_quantity }}"
+                        data-updated="{{ product.updated_at or '' }}">
+                        <td>
+                            <div class="cs1-product-cell">
+                                <div class="cs1-thumb">
+                                    {% if product.image_url %}
+                                    <img src="{{ product.image_url }}" alt="{{ product.product_name }}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+                                    {% endif %}
+                                    <span class="cs1-thumb-fallback" {% if product.image_url %}style="display:none"{% endif %} aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg>
+                                    </span>
                                 </div>
-                            </td>
-                            <td><span class="cs3-code">{{ product.product_id }}</span></td>
-                            <td><span class="cs3-category">{{ product.category }}</span></td>
-                            <td><strong class="cs3-qty cs3-qty-{{ product.stock_status_key }}">{{ product.current_quantity }} {{ product.unit }}</strong></td>
-                            <td>
-                                <div class="cs3-location-cell">
-                                    <span class="cs3-location-icon"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></svg></span>
-                                    <div><strong>{{ product.location or 'Not assigned' }}</strong><small>{{ active_branch_short }}</small></div>
-                                </div>
-                            </td>
-                            <td><span class="cs3-status cs3-status-{{ product.stock_status_key }}">{{ product.stock_status_label }}</span></td>
-                            <td>
-                                <div class="cs3-actions">
-                                    <button type="button" class="cs3-view-button"
-                                        data-open-product-details
-                                        data-product-id="{{ product.product_id }}"
-                                        data-product-name="{{ product.product_name }}"
-                                        data-product-category="{{ product.category }}"
-                                        data-product-brand="{{ product.brand or '' }}"
-                                        data-product-model="{{ product.model or '' }}"
-                                        data-product-quantity="{{ product.current_quantity }}"
-                                        data-product-unit="{{ product.unit }}"
-                                        data-product-location="{{ product.location or '' }}"
-                                        data-product-image="{{ product.image_url or '' }}"
-                                        data-product-rack-mapped="{{ '1' if product.rack_mapped else '0' }}"
-                                        data-product-active="{{ '1' if product.is_active|default(1) else '0' }}">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5z"/><circle cx="12" cy="12" r="2.5"/></svg>
-                                        View
+                                <strong>{{ product.product_name }}</strong>
+                            </div>
+                        </td>
+                        <td><span class="cs1-code">{{ product.product_id }}</span></td>
+                        <td>{{ product.category }}</td>
+                        <td>{{ product.brand or '—' }}{% if product.model %} / {{ product.model }}{% endif %}</td>
+                        <td><strong class="cs1-qty cs1-qty-{{ product.stock_status_key }}">{{ product.current_quantity }}</strong></td>
+                        <td>{{ product.unit }}</td>
+                        <td>{{ product.location or 'Not assigned' }}</td>
+                        <td><span class="cs1-status cs1-status-{{ product.stock_status_key }}">{{ product.stock_status_label }}</span></td>
+                        <td><span class="cs1-updated">{{ product.updated_display }}</span></td>
+                        <td>
+                            <div class="cs1-actions">
+                                <button type="button" class="cs1-icon-button" title="View product" aria-label="View {{ product.product_name }}"
+                                    data-open-product-details
+                                    data-product-id="{{ product.product_id }}"
+                                    data-product-name="{{ product.product_name }}"
+                                    data-product-category="{{ product.category }}"
+                                    data-product-brand="{{ product.brand or '' }}"
+                                    data-product-model="{{ product.model or '' }}"
+                                    data-product-quantity="{{ product.current_quantity }}"
+                                    data-product-unit="{{ product.unit }}"
+                                    data-product-location="{{ product.location or '' }}"
+                                    data-product-image="{{ product.image_url or '' }}"
+                                    data-product-rack-mapped="{{ 1 if product.rack_mapped else 0 }}"
+                                    data-product-active="{{ product.is_active if product.is_active is defined else 1 }}">
+                                    <svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                                </button>
+                                <button type="button" class="cs1-more-button" title="More actions" aria-label="More actions for {{ product.product_name }}" data-more-actions>⋮</button>
+                                <div class="cs1-row-menu" hidden>
+                                    <a href="{{ url_for('add_stock_page') }}">Add / Remove Stock</a>
+                                    <button type="button" data-row-archive data-product-id="{{ product.product_id }}" data-active="{{ product.is_active if product.is_active is defined else 1 }}">
+                                        {{ 'Archive Product' if (product.is_active if product.is_active is defined else 1) else 'Restore Product' }}
                                     </button>
                                 </div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="8" class="cs3-empty">{{ 'No archived products.' if show_archived else 'No active stock products in this branch.' }}</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="cs3-pagination" id="cs3Pagination">
-                <div><span id="cs3PageStatus">Showing 0 products</span></div>
-                <div class="cs3-pages">
-                    <button id="cs3Prev" type="button" aria-label="Previous page">‹</button>
-                    <div id="cs3PageButtons"></div>
-                    <button id="cs3Next" type="button" aria-label="Next page">›</button>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <aside class="cs3-side-column">
-        <section class="cs3-side-card cs3-decision-card">
-            <span class="cs3-icon-box"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
-            <div><strong>Accurate stock. Smarter decisions.</strong><small>Real-time visibility across branch inventory.</small></div>
-        </section>
-
-        <section class="cs3-side-card cs3-branch-card">
-            <div class="cs3-selected-branch">
-                <span class="cs3-icon-box"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M8 21v-6h8v6M8 10h.01M12 10h.01M16 10h.01"/></svg></span>
-                <div><small>Selected Branch</small><strong>{{ active_branch_short }}</strong><span>Nunes Instrumentation</span></div>
-                <button type="button" id="cs3BranchChange">Change</button>
-            </div>
-            <div class="cs3-sync-row">
-                <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span>
-                <div><small>Live Sync</small><strong>Every 5 sec</strong></div>
-                <em>Synced</em>
-            </div>
-            <div class="cs3-branch-list" id="cs3BranchList">
-                <small>Branches in this company</small>
-                <div>
-                    {% for branch in branch_overview %}
-                    <form method="post" action="{{ url_for('switch_branch') }}">
-                        <input type="hidden" name="branch" value="{{ branch.key }}">
-                        <input type="hidden" name="return_to" value="{{ url_for('current_stock') }}">
-                        <button type="submit" class="{% if branch.active %}active{% endif %}" title="{{ branch.products }} products · {{ branch.quantity }} units">
-                            {{ branch.short_name }}
-                        </button>
-                    </form>
+                            </div>
+                        </td>
+                    </tr>
                     {% endfor %}
-                </div>
+                </tbody>
+            </table>
+            <div class="cs1-empty" id="cs1Empty" hidden>No matching products found.</div>
+        </div>
+
+        <footer class="cs1-table-footer">
+            <div id="cs1PageStatus">Showing 0 products</div>
+            <div class="cs1-pagination-wrap">
+                <button id="cs1Prev" type="button" class="cs1-page-nav" aria-label="Previous page">‹</button>
+                <div id="cs1PageButtons" class="cs1-page-buttons"></div>
+                <button id="cs1Next" type="button" class="cs1-page-nav" aria-label="Next page">›</button>
+                <select id="cs1PageSize" aria-label="Rows per page">
+                    <option value="8" selected>8 per page</option>
+                    <option value="15">15 per page</option>
+                    <option value="25">25 per page</option>
+                    <option value="50">50 per page</option>
+                </select>
             </div>
-            <div class="cs3-quick-actions">
-                <small>Quick Actions</small>
-                <div>
-                    <a class="primary" href="{{ url_for('add_stock_page') }}"><span>＋</span> Add Stock</a>
-                    <a href="{{ url_for('download_master_stock') }}"><span>⇩</span> Export</a>
-                </div>
-            </div>
-            <a class="cs3-archive-link" href="{{ url_for('current_stock', show='archived') if not show_archived else url_for('current_stock') }}">
-                {{ 'Archived Products' if not show_archived else 'Active Products' }}
-            </a>
-        </section>
-    </aside>
+        </footer>
+    </section>
 </section>
 
-<div id="cs3ProductDrawer" class="cs3-drawer-backdrop" hidden>
-    <aside class="cs3-drawer" role="dialog" aria-modal="true" aria-labelledby="cs3DrawerTitle">
-        <div class="cs3-drawer-head">
-            <div><small>PRODUCT DETAILS</small><h2 id="cs3DrawerTitle">Product</h2><p id="cs3DrawerMeta">—</p></div>
-            <button type="button" id="cs3DrawerClose" aria-label="Close">×</button>
+<div id="cs1ProductDrawer" class="cs1-drawer-backdrop" hidden>
+    <aside class="cs1-drawer" role="dialog" aria-modal="true" aria-labelledby="cs1DrawerTitle">
+        <div class="cs1-drawer-head">
+            <div><small>PRODUCT DETAILS</small><h2 id="cs1DrawerTitle">Product</h2><p id="cs1DrawerMeta">—</p></div>
+            <button type="button" id="cs1DrawerClose" aria-label="Close">×</button>
         </div>
-        <div class="cs3-drawer-product">
-            <div class="cs3-drawer-image"><img id="cs3DrawerImage" alt="" hidden><span id="cs3DrawerFallback"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span></div>
-            <div><small>Available now</small><strong id="cs3DrawerQty">0 Nos</strong><span id="cs3DrawerStatus">—</span></div>
+        <div class="cs1-drawer-product">
+            <div class="cs1-drawer-image"><img id="cs1DrawerImage" alt="" hidden><span id="cs1DrawerFallback"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span></div>
+            <div><small>Available now</small><strong id="cs1DrawerQty">0 Nos</strong><span id="cs1DrawerStatus">—</span></div>
         </div>
-        <div class="cs3-drawer-grid">
-            <div><small>Product ID</small><strong id="cs3DrawerId">—</strong></div>
+        <div class="cs1-drawer-grid">
+            <div><small>Product ID</small><strong id="cs1DrawerId">—</strong></div>
             <div><small>Branch</small><strong>{{ active_branch_short }}</strong></div>
-            <div><small>Category</small><strong id="cs3DrawerCategory">—</strong></div>
-            <div><small>Rack / 3D</small><strong id="cs3DrawerRack">—</strong></div>
-            <div><small>Location</small><strong id="cs3DrawerLocation">—</strong></div>
-            <div><small>Brand / Model</small><strong id="cs3DrawerBrandModel">—</strong></div>
+            <div><small>Category</small><strong id="cs1DrawerCategory">—</strong></div>
+            <div><small>Rack / 3D</small><strong id="cs1DrawerRack">—</strong></div>
+            <div><small>Location</small><strong id="cs1DrawerLocation">—</strong></div>
+            <div><small>Brand / Model</small><strong id="cs1DrawerBrandModel">—</strong></div>
         </div>
-        <div class="cs3-drawer-actions">
+        <div class="cs1-drawer-actions">
             <a href="{{ url_for('add_stock_page') }}">Add / Remove Stock</a>
-            <button id="cs3ArchiveProduct" type="button">Archive Product</button>
+            <button id="cs1ArchiveProduct" type="button">Archive Product</button>
         </div>
     </aside>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='current_stock_option3.js', v=app_version) }}"></script>
+<script src="{{ url_for('static', filename='current_stock_option1.js', v=app_version) }}"></script>
 {% endblock %}

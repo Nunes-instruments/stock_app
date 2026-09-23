@@ -165,7 +165,7 @@ $env:NUNES_STOCK_DATA_DIR = $DataDir
 $env:NUNES_STOCK_PORT = [string]$Port
 
 Log-Line '============================================================' 'Cyan'
-Log-Line ' NUNES STOCK v3.2.8 - PERSISTENT VISIBLE INSTALLER' 'Cyan'
+Log-Line ' NUNES STOCK v3.2.12 - PERSISTENT VISIBLE INSTALLER' 'Cyan'
 Log-Line ' Port 5055 | Soft Gradient Modern | silent background tasks' 'DarkCyan'
 Log-Line '============================================================' 'Cyan'
 
@@ -227,7 +227,7 @@ try {
     Stop-Existing5055
     Log-Line 'Port 5055 is ready for the new release.' 'Green'
 
-    Step 4 10 'Installing v3.2.8 application code with rollback copy'
+    Step 4 10 'Installing v3.2.12 application code with rollback copy'
     if (Test-Path $AppDir) {
         $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
         $CodeBackup = Join-Path $InstallRoot ("code_backup_" + $stamp)
@@ -309,7 +309,7 @@ try {
 
         $rc = Invoke-NativeLogged -FilePath 'git.exe' -Arguments @('diff','--cached','--quiet') -Quiet
         if ($rc -eq 1) {
-            $rc = Invoke-NativeLogged -FilePath 'git.exe' -Arguments @('commit','-m','NUNES Stock v3.2.8 installed snapshot')
+            $rc = Invoke-NativeLogged -FilePath 'git.exe' -Arguments @('commit','-m','NUNES Stock v3.2.12 installed snapshot')
             if ($rc -ne 0) { throw 'Unable to create local installed-code snapshot.' }
         }
         elseif ($rc -gt 1) {
@@ -318,7 +318,7 @@ try {
         else {
             $rc = Invoke-NativeLogged -FilePath 'git.exe' -Arguments @('rev-parse','--verify','HEAD') -Quiet
             if ($rc -ne 0 -or -not (($script:NativeOutput -join '').Trim())) {
-                $rc = Invoke-NativeLogged -FilePath 'git.exe' -Arguments @('commit','--allow-empty','-m','NUNES Stock v3.2.8 installed snapshot')
+                $rc = Invoke-NativeLogged -FilePath 'git.exe' -Arguments @('commit','--allow-empty','-m','NUNES Stock v3.2.12 installed snapshot')
                 if ($rc -ne 0) { throw 'Unable to create initial local installed-code snapshot.' }
             }
         }
@@ -368,7 +368,7 @@ try {
     if ($rc -ne 0) { throw 'Unable to create the silent GitHub updater task.' }
     Log-Line 'Scheduled background tasks use wscript.exe hidden mode; no recurring terminal should appear.' 'Green'
 
-    Step 9 10 'Starting v3.2.8 main server on port 5055'
+    Step 9 10 'Starting v3.2.12 main server on port 5055'
     $health = Start-InstalledServer
     Log-Line ("Health check PASS: version $($health.version), port 5055") 'Green'
 
@@ -382,7 +382,7 @@ try {
     }
 
     Log-Line '============================================================' 'Green'
-    Log-Line ' NUNES STOCK v3.2.8 - INSTALLATION SUCCESS' 'Green'
+    Log-Line ' NUNES STOCK v3.2.12 - INSTALLATION SUCCESS' 'Green'
     Log-Line '============================================================' 'Green'
     Log-Line 'Owner URL : http://127.0.0.1:5055' 'Green'
     if ($ip) { Log-Line ("Staff URL : http://${ip}:5055") 'Green' }
@@ -392,7 +392,7 @@ try {
     Log-Line 'Installer : will return to the persistent CMD window; it will not auto-close.' 'Green'
 
     # Code backup is deliberately kept as a rollback snapshot after a successful update.
-    Start-Process explorer.exe 'http://127.0.0.1:5055/?release=3.2.8'
+    Start-Process explorer.exe 'http://127.0.0.1:5055/?release=3.2.12'
     exit 0
 }
 catch {
