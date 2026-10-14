@@ -717,24 +717,78 @@ def dashboard():
     cursor = conn.cursor()
 
     try:
-
         cursor.execute(
             """
             SELECT COUNT(*) AS total
             FROM import_history
             """
         )
-
         row = cursor.fetchone()
+        total_imports = row["total"] if row else 0
 
-        total_imports = (
-            row["total"]
-            if row
-            else 0
-        )
+        # Category distribution for visual analytics
+        cat_rows = cursor.execute(
+            """
+            SELECT category, COUNT(*) as count, COALESCE(SUM(current_quantity), 0) as quantity
+            FROM products
+            WHERE COALESCE(is_active, 1) = 1
+            GROUP BY category
+            ORDER BY quantity DESC
+            """
+        ).fetchall()
+        category_labels = [r["category"] for r in cat_rows]
+        category_quantities = [clean_quantity(r["quantity"]) for r in cat_rows]
+
+        # Low stock / critical attention items (<= 2 quantity)
+        low_stock_rows = cursor.execute(
+            """
+            SELECT product_id, product_name, category, brand, model, current_quantity, unit, location
+            FROM products
+            WHERE COALESCE(is_active, 1) = 1 AND current_quantity <= 2
+            ORDER BY current_quantity ASC, product_name ASC
+            LIMIT 8
+            """
+        ).fetchall()
+        low_stock_items = [dict(r) for r in low_stock_rows]
+        low_stock_count_row = cursor.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM products
+            WHERE COALESCE(is_active, 1) = 1 AND current_quantity <= 2
+            """
+        ).fetchone()
+        total_low_stock = int(low_stock_count_row["count"] or 0) if low_stock_count_row else 0
+
+        # 7-Day movement trends for Chart.js
+        trend_rows = cursor.execute(
+            """
+            SELECT
+                stock_date,
+                COALESCE(SUM(CASE WHEN new_quantity > previous_quantity THEN quantity_added ELSE 0 END), 0) AS inward,
+                COALESCE(SUM(CASE WHEN new_quantity < previous_quantity THEN quantity_added ELSE 0 END), 0) AS outward
+            FROM stock_entries
+            GROUP BY stock_date
+            ORDER BY stock_date DESC
+            LIMIT 7
+            """
+        ).fetchall()
+        trend_rows = list(reversed(trend_rows))
+        trend_labels = [r["stock_date"] for r in trend_rows]
+        trend_inward = [clean_quantity(r["inward"]) for r in trend_rows]
+        trend_outward = [clean_quantity(r["outward"]) for r in trend_rows]
+
+        # Compact products list for quick search and instant movement modal
+        quick_rows = cursor.execute(
+            """
+            SELECT product_id, product_name, category, current_quantity, unit, location
+            FROM products
+            WHERE COALESCE(is_active, 1) = 1
+            ORDER BY product_name ASC
+            """
+        ).fetchall()
+        all_products_quick = [dict(r) for r in quick_rows]
 
     finally:
-
         conn.close()
 
     branch_overview = []
@@ -783,6 +837,14 @@ def dashboard():
         total_imports=total_imports,
         branch_overview=branch_overview,
         inventory_revision=get_inventory_revision(),
+        category_labels=category_labels,
+        category_quantities=category_quantities,
+        low_stock_items=low_stock_items,
+        total_low_stock=total_low_stock,
+        trend_labels=trend_labels,
+        trend_inward=trend_inward,
+        trend_outward=trend_outward,
+        all_products_quick=all_products_quick,
     )
 
 
