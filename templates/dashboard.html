@@ -1,304 +1,511 @@
 {% extends "base.html" %}
 
-{% block title %}Executive Dashboard{% endblock %}
+{% block title %}Stock Dashboard{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='soft_gradient_2026.css', v=app_version) }}">
+<style>
+/* =============================================================
+   CLEAN & PROFESSIONAL DASHBOARD
+   Minimalist, high-readability, enterprise design
+   ============================================================= */
 
-<div class="sg-dashboard">
-    <!-- ==========================================
-         TOP BAR: GREETING & SEARCH & QUICK ACTIONS
-         ========================================== -->
-    <header class="sg-executive-header">
-        <div class="sg-welcome-col">
-            <div class="sg-greeting">
-                <span class="sg-greeting-icon">☀</span>
-                <span data-sg-greeting>Welcome Back</span>
-                <span class="sg-live-badge"><span class="sg-pulse-dot"></span> Live Fleet</span>
+.pd-dashboard {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 24px 20px 48px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e293b;
+}
+
+/* Header */
+.pd-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 24px;
+}
+
+.pd-header-title h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+
+.pd-header-title p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: #64748b;
+}
+
+.pd-branch-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-top: 6px;
+}
+
+.pd-live-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+}
+
+.pd-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Buttons */
+.pd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all .15s ease;
+}
+
+.pd-btn svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    fill: none;
+}
+
+.pd-btn-primary {
+    background: #0284c7;
+    color: #ffffff;
+}
+.pd-btn-primary:hover {
+    background: #0369a1;
+}
+
+.pd-btn-secondary {
+    background: #ffffff;
+    color: #334155;
+    border-color: #cbd5e1;
+}
+.pd-btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+/* KPI Cards */
+.pd-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.pd-kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.pd-kpi-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.pd-kpi-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+    margin: 10px 0 6px;
+    letter-spacing: -0.02em;
+}
+
+.pd-kpi-desc {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* Main 2-Column Grid */
+.pd-main-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+/* Card Container */
+.pd-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.pd-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+.pd-card-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.pd-card-header p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.pd-card-header a {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0284c7;
+    text-decoration: none;
+}
+.pd-card-header a:hover {
+    text-decoration: underline;
+}
+
+/* Table */
+.pd-table-wrap {
+    overflow-x: auto;
+}
+
+.pd-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.pd-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 12px 18px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.pd-table td {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.pd-table tr:hover td {
+    background: #f8fafc;
+}
+
+.pd-table tr:last-child td {
+    border-bottom: none;
+}
+
+.pd-product-name {
+    font-weight: 600;
+    color: #0f172a;
+    display: block;
+}
+
+.pd-product-id {
+    font-size: 11px;
+    color: #64748b;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.pd-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pd-badge-inward {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.pd-badge-outward {
+    background: #fff1f2;
+    color: #be123c;
+    border: 1px solid #fecdd3;
+}
+
+.pd-change-plus {
+    font-weight: 700;
+    color: #059669;
+}
+
+.pd-change-minus {
+    font-weight: 700;
+    color: #dc2626;
+}
+
+/* Branch Cards */
+.pd-branches-list {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pd-branch-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pd-branch-item.active {
+    border-color: #0284c7;
+    background: #f0f9ff;
+}
+
+.pd-branch-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pd-branch-head strong {
+    font-size: 14px;
+    color: #0f172a;
+}
+
+.pd-branch-active-pill {
+    font-size: 10px;
+    font-weight: 700;
+    background: #0284c7;
+    color: #ffffff;
+    padding: 2px 7px;
+    border-radius: 4px;
+}
+
+.pd-branch-stats {
+    display: flex;
+    gap: 20px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.pd-branch-stats strong {
+    color: #0f172a;
+    font-size: 14px;
+}
+
+.pd-branch-btn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+}
+.pd-branch-btn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+/* Quick Nav Cards */
+.pd-nav-grid {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.pd-nav-item {
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    text-decoration: none;
+    background: #ffffff;
+    transition: all .14s ease;
+}
+
+.pd-nav-item:hover {
+    border-color: #0284c7;
+    background: #f8fafc;
+    transform: translateY(-1px);
+}
+
+.pd-nav-item strong {
+    font-size: 13px;
+    color: #0f172a;
+}
+
+.pd-nav-item small {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 3px;
+}
+
+/* System Status */
+.pd-system-info {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.pd-sys-row {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.pd-sys-row:last-child {
+    border-bottom: none;
+}
+
+.pd-sys-row span {
+    color: #64748b;
+}
+
+.pd-sys-row strong {
+    color: #0f172a;
+}
+
+.pd-sys-online {
+    color: #10b981 !important;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .pd-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pd-main-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+    .pd-header { flex-direction: column; align-items: flex-start; }
+    .pd-header-actions { width: 100%; flex-wrap: wrap; }
+    .pd-kpi-grid { grid-template-columns: 1fr; }
+    .pd-nav-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="pd-dashboard">
+    <!-- Header -->
+    <header class="pd-header">
+        <div class="pd-header-title">
+            <h1>Stock Overview</h1>
+            <p>Nunes Instruments Inventory System</p>
+            <div class="pd-branch-badge">
+                <span class="pd-live-indicator"></span>
+                <span>Branch: <strong>{{ active_branch_name }}</strong></span>
             </div>
-            <div class="sg-greeting-copy">Central Inventory Command · <strong>{{ active_branch_name }}</strong></div>
         </div>
 
-        <div class="sg-search-bar-wrap">
-            <div class="sg-search-box">
-                <svg class="sg-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                <input type="text" id="dash-search-input" placeholder="Search instrument, model, or ID..." autocomplete="off">
-                <kbd class="sg-search-kbd">⌘K</kbd>
-            </div>
-            <div id="dash-search-results" class="sg-search-dropdown" style="display: none;"></div>
-        </div>
-
-        <div class="sg-top-actions">
-            <button type="button" class="sg-btn sg-btn-inward" onclick="openQuickMoveModal('inward')">
-                <svg viewBox="0 0 24 24"><path d="M12 4v13"/><path d="m7 12 5 5 5-5"/><path d="M5 20h14"/></svg>
-                <span>+ Inward</span>
-            </button>
-            <button type="button" class="sg-btn sg-btn-outward" onclick="openQuickMoveModal('outward')">
-                <svg viewBox="0 0 24 24"><path d="M12 20V7"/><path d="m7 12 5-5 5 5"/><path d="M5 4h14"/></svg>
-                <span>− Outward</span>
-            </button>
-            <button type="button" class="sg-btn sg-btn-outline" onclick="exportDashboardSummaryCSV()">
+        <div class="pd-header-actions">
+            <a href="{{ url_for('current_stock') }}" class="pd-btn pd-btn-secondary">
+                <svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+                Current Stock
+            </a>
+            <a href="{{ url_for('add_stock_page') }}" class="pd-btn pd-btn-primary">
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                Stock Movement
+            </a>
+            <a href="{{ url_for('import_excel') }}" class="pd-btn pd-btn-secondary">
                 <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                <span>Export CSV</span>
-            </button>
-            <div class="sg-clock-pill">
-                <span data-sg-date>Today</span>
-                <strong data-sg-time>--:--</strong>
-            </div>
+                Import Excel
+            </a>
         </div>
     </header>
 
-    <!-- ==========================================
-         HERO STATUS BANNER
-         ========================================== -->
-    <section class="sg-hero">
-        <div class="sg-hero-copy">
-            <div class="sg-eyebrow">Enterprise Precision Instruments</div>
-            <h1>Inventory Control Center</h1>
-            <p>Real-time telemetry and warehouse stock tracking for <strong>{{ active_branch_name }}</strong>. All actions synchronize instantly across cloud nodes.</p>
-        </div>
-        <div class="sg-hero-note">
-            NUNES Instruments<br>Precision & Quality Since Inception
-            <strong>System Revision · {{ inventory_revision }} · Online</strong>
-        </div>
-    </section>
-
-    <!-- ==========================================
-         5 EXECUTIVE KPI CARDS
-         ========================================== -->
-    <section class="sg-kpis" aria-label="Inventory summary">
-        <article class="sg-kpi blue">
-            <div class="sg-kpi-head">
-                <span class="sg-kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M12 12 4.3 7.7M12 12l7.7-4.3M12 12v9"/></svg></span>
-                <div>
-                    <div class="sg-kpi-label">Active Instruments</div>
-                    <div class="sg-kpi-value">{{ summary.total_products | default(0) }}</div>
-                </div>
-            </div>
-            <div class="sg-kpi-foot"><span>{{ category_labels|length }} Active Categories</span><span class="sg-trend-up">● Verified</span></div>
-        </article>
-
-        <article class="sg-kpi green">
-            <div class="sg-kpi-head">
-                <span class="sg-kpi-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v5c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 11v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></svg></span>
-                <div>
-                    <div class="sg-kpi-label">Available Units</div>
-                    <div class="sg-kpi-value">{{ summary.total_stock_quantity | default(0) }}</div>
-                </div>
-            </div>
-            <div class="sg-kpi-foot"><span>Live Warehouse Reserve</span><span class="sg-trend-up">In Stock</span></div>
-        </article>
-
-        <article class="sg-kpi teal">
-            <div class="sg-kpi-head">
-                <span class="sg-kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 4v13"/><path d="m7 12 5 5 5-5"/><path d="M5 20h14"/></svg></span>
-                <div>
-                    <div class="sg-kpi-label">Inward Today</div>
-                    <div class="sg-kpi-value">+{{ summary.stock_added_today | default(0) }}</div>
-                </div>
-            </div>
-            <div class="sg-kpi-foot"><span>Received from suppliers</span><span>Today</span></div>
-        </article>
-
-        <article class="sg-kpi purple">
-            <div class="sg-kpi-head">
-                <span class="sg-kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 20V7"/><path d="m7 12 5-5 5 5"/><path d="M5 4h14"/></svg></span>
-                <div>
-                    <div class="sg-kpi-label">Outward Today</div>
-                    <div class="sg-kpi-value">−{{ summary.stock_outward_today | default(0) }}</div>
-                </div>
-            </div>
-            <div class="sg-kpi-foot"><span>Dispatched to clients</span><span>Today</span></div>
-        </article>
-
-        <article class="sg-kpi amber {% if total_low_stock > 0 %}sg-kpi-alert{% endif %}">
-            <div class="sg-kpi-head">
-                <span class="sg-kpi-icon"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-                <div>
-                    <div class="sg-kpi-label">Low Stock Alert</div>
-                    <div class="sg-kpi-value">{{ total_low_stock }}</div>
-                </div>
-            </div>
-            <div class="sg-kpi-foot">
-                {% if total_low_stock > 0 %}
-                <span class="sg-alert-text">⚠️ {{ total_low_stock }} items ≤ 2 units</span>
-                <span class="sg-badge-warn">Action Needed</span>
-                {% else %}
-                <span>All stock optimal</span><span class="sg-trend-up">Normal</span>
-                {% endif %}
-            </div>
-        </article>
-    </section>
-
-    <!-- ==========================================
-         ANALYTICS & CHARTS SECTION
-         ========================================== -->
-    <section class="sg-charts-grid">
-        <!-- Chart 1: Category Distribution -->
-        <div class="sg-chart-card">
-            <div class="sg-card-header">
-                <div>
-                    <h3>Inventory by Category</h3>
-                    <p>Unit distribution across specialized instrument categories</p>
-                </div>
-                <span class="sg-chip">{{ category_labels|length }} Categories</span>
-            </div>
-            <div class="sg-chart-container">
-                <canvas id="categoryDonutChart"></canvas>
-            </div>
-            <div class="sg-chart-legend" id="categoryLegend"></div>
+    <!-- 4 Key KPI Cards -->
+    <section class="pd-kpi-grid">
+        <div class="pd-kpi-card">
+            <div class="pd-kpi-label">Total Products</div>
+            <div class="pd-kpi-value">{{ summary.total_products | default(0) }}</div>
+            <div class="pd-kpi-desc">Active items in catalog</div>
         </div>
 
-        <!-- Chart 2: 7-Day Inward/Outward Activity -->
-        <div class="sg-chart-card">
-            <div class="sg-card-header">
-                <div>
-                    <h3>Movement Dynamics (Last 7 Days)</h3>
-                    <p>Daily volume comparison between incoming stock and dispatches</p>
-                </div>
-                <div class="sg-legend-pills">
-                    <span class="sg-legend-pill in">● Inward</span>
-                    <span class="sg-legend-pill out">● Outward</span>
-                </div>
-            </div>
-            <div class="sg-chart-container">
-                <canvas id="movementTrendChart"></canvas>
-            </div>
+        <div class="pd-kpi-card">
+            <div class="pd-kpi-label">Available Stock Quantity</div>
+            <div class="pd-kpi-value">{{ summary.total_stock_quantity | default(0) }}</div>
+            <div class="pd-kpi-desc">Total units in branch warehouse</div>
+        </div>
+
+        <div class="pd-kpi-card">
+            <div class="pd-kpi-label">Today's Inward</div>
+            <div class="pd-kpi-value" style="color: #059669;">+{{ summary.stock_added_today | default(0) }}</div>
+            <div class="pd-kpi-desc">Stock added today</div>
+        </div>
+
+        <div class="pd-kpi-card">
+            <div class="pd-kpi-label">Today's Outward</div>
+            <div class="pd-kpi-value" style="color: #dc2626;">−{{ summary.stock_outward_today | default(0) }}</div>
+            <div class="pd-kpi-desc">Stock dispatched today</div>
         </div>
     </section>
 
-    <!-- ==========================================
-         CRITICAL & LOW STOCK ALERTS CENTER
-         ========================================== -->
-    {% if low_stock_items %}
-    <section class="sg-panel sg-low-stock-panel">
-        <div class="sg-panel-head">
-            <div class="sg-panel-title">
-                <span class="sg-panel-icon amber"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+    <!-- Main Content 2-Column Split -->
+    <div class="pd-main-grid">
+        <!-- Left: Recent Movement Table -->
+        <div class="pd-card">
+            <div class="pd-card-header">
                 <div>
-                    <h2>Low Stock & Reorder Attention</h2>
-                    <p>Instruments requiring urgent procurement or inward transfer to avoid stockout.</p>
+                    <h2>Recent Stock Movements</h2>
+                    <p>Latest inward and outward inventory transactions</p>
                 </div>
+                <a href="{{ url_for('import_history') }}">View Complete History →</a>
             </div>
-            <span class="sg-badge-warn">{{ total_low_stock }} Items Critical</span>
-        </div>
-        <div class="sg-low-stock-grid">
-            {% for item in low_stock_items %}
-            <div class="sg-low-stock-item">
-                <div class="sg-lsi-main">
-                    <div class="sg-lsi-id">{{ item.product_id }}</div>
-                    <div class="sg-lsi-name">{{ item.product_name }}</div>
-                    <div class="sg-lsi-cat">{{ item.category }} {% if item.location %}· <span class="sg-lsi-loc">{{ item.location }}</span>{% endif %}</div>
-                </div>
-                <div class="sg-lsi-action">
-                    <span class="sg-stock-pill {% if item.current_quantity <= 1 %}critical{% else %}warning{% endif %}">
-                        {{ item.current_quantity }} {{ item.unit | default('Nos') }} Left
-                    </span>
-                    <button type="button" class="sg-restock-btn" onclick="openQuickMoveModal('inward', '{{ item.product_id }}')">
-                        + Restock
-                    </button>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </section>
-    {% endif %}
 
-    <!-- ==========================================
-         COMPANY / BRANCH FLEET OVERVIEW
-         ========================================== -->
-    <section class="sg-panel">
-        <div class="sg-panel-head">
-            <div class="sg-panel-title">
-                <span class="sg-panel-icon"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M8 21v-6h8v6M8 10h.01M12 10h.01M16 10h.01"/></svg></span>
-                <div>
-                    <h2>Multi-Branch Fleet Summary</h2>
-                    <p>Independent inventory ledgers synchronized on central database cluster.</p>
-                </div>
-            </div>
-            <span class="sg-link">All 3 Branches Active</span>
-        </div>
-        <div class="sg-branches">
-            {% for branch in branch_overview %}
-            <article class="sg-branch {% if branch.active %}active{% endif %}">
-                <div class="sg-branch-head">
-                    <div class="sg-branch-name">
-                        <span class="sg-branch-icon"><svg viewBox="0 0 24 24"><path d="M5 21V5h10v16M15 10h4v11"/><path d="M8 9h4M8 13h4M8 17h4M18 14h.01M18 18h.01"/></svg></span>
-                        <h3>{{ branch.name }}</h3>
-                    </div>
-                    {% if branch.active %}<span class="sg-chip">ACTIVE NOW</span>{% else %}<span class="sg-chip muted">ONLINE</span>{% endif %}
-                </div>
-                <div class="sg-branch-metrics">
-                    <div class="sg-branch-metric"><small>Products</small><strong>{{ branch.products }}</strong></div>
-                    <div class="sg-branch-metric"><small>Total Units</small><strong>{{ branch.quantity }}</strong></div>
-                    <div class="sg-branch-metric"><small>Inward Today</small><strong>{{ branch.inward }}</strong></div>
-                    <div class="sg-branch-metric"><small>Outward Today</small><strong>{{ branch.outward }}</strong></div>
-                </div>
-                <form method="post" action="{{ url_for('switch_branch') }}">
-                    <input type="hidden" name="branch" value="{{ branch.key }}">
-                    <input type="hidden" name="return_to" value="{{ request.path }}">
-                    <button class="sg-branch-button" type="submit">{% if branch.active %}Current Branch ✓{% else %}Switch to this Branch →{% endif %}</button>
-                </form>
-            </article>
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- ==========================================
-         QUICK NAVIGATION ACTIONS
-         ========================================== -->
-    <section class="sg-actions" aria-label="Quick actions">
-        <a class="sg-action" href="{{ url_for('add_stock_page') }}">
-            <span class="sg-action-icon"><svg viewBox="0 0 24 24"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg></span>
-            <span><strong>Stock Movement</strong><small>Full ledger entry with invoice, notes and audit.</small></span>
-            <span class="sg-action-chevron">›</span>
-        </a>
-        <a class="sg-action green" href="{{ url_for('current_stock') }}">
-            <span class="sg-action-icon"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span>
-            <span><strong>Current Stock</strong><small>Search catalog, filter locations, export product list.</small></span>
-            <span class="sg-action-chevron">›</span>
-        </a>
-        <a class="sg-action purple" href="{{ url_for('storage_view') }}">
-            <span class="sg-action-icon"><svg viewBox="0 0 24 24"><path d="M4 20V9l5 3V9l5 3V6h6v14z"/><path d="M7 16h2M12 16h2M17 16h2"/></svg></span>
-            <span><strong>Rack & Shelf 3D</strong><small>Interactive physical rack and spatial warehouse view.</small></span>
-            <span class="sg-action-chevron">›</span>
-        </a>
-        <a class="sg-action orange" href="{{ url_for('import_excel') }}">
-            <span class="sg-action-icon"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span>
-            <span><strong>Excel Import</strong><small>Bulk import stock spreadsheet without data loss.</small></span>
-            <span class="sg-action-chevron">›</span>
-        </a>
-    </section>
-
-    <!-- ==========================================
-         RECENT ACTIVITY LEDGER & SYSTEM STATUS
-         ========================================== -->
-    <section class="sg-lower">
-        <div class="sg-panel">
-            <div class="sg-panel-head">
-                <div class="sg-panel-title">
-                    <span class="sg-panel-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
-                    <div>
-                        <h2>Recent Stock Movements</h2>
-                        <p>Latest verified inward receipts and outward dispatches</p>
-                    </div>
-                </div>
-                <div class="sg-table-controls">
-                    <div class="sg-tabs" role="tablist">
-                        <button type="button" class="sg-tab active" data-filter="all">All</button>
-                        <button type="button" class="sg-tab" data-filter="inward">Inward</button>
-                        <button type="button" class="sg-tab" data-filter="outward">Outward</button>
-                    </div>
-                    <a class="sg-link" href="{{ url_for('import_history') }}">View Complete Ledger →</a>
-                </div>
-            </div>
-            <div class="sg-table-wrap">
-                <table class="sg-table" id="recentMovesTable">
+            <div class="pd-table-wrap">
+                <table class="pd-table">
                     <thead>
                         <tr>
-                            <th>Instrument / Model</th>
-                            <th>Transaction</th>
-                            <th>Change</th>
+                            <th>Product</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
                             <th>Balance</th>
                             <th>Date</th>
                         </tr>
@@ -308,144 +515,134 @@
                         {% for entry in recent_entries %}
                         {% set current = entry.new_quantity | default(0) %}
                         {% set move_type = entry.movement_type | default('inward') | lower %}
-                        <tr data-type="{{ move_type }}">
+                        <tr>
                             <td>
-                                <div class="sg-product">
-                                    <strong>{{ entry.product_name | default('Instrument Product', true) }}</strong>
-                                    <small>{{ entry.product_id | default('-', true) }}</small>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="sg-move {{ move_type }}">{{ 'OUTWARD' if move_type == 'outward' else 'INWARD' }}</span>
+                                <span class="pd-product-name">{{ entry.product_name | default('Instrument', true) }}</span>
+                                <span class="pd-product-id">{{ entry.product_id | default('-', true) }}</span>
                             </td>
                             <td>
                                 {% if move_type == 'outward' %}
-                                <span class="sg-minus">−{{ entry.quantity_added | default(0) }}</span>
+                                <span class="pd-badge pd-badge-outward">Outward</span>
                                 {% else %}
-                                <span class="sg-plus">+{{ entry.quantity_added | default(0) }}</span>
+                                <span class="pd-badge pd-badge-inward">Inward</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if move_type == 'outward' %}
+                                <span class="pd-change-minus">−{{ entry.quantity_added | default(0) }}</span>
+                                {% else %}
+                                <span class="pd-change-plus">+{{ entry.quantity_added | default(0) }}</span>
                                 {% endif %}
                             </td>
                             <td><strong>{{ current }}</strong></td>
-                            <td>{{ entry.stock_date | default('-', true) }}</td>
+                            <td style="color: #64748b;">{{ entry.stock_date | default('-', true) }}</td>
                         </tr>
                         {% endfor %}
                     {% else %}
-                        <tr><td colspan="5" class="sg-empty-row">No stock movements recorded yet.</td></tr>
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #94a3b8; padding: 32px;">
+                                No stock movements recorded yet.
+                            </td>
+                        </tr>
                     {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <aside>
-            <section class="sg-panel">
-                <div class="sg-panel-head">
-                    <div class="sg-panel-title">
-                        <span class="sg-panel-icon green"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></span>
-                        <div><h2>Health & Cluster</h2><p>Core system status</p></div>
+        <!-- Right: Branch Overview & Quick Links -->
+        <div>
+            <!-- Branch Cards -->
+            <div class="pd-card">
+                <div class="pd-card-header">
+                    <div>
+                        <h2>Branches Overview</h2>
+                        <p>Stock per company location</p>
                     </div>
                 </div>
-                <div class="sg-status-body">
-                    <div class="sg-status-row"><span>Cloud Infrastructure</span><strong class="good">● Vercel Serverless</strong></div>
-                    <div class="sg-status-row"><span>Active Branch</span><strong>{{ active_branch_name }}</strong></div>
-                    <div class="sg-status-row"><span>Sync Heartbeat</span><strong class="good">↻ 5s Polling</strong></div>
-                    <div class="sg-status-row"><span>Excel Batches</span><strong>{{ total_imports | default(0) }} Completed</strong></div>
-                    <div class="sg-status-row"><span>App Engine</span><strong>v{{ app_version }} Unified</strong></div>
-                    <div class="sg-status-row"><span>Database Storage</span><strong>SQLite WAL (Zero Loss)</strong></div>
-                    <div class="sg-health"><strong>✓ All Systems Optimal</strong><small>Zero errors reported. Fleet operational.</small></div>
-                    <div class="sg-promo">
-                        <strong>NUNES Instruments</strong>
-                        <small>Precision Instruments · Safer Tomorrow</small>
+
+                <div class="pd-branches-list">
+                    {% for branch in branch_overview %}
+                    <div class="pd-branch-item {% if branch.active %}active{% endif %}">
+                        <div class="pd-branch-head">
+                            <strong>{{ branch.name }}</strong>
+                            {% if branch.active %}
+                            <span class="pd-branch-active-pill">ACTIVE</span>
+                            {% endif %}
+                        </div>
+                        <div class="pd-branch-stats">
+                            <div>Products: <strong>{{ branch.products }}</strong></div>
+                            <div>Total Units: <strong>{{ branch.quantity }}</strong></div>
+                        </div>
+                        {% if not branch.active %}
+                        <form method="post" action="{{ url_for('switch_branch') }}">
+                            <input type="hidden" name="branch" value="{{ branch.key }}">
+                            <input type="hidden" name="return_to" value="{{ request.path }}">
+                            <button class="pd-branch-btn" type="submit">Switch to this branch</button>
+                        </form>
+                        {% endif %}
                     </div>
-                </div>
-            </section>
-        </aside>
-    </section>
-</div>
-
-<!-- ==========================================
-     QUICK STOCK MOVEMENT MODAL
-     ========================================== -->
-<div id="quickMoveModal" class="sg-modal-backdrop" style="display: none;">
-    <div class="sg-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <div class="sg-modal-head">
-            <div>
-                <h3 id="modalTitle">Quick Stock Movement</h3>
-                <p>Record instant inward or outward adjustment</p>
-            </div>
-            <button type="button" class="sg-modal-close" onclick="closeQuickMoveModal()">✕</button>
-        </div>
-
-        <form id="quickMoveForm" onsubmit="handleQuickMoveSubmit(event)">
-            <div class="sg-form-group">
-                <label>Movement Type</label>
-                <div class="sg-toggle-group">
-                    <button type="button" class="sg-toggle-btn active" id="btnTypeInward" onclick="setQuickMoveType('inward')">
-                        📥 Inward (Add Stock)
-                    </button>
-                    <button type="button" class="sg-toggle-btn" id="btnTypeOutward" onclick="setQuickMoveType('outward')">
-                        📤 Outward (Dispatch)
-                    </button>
-                </div>
-                <input type="hidden" id="qm_movement_type" value="inward">
-            </div>
-
-            <div class="sg-form-group">
-                <label for="qm_product_select">Select Instrument</label>
-                <select id="qm_product_select" required class="sg-select">
-                    <option value="">-- Choose an instrument --</option>
-                    {% for p in all_products_quick %}
-                    <option value="{{ p.product_id }}" data-name="{{ p.product_name }}" data-qty="{{ p.current_quantity }}" data-unit="{{ p.unit }}">
-                        {{ p.product_name }} ({{ p.product_id }}) — In Stock: {{ p.current_quantity }} {{ p.unit }}
-                    </option>
                     {% endfor %}
-                </select>
-            </div>
-
-            <div class="sg-form-group">
-                <label for="qm_quantity">Quantity</label>
-                <div class="sg-qty-wrap">
-                    <button type="button" class="sg-qty-stepper" onclick="adjustQuickQty(-1)">−</button>
-                    <input type="number" id="qm_quantity" value="1" min="0.01" step="any" required class="sg-input-qty">
-                    <button type="button" class="sg-qty-stepper" onclick="adjustQuickQty(1)">+</button>
-                    <div class="sg-quick-chips">
-                        <button type="button" class="sg-chip-btn" onclick="setQuickQty(5)">+5</button>
-                        <button type="button" class="sg-chip-btn" onclick="setQuickQty(10)">+10</button>
-                        <button type="button" class="sg-chip-btn" onclick="setQuickQty(25)">+25</button>
-                    </div>
                 </div>
             </div>
 
-            <div class="sg-form-group">
-                <label for="qm_notes">Reference / Notes (Optional)</label>
-                <input type="text" id="qm_notes" placeholder="e.g. PO-8842, Client Dispatch, Calibration" class="sg-input">
+            <!-- Quick Navigation -->
+            <div class="pd-card">
+                <div class="pd-card-header">
+                    <div>
+                        <h2>Quick Navigation</h2>
+                        <p>Frequently accessed tools</p>
+                    </div>
+                </div>
+
+                <div class="pd-nav-grid">
+                    <a href="{{ url_for('current_stock') }}" class="pd-nav-item">
+                        <strong>📦 Current Stock</strong>
+                        <small>Search full catalog</small>
+                    </a>
+                    <a href="{{ url_for('add_stock_page') }}" class="pd-nav-item">
+                        <strong>🔄 Movement</strong>
+                        <small>Inward / Outward entry</small>
+                    </a>
+                    <a href="{{ url_for('storage_view') }}" class="pd-nav-item">
+                        <strong>🏗️ 3D Rack & Shelf</strong>
+                        <small>Storage visualization</small>
+                    </a>
+                    <a href="{{ url_for('import_excel') }}" class="pd-nav-item">
+                        <strong>📥 Excel Import</strong>
+                        <small>Upload master sheets</small>
+                    </a>
+                </div>
             </div>
 
-            <div id="qm_feedback" class="sg-feedback" style="display: none;"></div>
+            <!-- System Info -->
+            <div class="pd-card">
+                <div class="pd-card-header">
+                    <div>
+                        <h2>System Information</h2>
+                    </div>
+                </div>
 
-            <div class="sg-modal-foot">
-                <button type="button" class="sg-btn sg-btn-secondary" onclick="closeQuickMoveModal()">Cancel</button>
-                <button type="submit" class="sg-btn sg-btn-primary" id="qm_submit_btn">Confirm Movement</button>
+                <div class="pd-system-info">
+                    <div class="pd-sys-row">
+                        <span>Main Server</span>
+                        <strong class="pd-sys-online">● Online</strong>
+                    </div>
+                    <div class="pd-sys-row">
+                        <span>Application Version</span>
+                        <strong>v{{ app_version }}</strong>
+                    </div>
+                    <div class="pd-sys-row">
+                        <span>Database Sync</span>
+                        <strong>Live (Revision {{ inventory_revision }})</strong>
+                    </div>
+                    <div class="pd-sys-row">
+                        <span>Completed Imports</span>
+                        <strong>{{ total_imports | default(0) }}</strong>
+                    </div>
+                </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
-
-<!-- Raw data for JS -->
-<script>
-    window.DASH_DATA = {
-        categoryLabels: {{ category_labels | tojson }},
-        categoryQuantities: {{ category_quantities | tojson }},
-        trendLabels: {{ trend_labels | tojson }},
-        trendInward: {{ trend_inward | tojson }},
-        trendOutward: {{ trend_outward | tojson }},
-        products: {{ all_products_quick | tojson }}
-    };
-</script>
-{% endblock %}
-
-{% block scripts %}
-<!-- Chart.js from CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="{{ url_for('static', filename='dashboard_soft_gradient.js', v=app_version) }}"></script>
 {% endblock %}
