@@ -73,6 +73,10 @@ def migrate_legacy_data_once() -> list[str]:
     legacy_db_names = ("stock.db", "stock_gandhipuram.db", "stock_gobalapuram.db")
     for name in legacy_db_names:
         source = APP_DIR / name
+        if not source.exists():
+            seed_source = APP_DIR / "seed_data" / name
+            if seed_source.exists():
+                source = seed_source
         target = DB_DIR / name
         if source.exists() and not target.exists():
             _copy_if_missing(source, target)

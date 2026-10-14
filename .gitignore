@@ -3,6 +3,7 @@ data/
 *.db
 *.db-shm
 *.db-wal
+!seed_data/*.db
 Master_Stock*.xlsx
 uploads/
 processed/
