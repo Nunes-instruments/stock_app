@@ -17,10 +17,13 @@ def _default_data_root() -> Path:
     override = os.environ.get("NUNES_STOCK_DATA_DIR", "").strip()
     if override:
         return Path(override).expanduser().resolve()
+    if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        return Path("/tmp/nunes_stock_data")
     if os.name == "nt":
         program_data = os.environ.get("PROGRAMDATA", r"C:\ProgramData")
         return Path(program_data) / "NunesStock" / "data"
     return APP_DIR / "data"
+
 
 
 DATA_DIR = _default_data_root()

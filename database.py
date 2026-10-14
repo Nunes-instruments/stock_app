@@ -94,7 +94,10 @@ def get_connection(branch_key=None):
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.execute("PRAGMA busy_timeout = 15000;")
-    conn.execute("PRAGMA journal_mode = WAL;")
+    try:
+        conn.execute("PRAGMA journal_mode = WAL;")
+    except sqlite3.OperationalError:
+        conn.execute("PRAGMA journal_mode = DELETE;")
     conn.execute("PRAGMA synchronous = NORMAL;")
     return conn
 
@@ -340,6 +343,41 @@ def init_database(branch_key=None):
         ON import_history(imported_at);
         """
     )
+
+    if str(branch_key or DEFAULT_BRANCH_KEY).strip().lower() == "main":
+        try:
+            cursor.execute("SELECT COUNT(*) FROM products;")
+            if cursor.fetchone()[0] == 0:
+                seed_path = BASE_DIR / "seed_products.json"
+                if seed_path.exists():
+                    import json
+                    seed_items = json.loads(seed_path.read_text(encoding="utf-8"))
+                    now_ts = get_current_timestamp()
+                    for item in seed_items:
+                        cursor.execute(
+                            """
+                            INSERT OR IGNORE INTO products (
+                                product_id, category, product_name, brand, model,
+                                unit, location, current_quantity, is_active,
+                                created_at, updated_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                            """,
+                            (
+                                item.get("product_id"),
+                                item.get("category", "General"),
+                                item.get("product_name"),
+                                item.get("brand"),
+                                item.get("model"),
+                                item.get("unit", "Nos"),
+                                item.get("location"),
+                                item.get("current_quantity", 0),
+                                item.get("is_active", 1),
+                                item.get("created_at", now_ts),
+                                item.get("updated_at", now_ts),
+                            ),
+                        )
+        except Exception:
+            pass
 
     conn.commit()
     conn.close()
