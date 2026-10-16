@@ -14,9 +14,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 PROTECTED_UI_BLOBS = {
     "templates/rack_shelf.html": "9a2f38420bc1695f702bd91f7090b70b4b4d6787",
-    "templates/storage_view.html": "8c0701e0b097519113dc78dcc474cf05a4f9a276",
-    "static/shelf_rack_3d.js": "ec068a1b08281a4a0b8a7c81a3eb4f014cf59704",
-    "static/stock_3d.js": "c9e708adb5ccc15107adf1308f13a93b72efe82c",
+    "templates/storage_view.html": "f9070ecd54ad5e5e2ca2abfbfc814ccb16d1dc25",
+    "static/shelf_rack_3d.js": "bf7adce02ca4eaeaa84600c11308963c1832ef4a",
+    "static/stock_3d.js": "cfb0d6c64142429a4ebb213916a597db76cf8c96",
 }
 
 
